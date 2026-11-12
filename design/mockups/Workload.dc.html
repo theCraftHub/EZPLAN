@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Team workload</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="padding: 20px 20px 8px; display: flex; flex-direction: column; gap: 4px">
+    <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em">Team workload</h1>
+    <span style="font-size: 14px; color: #475569">Hours planned per week, across all active projects</span>
+  </header>
+
+  <main style="flex: 1; overflow-y: auto; padding: 8px 20px 24px; display: flex; flex-direction: column; gap: 14px">
+    <section aria-label="Workload grid" style="background: #FFFFFF; border-radius: 18px; padding: 14px 12px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 6px">
+      <div style="display: grid; grid-template-columns: 92px repeat(4, minmax(0, 1fr)); gap: 6px; align-items: center">
+        <span style="font-size: 12px; color: #475569">Week of</span>
+        <sc-for list="{{ weeks }}" as="w" hint-placeholder-count="4">
+          <span style="font-size: 12px; font-weight: 600; color: #334155; text-align: center">{{ w }}</span>
+        </sc-for>
+      </div>
+      <sc-for list="{{ people }}" as="p" hint-placeholder-count="3">
+        <div style="display: grid; grid-template-columns: 92px repeat(4, minmax(0, 1fr)); gap: 6px; align-items: center">
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500">
+            <span style="{{ p.avatarStyle }}">{{ p.initials }}</span>{{ p.name }}
+          </span>
+          <sc-for list="{{ p.cells }}" as="c" hint-placeholder-count="4">
+            <button onClick="{{ c.pick }}" aria-label="{{ c.aria }}" aria-pressed="{{ c.pressed }}" style="{{ c.style }}">
+              <span style="font-size: 14px; font-weight: 700">{{ c.hours }}</span>
+              <sc-if value="{{ c.over }}" hint-placeholder-val="{{ false }}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 4v10M12 19v.5"></path></svg>
+              </sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </sc-for>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; padding-top: 8px; font-size: 12px; color: #334155">
+        <span style="display: flex; align-items: center; gap: 6px"><span style="width: 14px; height: 14px; border-radius: 4px; background: #EEF2FF; border: 1px solid #C7D2FE"></span>Room to spare</span>
+        <span style="display: flex; align-items: center; gap: 6px"><span style="width: 14px; height: 14px; border-radius: 4px; background: #818CF8"></span>Near capacity</span>
+        <span style="display: flex; align-items: center; gap: 6px"><span style="width: 14px; height: 14px; border-radius: 4px; background: #C2410C"></span>Overloaded (!)</span>
+      </div>
+    </section>
+
+    <section aria-live="polite" style="background: #FFFFFF; border-radius: 18px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <h2 style="margin: 0; font-size: 16px; font-weight: 600">{{ detailTitle }}</h2>
+        <span style="{{ detailChipStyle }}">{{ detailHours }}</span>
+      </div>
+      <sc-for list="{{ detailTasks }}" as="t" hint-placeholder-count="3">
+        <div style="display: flex; align-items: center; gap: 10px; min-height: 40px; border-top: 1px solid #EEF2F6; padding-top: 8px">
+          <span style="{{ t.dotStyle }}"></span>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 14px; font-weight: 500">{{ t.title }}</span>
+            <span style="font-size: 12px; color: #475569">{{ t.project }}</span>
+          </div>
+          <span style="font-size: 13px; font-weight: 600; color: #334155">{{ t.hours }}</span>
+        </div>
+      </sc-for>
+      <sc-if value="{{ detailOver }}" hint-placeholder-val="{{ false }}">
+        <div style="background: #FFF7ED; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+          <span style="font-size: 13px; line-height: 1.5; color: #7C2D12">Suggestion: move "Pitch businesses" to Leo, who has 18 free hours that week.</span>
+          <button style="align-self: flex-start; min-height: 40px; padding: 0 14px; border-radius: 10px; border: none; background: #0F172A; color: #FFFFFF; font: 600 13px Inter, sans-serif">Reassign</button>
+        </div>
+      </sc-if>
+    </section>
+  </main>
+
+  <nav aria-label="Main" style="height: 76px; background: #FFFFFF; border-top: 1px solid #E2E8F0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; padding-bottom: 8px">
+    <a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: #475569; min-height: 44px; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"></path></svg>Home</a>
+    <a href="Portfolio.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: #475569; min-height: 44px; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"></rect><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>Projects</a>
+    <a href="NewPlan.dc.html" aria-label="New plan" style="display: flex; align-items: center; justify-content: center">
+      <span style="width: 52px; height: 52px; border-radius: 26px; background: #4F46E5; color: #FFFFFF; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(79,70,229,0.35)">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      </span></a>
+    <a href="Workload.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; color: #4338CA; min-height: 44px; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><circle cx="17.5" cy="9" r="2.5"></circle><path d="M16 14.2A5 5 0 0 1 21.5 19"></path></svg>Team</a>
+    <a href="Timeline.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: #475569; min-height: 44px; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>Timeline</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 'SL-1' };
+  }
+  renderVals() {
+    var self = this;
+    var weeks = ['Nov 16', 'Nov 23', 'Nov 30', 'Dec 7'];
+    var cap = 40;
+    var proj = { Gala: '#4F46E5', Kitchen: '#B45309', Launch: '#0E7490' };
+    var team = [
+      { id: 'SL', name: 'Sam', color: '#4F46E5', hours: [34, 52, 38, 20], tasks: [
+        [['Sponsor packet', 'Gala', 14], ['Approve tile samples', 'Kitchen', 8], ['Launch email draft', 'Launch', 12]],
+        [['Pitch businesses', 'Gala', 30], ['Launch email draft', 'Launch', 12], ['Budget review', 'Gala', 10]],
+        [['Pitch businesses', 'Gala', 24], ['Press list', 'Launch', 14]],
+        [['Ticket pricing', 'Gala', 20]]
+      ] },
+      { id: 'AN', name: 'Ana', color: '#B45309', hours: [40, 36, 44, 28], tasks: [
+        [['Book the venue', 'Gala', 24], ['Cabinet order', 'Kitchen', 16]],
+        [['Book a speaker', 'Gala', 20], ['Cabinet order', 'Kitchen', 16]],
+        [['Book a speaker', 'Gala', 20], ['Electrician visit', 'Kitchen', 24]],
+        [['Speaker briefing', 'Gala', 28]]
+      ] },
+      { id: 'LE', name: 'Leo', color: '#0E7490', hours: [16, 22, 30, 36], tasks: [
+        [['Landing page copy', 'Launch', 16]],
+        [['Landing page copy', 'Launch', 22]],
+        [['Shortlist caterers', 'Gala', 30]],
+        [['Shortlist caterers', 'Gala', 16], ['Ticket sales setup', 'Gala', 20]]
+      ] }
+    ];
+    var detail = null;
+    var people = team.map(function (p) {
+      return {
+        name: p.name,
+        initials: p.id,
+        avatarStyle: 'width: 28px; height: 28px; border-radius: 14px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #FFFFFF; background: ' + p.color + ';',
+        cells: p.hours.map(function (h, i) {
+          var key = p.id + '-' + i;
+          var on = self.state.sel === key;
+          var ratio = h / cap;
+          var bg, fg, border;
+          if (ratio > 1) { bg = '#C2410C'; fg = '#FFFFFF'; border = '#C2410C'; }
+          else if (ratio >= 0.8) { bg = '#818CF8'; fg = '#0F172A'; border = '#818CF8'; }
+          else { bg = '#EEF2FF'; fg = '#3730A3'; border = '#C7D2FE'; }
+          if (on) detail = { p: p, i: i, h: h, over: ratio > 1 };
+          return {
+            hours: h + 'h',
+            over: ratio > 1,
+            pressed: on ? 'true' : 'false',
+            aria: p.name + ', week of ' + weeks[i] + ': ' + h + ' of ' + cap + ' hours' + (ratio > 1 ? ', overloaded' : ''),
+            pick: function () { self.setState({ sel: key }); },
+            style: 'min-height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 2px; cursor: pointer; font-family: Inter, sans-serif; background: ' + bg + '; color: ' + fg + '; border: 1px solid ' + border + ';' + (on ? ' box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px #0F172A;' : '')
+          };
+        })
+      };
+    });
+    var d = detail || { p: team[0], i: 1, h: 52, over: true };
+    return {
+      weeks: weeks,
+      people: people,
+      detailTitle: d.p.name + ', week of ' + weeks[d.i],
+      detailHours: d.h + ' of ' + cap + 'h',
+      detailOver: d.over,
+      detailChipStyle: 'font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; ' + (d.over ? 'background: #FFEDD5; color: #9A3412;' : 'background: #EEF2FF; color: #3730A3;'),
+      detailTasks: d.p.tasks[d.i].map(function (t) {
+        return { title: t[0], project: t[1] === 'Gala' ? 'Spring Charity Gala' : t[1] === 'Kitchen' ? 'Kitchen Renovation' : 'Spring Product Launch', hours: t[2] + 'h',
+          dotStyle: 'width: 10px; height: 10px; border-radius: 5px; flex: none; background: ' + proj[t[1]] + ';' };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

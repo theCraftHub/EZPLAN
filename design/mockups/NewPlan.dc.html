@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New plan</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="padding: 12px 12px 4px; display: flex; align-items: center; gap: 4px">
+    <a href="Main.dc.html" aria-label="Close" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #0F172A">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+    </a>
+    <h1 style="flex: 1; margin: 0; font-size: 18px; font-weight: 700">New plan</h1>
+  </header>
+
+  <ol aria-label="Steps" style="list-style: none; margin: 0; padding: 8px 20px 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+    <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
+      <li style="display: flex; flex-direction: column; gap: 6px">
+        <span style="{{ s.barStyle }}"></span>
+        <span style="{{ s.labelStyle }}">{{ s.label }}</span>
+      </li>
+    </sc-for>
+  </ol>
+
+  <main style="flex: 1; overflow-y: auto; padding: 0 20px 24px; display: flex; flex-direction: column; gap: 14px">
+
+    <sc-if value="{{ isStep1 }}" hint-placeholder-val="{{ true }}">
+      <section style="display: flex; flex-direction: column; gap: 14px">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em">Ask your Claude to write the plan</h2>
+        <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #334155">Copy this prompt, paste it into Claude with your project notes, then come back with the reply. Works for any kind of project.</p>
+        <div style="background: #FFFFFF; border-radius: 16px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 8px">
+          <span style="font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.04em">EZPLAN prompt</span>
+          <p style="margin: 0; font-size: 13px; line-height: 1.55; color: #334155; white-space: pre-line">You are a project planner. Turn my project notes into a plan in EZPLAN format: a goal, what "done" looks like, phases, tasks with realistic time estimates, owners and what each task waits on…
+(full format rules and an example are included)</p>
+        </div>
+        <button onClick="{{ copy }}" style="min-height: 52px; border-radius: 14px; border: none; background: #4F46E5; color: #FFFFFF; font: 600 16px Inter, sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ copyIcon }}"></path></svg>
+          {{ copyLabel }}
+        </button>
+        <button onClick="{{ toStep2 }}" style="min-height: 48px; border-radius: 14px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font: 600 15px Inter, sans-serif; cursor: pointer">I have Claude's reply</button>
+        <div style="display: flex; flex-direction: column; gap: 8px; padding-top: 6px">
+          <span style="font-size: 13px; font-weight: 600; color: #334155">Or start from</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <sc-for list="{{ starters }}" as="st" hint-placeholder-count="4">
+              <button style="min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #334155; font: 500 13px Inter, sans-serif">{{ st }}</button>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ isStep2 }}" hint-placeholder-val="{{ false }}">
+      <section style="display: flex; flex-direction: column; gap: 14px">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em">Paste Claude's reply</h2>
+        <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #334155">
+          Plan text or .ezplan file
+          <textarea rows="8" style="border: 1px solid #CBD5E1; border-radius: 14px; padding: 12px; font: 400 13px ui-monospace, Menlo, monospace; color: #0F172A; background: #FFFFFF; resize: none; line-height: 1.5">---
+ezplan: 1
+title: Spring Charity Gala
+goal: Host a 200-guest dinner raising $50k.
+---
+## P1: Venue and budget
+- [ ] T1: Set the budget (2d) @Sam
+- [ ] T2: Book the venue (1w) @Ana depends: T1</textarea>
+        </label>
+        <button style="min-height: 44px; border-radius: 12px; border: 1px dashed #94A3B8; background: transparent; color: #334155; font: 600 14px Inter, sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"></path></svg>
+          Upload a .ezplan or .md file
+        </button>
+        <div style="background: #FFFFFF; border-radius: 14px; padding: 12px 14px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 14px; font-weight: 600; color: #115E59; display: flex; align-items: center; gap: 6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+            Read successfully
+          </span>
+          <span style="font-size: 13px; color: #334155">4 phases · 24 tasks · 2 milestones · 3 people</span>
+          <span style="font-size: 13px; color: #9A3412">1 note: "Thank-you notes" has no time estimate (we'll assume 1 day).</span>
+        </div>
+        <button onClick="{{ toStep3 }}" style="min-height: 52px; border-radius: 14px; border: none; background: #4F46E5; color: #FFFFFF; font: 600 16px Inter, sans-serif; cursor: pointer">Create plan</button>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ isStep3 }}" hint-placeholder-val="{{ false }}">
+      <section style="display: flex; flex-direction: column; gap: 14px">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em">Plan Check</h2>
+        <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #334155">EZPLAN's AI reviewed your plan against its goal.</p>
+        <div style="background: #FFFFFF; border-radius: 18px; padding: 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; align-items: center; gap: 14px">
+            <span style="width: 64px; height: 64px; border-radius: 32px; background: #CCFBF1; color: #115E59; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700">86</span>
+            <div style="display: flex; flex-direction: column; gap: 3px">
+              <span style="font-size: 18px; font-weight: 700; color: #115E59">Looks good</span>
+              <span style="font-size: 13px; color: #475569">Aligned with your goal · 2 suggestions</span>
+            </div>
+          </div>
+          <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #334155">The plan covers venue, catering, sponsors and ticket sales, and reaches the $50k goal by March. Two gaps could delay the event.</p>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <div style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.4">
+              <span style="flex: none; font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 6px; color: #9A3412; background: #FFEDD5">High</span>
+              <span>Add a backup venue option until the contract is signed.</span>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.4">
+              <span style="flex: none; font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 6px; color: #334155; background: #E2E8F0">Medium</span>
+              <span>"Thank-you notes" needs an owner.</span>
+            </div>
+          </div>
+        </div>
+        <a href="Project.dc.html" style="min-height: 52px; border-radius: 14px; background: #4F46E5; color: #FFFFFF; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center">Apply both fixes and open plan</a>
+        <a href="Project.dc.html" style="min-height: 48px; border-radius: 14px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center">Open plan as is</a>
+      </section>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { step: 1, copied: false };
+  }
+  renderVals() {
+    var self = this;
+    var step = this.state.step;
+    var steps = ['Get prompt', 'Paste reply', 'Plan Check'].map(function (l, i) {
+      var reached = i + 1 <= step;
+      return { label: (i + 1) + '. ' + l,
+        barStyle: 'display: block; height: 4px; border-radius: 2px; background: ' + (reached ? '#4F46E5' : '#CBD5E1') + ';',
+        labelStyle: 'font-size: 12px; font-weight: ' + (i + 1 === step ? '700' : '500') + '; color: ' + (reached ? '#0F172A' : '#475569') + ';' };
+    });
+    return {
+      steps: steps,
+      isStep1: step === 1,
+      isStep2: step === 2,
+      isStep3: step === 3,
+      copyLabel: this.state.copied ? 'Copied! Now paste it into Claude' : 'Copy prompt',
+      copyIcon: this.state.copied ? 'M5 12.5l4.5 4.5L19 7.5' : 'M9 9h10v10H9zM5 15V5h10',
+      copy: function () { self.setState({ copied: true }); },
+      toStep2: function () { self.setState({ step: 2 }); },
+      toStep3: function () { self.setState({ step: 3 }); },
+      starters: ['A past project', 'Event', 'Renovation', 'Product launch', 'Hiring']
+    };
+  }
+}
+</script>
+</body>
+</html>

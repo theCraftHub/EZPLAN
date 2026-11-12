@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Checklist</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="padding: 12px 12px 8px; display: flex; align-items: center; gap: 4px">
+    <a href="Main.dc.html" aria-label="Back to Home" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #0F172A">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+    </a>
+    <h1 style="flex: 1; margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em">Spring Charity Gala</h1>
+    <span style="display: flex; margin-right: 8px" aria-label="Viewing now: Ana and Leo">
+      <span style="width: 28px; height: 28px; border-radius: 14px; border: 2px solid #F6F7F9; background: #B45309; color: #FFFFFF; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center">AN</span>
+      <span style="width: 28px; height: 28px; border-radius: 14px; border: 2px solid #F6F7F9; background: #0E7490; color: #FFFFFF; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; margin-left: -8px">LE</span>
+    </span>
+  </header>
+
+  <nav aria-label="Project views" style="margin: 0 20px 8px; padding: 4px; background: #E9ECF1; border-radius: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px">
+    <a href="Project.dc.html" style="min-height: 36px; border-radius: 9px; color: #475569; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center">Overview</a>
+    <a href="Checklist.dc.html" aria-current="page" style="min-height: 36px; border-radius: 9px; background: #FFFFFF; color: #0F172A; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(15,23,42,0.08)">Checklist</a>
+    <a href="Timeline.dc.html" style="min-height: 36px; border-radius: 9px; color: #475569; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center">Timeline</a>
+  </nav>
+
+  <div style="padding: 4px 20px 8px; display: flex; gap: 8px; overflow-x: auto">
+    <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+      <button onClick="{{ f.pick }}" aria-pressed="{{ f.pressed }}" style="{{ f.style }}">{{ f.label }}</button>
+    </sc-for>
+  </div>
+
+  <main style="flex: 1; overflow-y: auto; padding: 6px 20px 28px; display: flex; flex-direction: column; gap: 14px">
+    <sc-for list="{{ phases }}" as="ph" hint-placeholder-count="3">
+      <section style="background: #FFFFFF; border-radius: 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); overflow: hidden">
+        <div style="{{ ph.bandStyle }}"></div>
+        <button onClick="{{ ph.toggle }}" aria-expanded="{{ ph.expandedAttr }}" style="width: 100%; min-height: 56px; padding: 12px 16px; border: none; background: transparent; display: flex; flex-direction: column; gap: 8px; text-align: left; font-family: Inter, sans-serif; cursor: pointer">
+          <span style="display: flex; align-items: center; gap: 8px; width: 100%">
+            <span style="flex: 1; font-size: 16px; font-weight: 600; color: #0F172A">{{ ph.name }}</span>
+            <span style="font-size: 13px; font-weight: 600; color: #334155">{{ ph.doneText }}</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ ph.chevron }}"></path></svg>
+          </span>
+          <span style="width: 100%; height: 6px; border-radius: 3px; background: #E2E8F0; overflow: hidden; display: block">
+            <span style="{{ ph.barStyle }}"></span>
+          </span>
+        </button>
+        <sc-if value="{{ ph.open }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column">
+            <sc-for list="{{ ph.tasks }}" as="t" hint-placeholder-count="3">
+              <div style="padding: 12px 16px; border-top: 1px solid #EEF2F6; display: flex; gap: 12px; align-items: flex-start">
+                <sc-if value="{{ t.milestone }}" hint-placeholder-val="{{ false }}">
+                  <span style="width: 32px; height: 32px; flex: none; display: flex; align-items: center; justify-content: center" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 2.5l9.5 9.5-9.5 9.5L2.5 12z" fill="{{ t.diamondFill }}" stroke="#0F172A" stroke-width="1.6"></path></svg>
+                  </span>
+                </sc-if>
+                <sc-if value="{{ t.notMilestone }}" hint-placeholder-val="{{ true }}">
+                  <span style="{{ t.avatarStyle }}">{{ t.owner }}</span>
+                </sc-if>
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+                  <span style="{{ t.titleStyle }}">{{ t.title }}</span>
+                  <span style="display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; color: #475569">
+                    <sc-for list="{{ t.chips }}" as="c" hint-placeholder-count="2">
+                      <span style="{{ c.style }}">{{ c.text }}</span>
+                    </sc-for>
+                  </span>
+                </div>
+                <button onClick="{{ t.cycle }}" aria-label="{{ t.cycleLabel }}" style="{{ t.pillStyle }}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ t.icon }}"></path></svg>
+                  {{ t.statusLabel }}
+                </button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </section>
+    </sc-for>
+    <p style="margin: 4px 0 0; font-size: 12px; color: #475569; text-align: center">Tap a status to change it. Everyone on the project sees it instantly.</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      status: { T1: 'done', T2: 'progress', M1: 'todo', T3: 'todo', T4: 'done', T5: 'progress', T6: 'todo', T7: 'todo', T8: 'skipped' },
+      closed: {},
+      filter: 'all'
+    };
+  }
+  renderVals() {
+    var self = this;
+    var ORDER = ['todo', 'progress', 'done', 'skipped'];
+    var S = {
+      todo: { label: 'To do', icon: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z', css: 'color: #334155; background: #F1F5F9; border: 1px solid #CBD5E1;' },
+      progress: { label: 'In progress', icon: 'M12 3a9 9 0 1 0 0 18M12 3v18', css: 'color: #1E3A8A; background: #DBEAFE; border: 1px solid #93C5FD;' },
+      done: { label: 'Done', icon: 'M5 12.5l4.5 4.5L19 7.5', css: 'color: #FFFFFF; background: #0F766E; border: 1px solid #0F766E;' },
+      skipped: { label: 'Skipped', icon: 'M6 12h12', css: 'color: #475569; background: #FFFFFF; border: 1px dashed #94A3B8;' }
+    };
+    var people = { SL: '#4F46E5', AN: '#B45309', LE: '#0E7490' };
+    var data = [
+      { id: 'P1', name: 'Venue and budget', color: '#4F46E5', tasks: [
+        { id: 'T1', title: 'Set the budget', owner: 'SL', chips: ['2 days', 'Done Dec 2'] },
+        { id: 'T2', title: 'Book the venue', owner: 'AN', chips: ['1 week', 'Due today', 'Waits on T1', 'Notes'], late: true },
+        { id: 'M1', title: 'Venue confirmed', milestone: true, chips: ['Milestone', 'Dec 12'] }
+      ] },
+      { id: 'P2', name: 'Sponsors and tickets', color: '#B45309', tasks: [
+        { id: 'T4', title: 'Draft sponsor packet', owner: 'SL', chips: ['3 days'] },
+        { id: 'T5', title: 'Pitch 10 local businesses', owner: 'SL', chips: ['2 weeks', 'Due Dec 18'] },
+        { id: 'T6', title: 'Open ticket sales', owner: 'LE', chips: ['1 day', 'Waits on M1'] }
+      ] },
+      { id: 'P3', name: 'Food and program', color: '#0E7490', tasks: [
+        { id: 'T3', title: 'Shortlist caterers', owner: 'LE', chips: ['1 week', 'Waits on M1'] },
+        { id: 'T7', title: 'Book a speaker', owner: 'AN', chips: ['2 weeks'] },
+        { id: 'T8', title: 'Live band', owner: 'AN', chips: ['Removed from budget'] }
+      ] }
+    ];
+    var filt = this.state.filter;
+    var filters = [
+      { key: 'all', label: 'All' }, { key: 'mine', label: 'My tasks' }, { key: 'open', label: 'Not done' }, { key: 'late', label: 'Overdue' }
+    ].map(function (f) {
+      var on = filt === f.key;
+      return { label: f.label, pressed: on ? 'true' : 'false', pick: function () { self.setState({ filter: f.key }); },
+        style: 'flex: none; min-height: 36px; padding: 0 14px; border-radius: 999px; font: 600 13px Inter, sans-serif; cursor: pointer; ' + (on ? 'background: #0F172A; color: #FFFFFF; border: 1px solid #0F172A;' : 'background: #FFFFFF; color: #334155; border: 1px solid #CBD5E1;') };
+    });
+    var phases = data.map(function (ph) {
+      var open = !self.state.closed[ph.id];
+      var all = ph.tasks.filter(function (t) { return self.state.status[t.id] !== 'skipped'; });
+      var done = all.filter(function (t) { return self.state.status[t.id] === 'done'; }).length;
+      var pct = all.length ? Math.round(done / all.length * 100) : 0;
+      var tasks = ph.tasks.filter(function (t) {
+        var st = self.state.status[t.id];
+        if (filt === 'mine') return t.owner === 'SL';
+        if (filt === 'open') return st !== 'done' && st !== 'skipped';
+        if (filt === 'late') return !!t.late && st !== 'done';
+        return true;
+      }).map(function (t) {
+        var st = self.state.status[t.id];
+        var s = S[st];
+        var next = ORDER[(ORDER.indexOf(st) + 1) % ORDER.length];
+        var faded = st === 'done' || st === 'skipped';
+        return {
+          title: t.title,
+          owner: t.owner || '',
+          milestone: !!t.milestone,
+          notMilestone: !t.milestone,
+          diamondFill: st === 'done' ? '#0F766E' : '#FFFFFF',
+          avatarStyle: 'width: 32px; height: 32px; flex: none; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #FFFFFF; background: ' + (people[t.owner] || '#64748B') + ';',
+          titleStyle: 'font-size: 15px; font-weight: 500; line-height: 1.3;' + (faded ? ' color: #64748B; text-decoration: line-through;' : ''),
+          chips: t.chips.map(function (c) {
+            var warn = c === 'Due today';
+            return { text: c, style: 'padding: 2px 8px; border-radius: 6px; ' + (warn ? 'background: #FFEDD5; color: #9A3412; font-weight: 600;' : 'background: #F1F5F9; color: #334155;') };
+          }),
+          statusLabel: s.label,
+          icon: s.icon,
+          pillStyle: 'flex: none; min-height: 32px; padding: 0 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 5px; font: 600 12px Inter, sans-serif; cursor: pointer; ' + s.css,
+          cycleLabel: t.title + ': ' + s.label + '. Tap to change to ' + S[next].label,
+          cycle: function () {
+            var m = Object.assign({}, self.state.status);
+            m[t.id] = next;
+            self.setState({ status: m });
+          }
+        };
+      });
+      return {
+        name: ph.name,
+        doneText: done + ' of ' + all.length,
+        open: open,
+        expandedAttr: open ? 'true' : 'false',
+        chevron: open ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6',
+        bandStyle: 'height: 4px; background: ' + ph.color + ';',
+        barStyle: 'display: block; height: 100%; width: ' + pct + '%; background: ' + ph.color + '; border-radius: 3px;',
+        tasks: tasks,
+        toggle: function () {
+          var c = Object.assign({}, self.state.closed);
+          c[ph.id] = open;
+          self.setState({ closed: c });
+        }
+      };
+    });
+    return { phases: phases, filters: filters };
+  }
+}
+</script>
+</body>
+</html>

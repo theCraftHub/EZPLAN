@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Portfolio</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="padding: 20px 20px 10px; display: flex; flex-direction: column; gap: 12px">
+    <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em">Portfolio</h1>
+    <label style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 12px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search projects</span>
+      <input type="search" placeholder="Search projects" style="flex: 1; border: none; outline: none; background: transparent; font: 400 15px Inter, sans-serif; color: #0F172A">
+    </label>
+    <div role="tablist" aria-label="Project state" style="padding: 4px; background: #E9ECF1; border-radius: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+        <button role="tab" aria-selected="{{ t.selected }}" onClick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</button>
+      </sc-for>
+    </div>
+  </header>
+
+  <main style="flex: 1; overflow-y: auto; padding: 4px 20px 24px; display: flex; flex-direction: column; gap: 12px">
+    <sc-for list="{{ cards }}" as="c" hint-placeholder-count="3">
+      <article style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; justify-content: space-between; gap: 10px; align-items: flex-start">
+          <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+            <a href="Project.dc.html" style="font-size: 16px; font-weight: 600; color: #0F172A">{{ c.name }}</a>
+            <span style="font-size: 13px; color: #475569">{{ c.sub }}</span>
+          </div>
+          <span style="{{ c.chipStyle }}">{{ c.chip }}</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+          <sc-for list="{{ c.stats }}" as="s" hint-placeholder-count="3">
+            <div style="background: #F8FAFC; border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px">
+              <span style="font-size: 15px; font-weight: 700">{{ s.value }}</span>
+              <span style="font-size: 11px; color: #475569">{{ s.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: flex; gap: 8px">
+          <a href="Project.dc.html" style="flex: 1; min-height: 40px; border-radius: 10px; border: 1px solid #CBD5E1; color: #0F172A; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center">Open</a>
+          <a href="NewPlan.dc.html" style="flex: 1; min-height: 40px; border-radius: 10px; border: 1px solid #CBD5E1; color: #0F172A; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg>
+            Reuse as template</a>
+        </div>
+      </article>
+    </sc-for>
+  </main>
+
+  <nav aria-label="Main" style="height: 76px; background: #FFFFFF; border-top: 1px solid #E2E8F0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; padding-bottom: 8px">
+    <a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: #475569; min-height: 44px; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"></path></svg>Home</a>
+    <a href="Portfolio.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; color: #4338CA; min-height: 44px; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"></rect><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>Projects</a>
+    <a href="NewPlan.dc.html" aria-label="New plan" style="display: flex; align-items: center; justify-content: center">
+      <span style="width: 52px; height: 52px; border-radius: 26px; background: #4F46E5; color: #FFFFFF; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(79,70,229,0.35)">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      </span></a>
+    <a href="Workload.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: #475569; min-height: 44px; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><circle cx="17.5" cy="9" r="2.5"></circle><path d="M16 14.2A5 5 0 0 1 21.5 19"></path></svg>Team</a>
+    <a href="Timeline.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: #475569; min-height: 44px; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>Timeline</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'active' };
+  }
+  renderVals() {
+    var self = this;
+    var tabs = [
+      { key: 'active', label: 'Active · 4' },
+      { key: 'completed', label: 'Completed · 7' },
+      { key: 'archived', label: 'Archived · 2' }
+    ].map(function (t) {
+      var on = self.state.tab === t.key;
+      return { label: t.label, selected: on ? 'true' : 'false', pick: function () { self.setState({ tab: t.key }); },
+        style: 'min-height: 38px; border-radius: 9px; border: none; font: ' + (on ? '600' : '500') + ' 13px Inter, sans-serif; cursor: pointer; ' + (on ? 'background: #FFFFFF; color: #0F172A; box-shadow: 0 1px 2px rgba(15,23,42,0.08);' : 'background: transparent; color: #475569;') };
+    });
+    var chip = {
+      'On track': 'color: #115E59; background: #CCFBF1;',
+      'At risk': 'color: #9A3412; background: #FFEDD5;',
+      'Done on time': 'color: #115E59; background: #CCFBF1;',
+      'Done late': 'color: #334155; background: #E2E8F0;',
+      'Archived': 'color: #334155; background: #E2E8F0;'
+    };
+    var data = {
+      active: [
+        { name: 'Spring Charity Gala', sub: 'Events · Dec 1 to Mar 14', chip: 'At risk', stats: [['38%', 'complete'], ['24', 'tasks'], ['86', 'Plan Check']] },
+        { name: 'Kitchen Renovation', sub: 'Construction · Oct 5 to Feb 2', chip: 'On track', stats: [['61%', 'complete'], ['31', 'tasks'], ['91', 'Plan Check']] },
+        { name: 'Spring Product Launch', sub: 'Marketing · Nov 2 to Apr 1', chip: 'On track', stats: [['22%', 'complete'], ['40', 'tasks'], ['78', 'Plan Check']] }
+      ],
+      completed: [
+        { name: 'Fall Fundraiser 2026', sub: 'Events · finished Oct 18', chip: 'Done on time', stats: [['42 days', 'planned 44'], ['100%', 'on-time tasks'], ['88', 'Plan Check']] },
+        { name: 'Office Move', sub: 'Operations · finished Aug 30', chip: 'Done late', stats: [['61 days', 'planned 50'], ['72%', 'on-time tasks'], ['70', 'Plan Check']] },
+        { name: 'Clinic Website Refresh', sub: 'Healthcare · finished Jul 12', chip: 'Done on time', stats: [['30 days', 'planned 32'], ['94%', 'on-time tasks'], ['92', 'Plan Check']] }
+      ],
+      archived: [
+        { name: 'Pop-up Shop (cancelled)', sub: 'Retail · archived May 3', chip: 'Archived', stats: [['15%', 'complete'], ['18', 'tasks'], ['74', 'Plan Check']] },
+        { name: 'Summer Camp 2025', sub: 'Education · archived Jan 9', chip: 'Archived', stats: [['100%', 'complete'], ['36', 'tasks'], ['83', 'Plan Check']] }
+      ]
+    };
+    var cards = data[this.state.tab].map(function (c) {
+      return { name: c.name, sub: c.sub, chip: c.chip,
+        chipStyle: 'flex: none; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; ' + chip[c.chip],
+        stats: c.stats.map(function (s) { return { value: s[0], label: s[1] }; }) };
+    });
+    return { tabs: tabs, cards: cards };
+  }
+}
+</script>
+</body>
+</html>

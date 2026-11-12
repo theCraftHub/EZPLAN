@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Project dashboard</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="padding: 12px 12px 8px; display: flex; align-items: center; gap: 4px">
+    <a href="Main.dc.html" aria-label="Back to Home" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #0F172A">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+    </a>
+    <h1 style="flex: 1; margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em">Spring Charity Gala</h1>
+    <button aria-label="Share" style="width: 44px; height: 44px; border: none; background: transparent; color: #334155; display: flex; align-items: center; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"></circle><circle cx="6" cy="12" r="2.5"></circle><circle cx="18" cy="19" r="2.5"></circle><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"></path></svg>
+    </button>
+    <button aria-label="Export and more" style="width: 44px; height: 44px; border: none; background: transparent; color: #334155; display: flex; align-items: center; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="#334155" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>
+    </button>
+  </header>
+
+  <nav aria-label="Project views" style="margin: 0 20px 8px; padding: 4px; background: #E9ECF1; border-radius: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px">
+    <a href="Project.dc.html" aria-current="page" style="min-height: 36px; border-radius: 9px; background: #FFFFFF; color: #0F172A; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(15,23,42,0.08)">Overview</a>
+    <a href="Checklist.dc.html" style="min-height: 36px; border-radius: 9px; color: #475569; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center">Checklist</a>
+    <a href="Timeline.dc.html" style="min-height: 36px; border-radius: 9px; color: #475569; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center">Timeline</a>
+  </nav>
+
+  <main style="flex: 1; overflow-y: auto; padding: 8px 20px 28px; display: flex; flex-direction: column; gap: 14px">
+
+    <section aria-label="Progress" style="background: #FFFFFF; border-radius: 18px; padding: 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; gap: 18px; align-items: center">
+      <svg width="104" height="104" viewBox="0 0 104 104" role="img" aria-label="38 percent complete">
+        <circle cx="52" cy="52" r="44" fill="none" stroke="#E2E8F0" stroke-width="12"></circle>
+        <circle cx="52" cy="52" r="44" fill="none" stroke="#4F46E5" stroke-width="12" stroke-linecap="round" stroke-dasharray="105 277" transform="rotate(-90 52 52)"></circle>
+        <text x="52" y="50" text-anchor="middle" font-family="Inter, sans-serif" font-size="24" font-weight="700" fill="#0F172A">38%</text>
+        <text x="52" y="68" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#475569">complete</text>
+      </svg>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0">
+        <span style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #9A3412; background: #FFEDD5; padding: 5px 10px; border-radius: 999px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2z"></path><path d="M12 10v5M12 18v.5"></path></svg>
+          At risk
+        </span>
+        <span style="font-size: 14px; color: #334155">4 days behind the original plan</span>
+        <div style="display: flex; flex-direction: column; gap: 2px; font-size: 13px; color: #475569">
+          <span>Finish <strong style="color: #0F172A">Mar 14</strong> (planned Mar 10)</span>
+          <span>9 of 24 tasks done · 2 overdue</span>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="Goal" style="background: #FFFFFF; border-radius: 18px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; flex-direction: column; gap: 3px">
+        <span style="font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.04em">Goal</span>
+        <span style="font-size: 15px">Host a 200-guest fundraising dinner raising $50k.</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 3px">
+        <span style="font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.04em">Done when</span>
+        <span style="font-size: 15px">Event held, $50k raised, thank-you notes sent.</span>
+      </div>
+    </section>
+
+    <section aria-labelledby="check" style="background: #FFFFFF; border-radius: 18px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <h2 id="check" style="margin: 0; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.2 5.3L20 9l-4.4 3.8L17 18.5 12 15.6 7 18.5l1.4-5.7L4 9l5.8-.7z"></path></svg>
+          Plan Check
+        </h2>
+        <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #115E59; background: #CCFBF1; padding: 5px 10px; border-radius: 999px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+          Looks good · 86
+        </span>
+      </div>
+      <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #334155">The plan covers venue, catering, sponsors and ticket sales, and reaches the $50k goal. Two gaps could delay the event.</p>
+      <sc-for list="{{ issues }}" as="it" hint-placeholder-count="2">
+        <div style="border: 1px solid #E2E8F0; border-radius: 12px; display: flex; flex-direction: column">
+          <button onClick="{{ it.toggle }}" aria-expanded="{{ it.expandedAttr }}" style="min-height: 48px; padding: 10px 12px; border: none; background: transparent; display: flex; align-items: center; gap: 10px; text-align: left; font: 500 14px Inter, sans-serif; color: #0F172A; cursor: pointer">
+            <span style="{{ it.sevStyle }}">{{ it.sev }}</span>
+            <span style="flex: 1">{{ it.title }}</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ it.chevron }}"></path></svg>
+          </button>
+          <sc-if value="{{ it.open }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 0 12px 12px; display: flex; flex-direction: column; gap: 10px">
+              <span style="font-size: 13px; line-height: 1.5; color: #334155">{{ it.detail }}</span>
+              <div style="display: flex; gap: 8px">
+                <button style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: none; background: #4F46E5; color: #FFFFFF; font: 600 13px Inter, sans-serif">Apply fix</button>
+                <a href="Checklist.dc.html" style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #CBD5E1; color: #0F172A; font-size: 13px; font-weight: 600; display: flex; align-items: center">Show me</a>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </section>
+
+    <section aria-labelledby="next" style="background: #FFFFFF; border-radius: 18px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
+      <h2 id="next" style="margin: 0; font-size: 16px; font-weight: 600">Up next</h2>
+      <sc-for list="{{ upnext }}" as="u" hint-placeholder-count="3">
+        <div style="display: flex; align-items: center; gap: 12px; min-height: 44px">
+          <span style="{{ u.avatarStyle }}">{{ u.initials }}</span>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 14px; font-weight: 500">{{ u.title }}</span>
+            <span style="font-size: 12px; color: #475569">{{ u.meta }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </section>
+
+    <section aria-labelledby="burn" style="background: #FFFFFF; border-radius: 18px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <h2 id="burn" style="margin: 0; font-size: 16px; font-weight: 600">Progress vs plan</h2>
+        <span style="font-size: 12px; color: #475569">tasks done</span>
+      </div>
+      <svg width="314" height="150" viewBox="0 0 314 150" role="img" aria-label="Tasks done over time: 9 done now, the original plan expected 11 by today">
+        <line x1="28" y1="120" x2="306" y2="120" stroke="#CBD5E1" stroke-width="1"></line>
+        <line x1="28" y1="70" x2="306" y2="70" stroke="#EEF2F6" stroke-width="1"></line>
+        <line x1="28" y1="20" x2="306" y2="20" stroke="#EEF2F6" stroke-width="1"></line>
+        <text x="20" y="124" text-anchor="end" font-family="Inter, sans-serif" font-size="10" fill="#475569">0</text>
+        <text x="20" y="74" text-anchor="end" font-family="Inter, sans-serif" font-size="10" fill="#475569">12</text>
+        <text x="20" y="24" text-anchor="end" font-family="Inter, sans-serif" font-size="10" fill="#475569">24</text>
+        <polyline points="28,120 80,108 132,90 184,74 236,50 288,24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-dasharray="5 4"></polyline>
+        <polyline points="28,120 80,112 132,99 160,83" fill="none" stroke="#4F46E5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
+        <circle cx="160" cy="83" r="4.5" fill="#4F46E5"></circle>
+        <line x1="160" y1="14" x2="160" y2="120" stroke="#0F172A" stroke-width="1" stroke-dasharray="2 3"></line>
+        <text x="164" y="14" font-family="Inter, sans-serif" font-size="10" fill="#0F172A">Today</text>
+        <text x="168" y="96" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#4338CA">Actual 9</text>
+        <text x="240" y="44" font-family="Inter, sans-serif" font-size="11" fill="#475569">Original plan</text>
+        <text x="28" y="140" font-family="Inter, sans-serif" font-size="10" fill="#475569">Dec 1</text>
+        <text x="306" y="140" text-anchor="end" font-family="Inter, sans-serif" font-size="10" fill="#475569">Mar 14</text>
+      </svg>
+    </section>
+
+    <section aria-labelledby="report" style="background: #FFFFFF; border-radius: 18px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <h2 id="report" style="margin: 0; font-size: 16px; font-weight: 600">Status report</h2>
+        <span style="font-size: 12px; color: #475569">Mon, Nov 9</span>
+      </div>
+      <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #334155">Budget is set and two sponsors have signed. The venue contract slipped 4 days, which pushes catering. Ana is following up Friday.</p>
+      <button style="min-height: 44px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font: 600 14px Inter, sans-serif">Write this week's report</button>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { openIssue: 0 };
+  }
+  renderVals() {
+    var self = this;
+    var sev = {
+      High: 'flex: none; font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 6px; color: #9A3412; background: #FFEDD5;',
+      Medium: 'flex: none; font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 6px; color: #334155; background: #E2E8F0;'
+    };
+    var issues = [
+      { sev: 'High', title: 'No backup if the venue falls through', detail: 'Everything depends on one venue. Add a task to hold a second option until the contract is signed.' },
+      { sev: 'Medium', title: 'Thank-you notes have no owner', detail: '"Done when" includes thank-you notes, but task T22 is unassigned. Assign it to someone.' }
+    ].map(function (it, i) {
+      var open = self.state.openIssue === i;
+      return Object.assign({}, it, {
+        open: open,
+        expandedAttr: open ? 'true' : 'false',
+        chevron: open ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6',
+        sevStyle: sev[it.sev],
+        toggle: function () { self.setState({ openIssue: open ? -1 : i }); }
+      });
+    });
+    var people = { SL: '#4F46E5', AN: '#B45309', LE: '#0E7490' };
+    var upnext = [
+      { initials: 'AN', title: 'Sign venue contract', meta: 'Ana · due today · overdue 1 day' },
+      { initials: 'SL', title: 'Send sponsor packets', meta: 'Sam · due Fri' },
+      { initials: 'LE', title: 'Shortlist caterers', meta: 'Leo · starts Mon' }
+    ].map(function (u) {
+      return Object.assign({}, u, {
+        avatarStyle: 'width: 36px; height: 36px; border-radius: 18px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #FFFFFF; background: ' + people[u.initials] + ';'
+      });
+    });
+    return { issues: issues, upnext: upnext };
+  }
+}
+</script>
+</body>
+</html>
