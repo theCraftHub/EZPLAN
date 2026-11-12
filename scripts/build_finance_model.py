@@ -81,6 +81,7 @@ lines = [
     ("3. Pricing: gross margin at candidate prices, and the MINIMUM price per user to hit the target margin.", BLACK),
     ("4. Scenarios: total monthly profit/loss at 100 / 1k / 10k / 100k total users (free + paid), with real included allowances.", BLACK),
     ("5. TierCaps: how many AI uses a paid tier can include before margin drops below target.", BLACK),
+    ("5b. Enterprise: profit per company-wide customer (25 / 200 / 1,000 seats) incl. SSO + directory sync costs.", BLACK),
     ("6. Actuals: paste monthly numbers from the app's Admin > Economics CSV export to compare reality with the model.", BLACK),
     ("", BLACK),
     ("COLOR LEGEND", BOLD),
@@ -176,8 +177,17 @@ blocks = [
         ("mix_t", "Paid users: share typical", 0.35, "%", "Estimate", PCT),
         ("mix_h", "Paid users: share heavy", 0.15, "%", "Estimate; light + typical + heavy should total 100%", PCT),
     ]),
+    ("Enterprise (company-wide licenses)", [
+        ("ent_price", "Enterprise price per seat (annual contract, per month)", 15.00, "$ / seat / month", "Key lever. Placeholder; market Business/Enterprise tiers ~$12-25", USD),
+        ("ent_min", "Minimum seats per Enterprise contract", 25, "seats", "Keeps fixed identity costs a small share of revenue", NUM),
+        ("ent_sso", "SSO connection (WorkOS) per company", 125.00, "$ / company / month", "WorkOS pricing via search " + CHECKED + "; volume discounts down to ~$65", USD),
+        ("ent_scim", "Directory sync / SCIM (WorkOS) per company", 125.00, "$ / company / month", "WorkOS pricing via search " + CHECKED + "; billed separately from SSO", USD),
+        ("ent_support", "Support / account management per company", 50.00, "$ / company / month", "User input: placeholder for support time", USD),
+        ("ent_pay", "Invoice / ACH payment fee", 0.008, "% of invoice", "Stripe ACH ~0.8% (capped per payment); conservative, no cap applied", PCT),
+        ("ent_id_max", "Max identity cost as share of revenue", 0.05, "%", "Target used to compute minimum seats", PCT),
+    ]),
 ]
-KEY = {"price", "free_ratio", "target_gm", "inapp", "ann_share"}
+KEY = {"price", "free_ratio", "target_gm", "inapp", "ann_share", "ent_price"}
 for title, items in blocks:
     section(ws, row, title, 4)
     row += 1
@@ -377,6 +387,8 @@ REF["sub1"] = ref(U, 6, R_SUB1)
 REF["aicore_blend"] = ref(U, 6, R_AICORE)
 REF["aiapp_blend"] = ref(U, 6, R_AIAPP)
 REF["aicore_free"] = ref(U, 5, R_AICORE)
+REF["p1_blend"] = ref(U, 6, R_P1)
+REF["p2_blend"] = ref(U, 6, R_P2)
 for name in UROW:
     REF[name + "_paid"] = ref(U, 6, UROW[name])
     REF[name + "_free"] = ref(U, 5, UROW[name])
@@ -600,6 +612,65 @@ R_WCM = r
 r += 1
 tc.cell(row=r, column=1, value="Caps OK? (worst case at or above target margin)").font = BOLD
 tc.cell(row=r, column=2, value=f"=IF(B{R_WCM}>={REF['target_gm']},\"OK\",\"Lower caps or raise price\")").font = BOLD
+
+# ---------------------------------------------------------------- Enterprise
+E = "Enterprise"
+en = wb.create_sheet(E)
+header(en, 1, ["Per Enterprise customer, per month", "Customer A", "Customer B", "Customer C", "Note"], [56, 16, 16, 16, 62])
+r = 2
+en.cell(row=r, column=1, value="Seats (employees licensed)").font = BOLD
+for j, n in enumerate([25, 200, 1000]):
+    c = en.cell(row=r, column=2 + j, value=n)
+    c.font = BLUE
+    c.number_format = NUM
+R_ES = r
+r += 1
+EC = [2, 3, 4]
+
+
+def erow(label, fn, fmt=USD0, bold=False, note=""):
+    global r
+    en.cell(row=r, column=1, value=label).font = BOLD if bold else BLACK
+    for col in EC:
+        L = get_column_letter(col)
+        c = en.cell(row=r, column=col, value=fn(L))
+        c.number_format = fmt
+        if bold:
+            c.font = BOLD
+    if note:
+        en.cell(row=r, column=5, value=note).font = BLACK
+    style_row(en, r, 5)
+    out = r
+    r += 1
+    return out
+
+
+R_EB = erow("Billed seats (minimum applies)", lambda L: f"=MAX({L}{R_ES},{REF['ent_min']})", NUM)
+R_EREV = erow("Revenue", lambda L: f"={L}{R_EB}*{REF['ent_price']}", USD0, True)
+r += 1
+R_EUSE = erow("Seat usage costs (AI + infra + email)",
+              lambda L: f"={L}{R_ES}*({REF['p1_blend']}+{REF['inapp']}*({REF['p2_blend']}-{REF['p1_blend']}))",
+              note="Blended paid-user cost; no free users carried")
+R_EID = erow("Identity: SSO + directory sync (WorkOS)", lambda L: f"={REF['ent_sso']}+{REF['ent_scim']}")
+R_ESUP = erow("Support / account management", lambda L: f"={REF['ent_support']}")
+R_EPAY = erow("Invoice payment fees", lambda L: f"={L}{R_EREV}*{REF['ent_pay']}")
+R_ECOST = erow("Total cost", lambda L: f"={L}{R_EUSE}+{L}{R_EID}+{L}{R_ESUP}+{L}{R_EPAY}", USD0, True)
+r += 1
+R_EPROF = erow("PROFIT per month", lambda L: f"={L}{R_EREV}-{L}{R_ECOST}", USD0, True)
+for col in EC:
+    en.cell(row=R_EPROF, column=col).fill = KEY_FILL
+erow("Gross margin", lambda L: f"=IF({L}{R_EREV}=0,0,{L}{R_EPROF}/{L}{R_EREV})", PCT, True)
+erow("Identity cost as % of revenue", lambda L: f"=IF({L}{R_EREV}=0,0,{L}{R_EID}/{L}{R_EREV})", PCT)
+erow("Annual contract value", lambda L: f"={L}{R_EREV}*12", USD0)
+erow("Income-to-cost ratio", lambda L: f"=IF({L}{R_ECOST}=0,0,{L}{R_EREV}/{L}{R_ECOST})", '0.00"x"', True)
+r += 1
+en.cell(row=r, column=1, value="Seats needed so identity cost stays under the target share").font = BOLD
+c = en.cell(row=r, column=2, value=f"=ROUNDUP(({REF['ent_sso']}+{REF['ent_scim']})/({REF['ent_id_max']}*{REF['ent_price']}),0)")
+c.number_format = NUM
+c.font = BOLD
+c.fill = KEY_FILL
+en.cell(row=r, column=5, value="Compare with the minimum seats on Assumptions").font = BLACK
+en.freeze_panes = "B3"
 
 # ---------------------------------------------------------------- Actuals
 AC = "Actuals"

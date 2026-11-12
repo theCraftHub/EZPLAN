@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>EZPLAN admin console</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
+</style>
+</helmet>
+<div style="min-height: 1000px; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-wrap: wrap">
+
+  <nav aria-label="Admin" style="flex: 1 1 220px; max-width: 260px; min-width: 200px; background: #0F172A; color: #E2E8F0; padding: 20px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+    <span style="font-size: 20px; font-weight: 800; letter-spacing: -0.03em; padding: 4px 10px 4px; color: #FFFFFF">EZPLAN</span>
+    <span style="font-size: 12px; padding: 0 10px 18px; color: #CBD5E1">Admin console</span>
+    <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="7">
+      <button onClick="{{ n.pick }}" aria-current="{{ n.current }}" style="{{ n.style }}">{{ n.label }}</button>
+    </sc-for>
+    <a href="Desktop.dc.html" style="margin-top: 20px; min-height: 40px; padding: 0 12px; display: flex; align-items: center; font-size: 13px; color: #C7D2FE">Back to EZPLAN</a>
+  </nav>
+
+  <div style="flex: 999 1 560px; min-width: 0; padding: 28px 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px">
+    <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px">
+      <div style="flex: 1 1 320px; display: flex; flex-direction: column; gap: 4px">
+        <h1 style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em">Northwind Builders</h1>
+        <span style="font-size: 14px; color: #475569">Enterprise plan · Sign-in with Microsoft Entra ID · Directory sync on · northwind.com verified</span>
+      </div>
+      <span style="font-size: 13px; color: #334155">Signed in as Priya (IT admin)</span>
+    </header>
+
+    <sc-if value="{{ isPeople }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <section aria-label="Seats" style="background: #FFFFFF; border-radius: 16px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: center">
+          <div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 14px; font-weight: 600">Licenses: 186 of 200 seats assigned</span>
+            <span style="height: 10px; border-radius: 5px; background: #E2E8F0; display: block; overflow: hidden"><span style="display: block; height: 100%; width: 93%; background: #4F46E5"></span></span>
+            <span style="font-size: 13px; color: #475569">14 available · 6 invites pending · renews Mar 1</span>
+          </div>
+          <button style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font: 600 14px Inter, sans-serif">Add seats</button>
+        </section>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+          <label style="flex: 1 1 260px; display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 12px; background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 10px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+            <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search people</span>
+            <input type="search" placeholder="Search name, email or department" style="flex: 1; border: none; outline: none; background: transparent; font: 400 14px Inter, sans-serif; color: #0F172A">
+          </label>
+          <button style="min-height: 42px; padding: 0 14px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font: 600 14px Inter, sans-serif">Add person</button>
+          <button onClick="{{ toggleCsv }}" style="min-height: 42px; padding: 0 14px; border-radius: 10px; border: none; background: #4F46E5; color: #FFFFFF; font: 600 14px Inter, sans-serif">Bulk add from CSV</button>
+        </div>
+
+        <sc-if value="{{ showCsv }}" hint-placeholder-val="{{ false }}">
+          <section aria-label="CSV import preview" style="background: #FFFFFF; border-radius: 16px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); border: 1px solid #C7D2FE; display: flex; flex-direction: column; gap: 10px">
+            <span style="font-size: 15px; font-weight: 600">new-hires-march.csv · 48 rows</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px">
+              <span style="padding: 4px 10px; border-radius: 8px; background: #CCFBF1; color: #115E59; font-weight: 600">45 ready to add</span>
+              <span style="padding: 4px 10px; border-radius: 8px; background: #E2E8F0; color: #334155; font-weight: 600">2 already members (skipped)</span>
+              <span style="padding: 4px 10px; border-radius: 8px; background: #FFEDD5; color: #9A3412; font-weight: 600">1 problem: row 31 "jmiller@northwind" is not a full email</span>
+            </div>
+            <span style="font-size: 13px; color: #475569">Columns found: name, email, department, role, workspace. 45 seats will be used (14 available): 31 more seats are needed.</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <button style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: none; background: #4F46E5; color: #FFFFFF; font: 600 13px Inter, sans-serif">Buy 31 seats and add 45 people</button>
+              <button style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font: 600 13px Inter, sans-serif">Download problem rows</button>
+              <button onClick="{{ toggleCsv }}" style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: none; background: transparent; color: #334155; font: 600 13px Inter, sans-serif">Cancel</button>
+            </div>
+          </section>
+        </sc-if>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+          <section aria-label="People" style="flex: 999 1 520px; min-width: 0; background: #FFFFFF; border-radius: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); overflow-x: auto">
+            <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 14px">
+              <thead>
+                <tr style="text-align: left; color: #475569; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em">
+                  <th style="padding: 12px 16px; font-weight: 600">Person</th>
+                  <th style="padding: 12px 8px; font-weight: 600">Department</th>
+                  <th style="padding: 12px 8px; font-weight: 600">Role</th>
+                  <th style="padding: 12px 8px; font-weight: 600">Status</th>
+                  <th style="padding: 12px 16px; font-weight: 600">Last active</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ people }}" as="p" hint-placeholder-count="6">
+                  <tr style="{{ p.rowStyle }}">
+                    <td style="padding: 10px 16px">
+                      <button onClick="{{ p.pick }}" style="border: none; background: transparent; padding: 0; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 2px; font-family: Inter, sans-serif; min-height: 40px; justify-content: center">
+                        <span style="font-size: 14px; font-weight: 600; color: #0F172A">{{ p.name }}</span>
+                        <span style="font-size: 13px; color: #475569">{{ p.email }}</span>
+                      </button>
+                    </td>
+                    <td style="padding: 10px 8px; color: #334155">{{ p.dept }}</td>
+                    <td style="padding: 10px 8px; color: #334155">{{ p.role }}</td>
+                    <td style="padding: 10px 8px"><span style="{{ p.statusStyle }}">{{ p.status }}</span></td>
+                    <td style="padding: 10px 16px; color: #475569">{{ p.last }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </section>
+
+          <aside aria-label="Selected person" style="flex: 1 1 300px; min-width: 0; background: #FFFFFF; border-radius: 16px; padding: 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 14px">
+            <div style="display: flex; flex-direction: column; gap: 2px">
+              <span style="font-size: 17px; font-weight: 700">{{ sel.name }}</span>
+              <span style="font-size: 13px; color: #475569">{{ sel.dept }} · {{ sel.role }} · 7 projects, 12 open tasks</span>
+            </div>
+            <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #334155">
+              Work email
+              <input type="email" value="{{ sel.email }}" style="min-height: 40px; padding: 0 10px; border: 1px solid #CBD5E1; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F172A">
+            </label>
+            <span style="font-size: 12px; color: #475569; margin-top: -8px">Changing it keeps all their projects, tasks and "Done by" history. The old address works until the new one is confirmed.</span>
+            <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #334155">
+              Role
+              <select style="min-height: 40px; padding: 0 10px; border: 1px solid #CBD5E1; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F172A; background: #FFFFFF">
+                <option>Member</option><option>Admin (IT)</option><option>Billing admin</option><option>Owner</option><option>Guest</option>
+              </select>
+            </label>
+            <div style="border-top: 1px solid #E2E8F0; padding-top: 14px; display: flex; flex-direction: column; gap: 10px">
+              <span style="font-size: 14px; font-weight: 600">Offboard</span>
+              <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #334155">
+                Hand their 12 open tasks and 2 owned projects to
+                <select style="min-height: 40px; padding: 0 10px; border: 1px solid #CBD5E1; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F172A; background: #FFFFFF">
+                  <option>Marcus Lee (their manager)</option><option>Choose someone else…</option>
+                </select>
+              </label>
+              <button style="min-height: 42px; border-radius: 10px; border: 1px solid #B91C1C; background: #FFFFFF; color: #B91C1C; font: 600 14px Inter, sans-serif">Deactivate and transfer</button>
+              <span style="font-size: 12px; color: #475569">Sign-in is blocked immediately and the seat is freed. Their history stays.</span>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAudit }}" hint-placeholder-val="{{ false }}">
+      <section aria-label="Audit log" style="background: #FFFFFF; border-radius: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column">
+        <div style="padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0">
+          <h2 style="margin: 0; font-size: 17px; font-weight: 600">Audit log</h2>
+          <button style="min-height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font: 600 13px Inter, sans-serif">Export CSV</button>
+        </div>
+        <sc-for list="{{ audit }}" as="a" hint-placeholder-count="6">
+          <div style="padding: 12px 18px; border-bottom: 1px solid #F1F5F9; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 14px">
+            <span style="width: 150px; color: #475569">{{ a.when }}</span>
+            <span style="flex: 1 1 300px">{{ a.what }}</span>
+            <span style="color: #475569">{{ a.who }}</span>
+          </div>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ isOther }}" hint-placeholder-val="{{ false }}">
+      <section style="background: #FFFFFF; border-radius: 16px; padding: 24px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 8px">
+        <h2 style="margin: 0; font-size: 18px; font-weight: 600">{{ otherTitle }}</h2>
+        <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #334155">{{ otherText }}</p>
+      </section>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'people', sel: 1, csv: false };
+  }
+  renderVals() {
+    var self = this;
+    var tabs = [
+      ['people', 'People'], ['licenses', 'Licenses and billing'], ['domains', 'Domains'],
+      ['sso', 'Sign-in and directory sync'], ['policies', 'Policies'], ['audit', 'Audit log']
+    ];
+    var navItems = tabs.map(function (t) {
+      var on = self.state.tab === t[0];
+      return { label: t[1], current: on ? 'page' : 'false', pick: function () { self.setState({ tab: t[0] }); },
+        style: 'min-height: 42px; padding: 0 12px; border-radius: 10px; border: none; text-align: left; cursor: pointer; font: ' + (on ? '600' : '500') + ' 14px Inter, sans-serif; ' + (on ? 'background: #312E81; color: #FFFFFF;' : 'background: transparent; color: #E2E8F0;') };
+    });
+    var status = {
+      Active: 'color: #115E59; background: #CCFBF1;',
+      Invited: 'color: #1E3A8A; background: #DBEAFE;',
+      Deactivated: 'color: #334155; background: #E2E8F0;'
+    };
+    var list = [
+      ['Marcus Lee', 'marcus.lee@northwind.com', 'Operations', 'Member', 'Active', 'Today'],
+      ['Jordan Miller', 'jordan.miller@northwind.com', 'Field crews', 'Member', 'Active', 'Yesterday'],
+      ['Priya Shah', 'priya.shah@northwind.com', 'IT', 'Admin (IT)', 'Active', 'Today'],
+      ['Elena Ruiz', 'elena.ruiz@northwind.com', 'Estimating', 'Member', 'Invited', 'Never'],
+      ['Tom Becker', 'tom.becker@northwind.com', 'Field crews', 'Member', 'Deactivated', 'Oct 30'],
+      ['Grace Kim', 'grace.kim@northwind.com', 'Finance', 'Billing admin', 'Active', '3 days ago']
+    ];
+    var people = list.map(function (p, i) {
+      var on = self.state.sel === i;
+      return { name: p[0], email: p[1], dept: p[2], role: p[3], status: p[4], last: p[5],
+        statusStyle: 'font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 999px; ' + status[p[4]],
+        rowStyle: 'border-top: 1px solid #F1F5F9;' + (on ? ' background: #EEF2FF;' : ''),
+        pick: function () { self.setState({ sel: i }); } };
+    });
+    var s = list[this.state.sel];
+    var audit = [
+      ['Today 9:42', 'Changed email for Jordan Miller: jmiller@nwbuild.com to jordan.miller@northwind.com', 'Priya Shah'],
+      ['Today 9:15', 'Added 12 people from CSV (onboarding-feb.csv)', 'Priya Shah'],
+      ['Oct 30 17:02', 'Deactivated Tom Becker; 9 tasks and 1 project transferred to Marcus Lee', 'Directory sync'],
+      ['Oct 28 11:20', 'Bought 20 more seats (180 to 200)', 'Grace Kim'],
+      ['Oct 21 08:05', 'Turned off public share links for all projects', 'Priya Shah'],
+      ['Oct 2 14:30', 'Verified domain northwind.com', 'Priya Shah']
+    ].map(function (a) { return { when: a[0], what: a[1], who: a[2] }; });
+    var other = {
+      licenses: ['Licenses and billing', '200 seats on the Enterprise plan, billed annually by invoice. Assign or free seats per person, buy more any time (prorated), and see AI usage per department.'],
+      domains: ['Domains', 'northwind.com is verified. New sign-ups with this domain join Northwind automatically (admin approval: off). Personal accounts using the domain can be claimed.'],
+      sso: ['Sign-in and directory sync', 'Employees sign in with Microsoft Entra ID. Directory sync is on: new hires get EZPLAN automatically, leavers are deactivated automatically, and name, email and department changes flow in from your directory.'],
+      policies: ['Policies', 'Public share links: off. Guests (outside collaborators): allowed on invited projects only. Sign-in: work account required. AI checks: up to 100 per person per month.']
+    };
+    var o = other[this.state.tab] || ['', ''];
+    return {
+      navItems: navItems,
+      isPeople: this.state.tab === 'people',
+      isAudit: this.state.tab === 'audit',
+      isOther: !!other[this.state.tab],
+      otherTitle: o[0],
+      otherText: o[1],
+      people: people,
+      sel: { name: s[0], email: s[1], dept: s[2], role: s[3] },
+      audit: audit,
+      showCsv: this.state.csv,
+      toggleCsv: function () { self.setState({ csv: !self.state.csv }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

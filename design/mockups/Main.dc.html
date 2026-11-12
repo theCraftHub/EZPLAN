@@ -63,6 +63,9 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
               <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #475569">
                 <span style="{{ t.dotStyle }}"></span>{{ t.project }}
               </span>
+              <sc-if value="{{ t.done }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: 12px; font-weight: 600; color: #115E59">{{ t.byText }}</span>
+              </sc-if>
             </div>
             <span style="{{ t.dueStyle }}">{{ t.due }}</span>
           </div>
@@ -119,7 +122,7 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { done: { a: false, b: true, c: false } };
+    this.state = { done: { a: false, b: true, c: false }, by: { b: 'Done by Ana · Tue' } };
   }
   renderVals() {
     var self = this;
@@ -136,11 +139,14 @@ class Component extends DCLogic {
         due: done ? 'Done' : t.due,
         done: done,
         open: !done,
+        byText: self.state.by[t.id] || 'Done by you · just now',
         toggleLabel: done ? 'Mark ' + t.title + ' as to do' : 'Mark ' + t.title + ' as done',
         toggle: function () {
           var next = Object.assign({}, self.state.done);
           next[t.id] = !done;
-          self.setState({ done: next });
+          var by = Object.assign({}, self.state.by);
+          delete by[t.id];
+          self.setState({ done: next, by: by });
         },
         rowStyle: 'display: flex; align-items: center; gap: 12px; padding: 12px 16px; min-height: 44px;' + (i > 0 ? ' border-top: 1px solid #EEF2F6;' : ''),
         titleStyle: 'font-size: 15px; font-weight: 500;' + (done ? ' color: #64748B; text-decoration: line-through;' : ''),

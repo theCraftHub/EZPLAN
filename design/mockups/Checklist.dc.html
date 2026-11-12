@@ -73,6 +73,12 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
                       <span style="{{ c.style }}">{{ c.text }}</span>
                     </sc-for>
                   </span>
+                  <sc-if value="{{ t.hasBy }}" hint-placeholder-val="{{ false }}">
+                    <span style="{{ t.byStyle }}">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ t.byIcon }}"></path></svg>
+                      {{ t.byText }}
+                    </span>
+                  </sc-if>
                 </div>
                 <button onClick="{{ t.cycle }}" aria-label="{{ t.cycleLabel }}" style="{{ t.pillStyle }}">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ t.icon }}"></path></svg>
@@ -84,7 +90,7 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
         </sc-if>
       </section>
     </sc-for>
-    <p style="margin: 4px 0 0; font-size: 12px; color: #475569; text-align: center">Tap a status to change it. Everyone on the project sees it instantly.</p>
+    <p style="margin: 4px 0 0; font-size: 12px; color: #475569; text-align: center">You are signed in as Sam. Tap a status to change it: everyone sees it instantly, tagged with your name.</p>
   </main>
 </div>
 </x-dc>
@@ -95,7 +101,8 @@ class Component extends DCLogic {
     this.state = {
       status: { T1: 'done', T2: 'progress', M1: 'todo', T3: 'todo', T4: 'done', T5: 'progress', T6: 'todo', T7: 'todo', T8: 'skipped' },
       closed: {},
-      filter: 'all'
+      filter: 'all',
+      by: { T1: ['Ana', 'Dec 2'], T4: ['Sam', 'Dec 3'], T8: ['Ana', 'Dec 5'] }
     };
   }
   renderVals() {
@@ -110,7 +117,7 @@ class Component extends DCLogic {
     var people = { SL: '#4F46E5', AN: '#B45309', LE: '#0E7490' };
     var data = [
       { id: 'P1', name: 'Venue and budget', color: '#4F46E5', tasks: [
-        { id: 'T1', title: 'Set the budget', owner: 'SL', chips: ['2 days', 'Done Dec 2'] },
+        { id: 'T1', title: 'Set the budget', owner: 'SL', chips: ['2 days'] },
         { id: 'T2', title: 'Book the venue', owner: 'AN', chips: ['1 week', 'Due today', 'Waits on T1', 'Notes'], late: true },
         { id: 'M1', title: 'Venue confirmed', milestone: true, chips: ['Milestone', 'Dec 12'] }
       ] },
@@ -149,7 +156,13 @@ class Component extends DCLogic {
         var s = S[st];
         var next = ORDER[(ORDER.indexOf(st) + 1) % ORDER.length];
         var faded = st === 'done' || st === 'skipped';
+        var by = faded ? self.state.by[t.id] : null;
+        var who = by ? (by[0] === 'Sam' ? 'you' : by[0]) : '';
         return {
+          hasBy: !!by,
+          byText: by ? (st === 'done' ? 'Done' : 'Skipped') + ' by ' + who + ' · ' + by[1] : '',
+          byIcon: st === 'done' ? 'M5 12.5l4.5 4.5L19 7.5' : 'M6 12h12',
+          byStyle: 'display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: ' + (st === 'done' ? '#115E59' : '#475569') + ';',
           title: t.title,
           owner: t.owner || '',
           milestone: !!t.milestone,
@@ -168,7 +181,9 @@ class Component extends DCLogic {
           cycle: function () {
             var m = Object.assign({}, self.state.status);
             m[t.id] = next;
-            self.setState({ status: m });
+            var b = Object.assign({}, self.state.by);
+            if (next === 'done' || next === 'skipped') { b[t.id] = ['Sam', 'just now']; } else { delete b[t.id]; }
+            self.setState({ status: m, by: b });
           }
         };
       });

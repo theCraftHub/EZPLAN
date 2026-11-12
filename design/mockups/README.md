@@ -14,3 +14,4 @@ Files are `.dc.html` design components (one per screen) plus `canvas.json` (layo
 | Portfolio | Portfolio.dc.html |
 | New plan + Plan Check | NewPlan.dc.html |
 | Desktop project view | Desktop.dc.html |
+| Desktop IT admin console | Admin.dc.html |
