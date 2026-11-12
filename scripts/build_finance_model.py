@@ -81,7 +81,7 @@ lines = [
     ("3. Pricing: gross margin at candidate prices, and the MINIMUM price per user to hit the target margin.", BLACK),
     ("4. Scenarios: total monthly profit/loss at 100 / 1k / 10k / 100k total users (free + paid), with real included allowances.", BLACK),
     ("5. TierCaps: how many AI uses a paid tier can include before margin drops below target.", BLACK),
-    ("5b. Enterprise: profit per company-wide customer (25 / 200 / 1,000 seats) incl. SSO + directory sync costs.", BLACK),
+    ("5b. Enterprise: profit per company-wide customer (25 / 200 / 1,000 seats) (direct sign-in below the WorkOS seat threshold, WorkOS above it).", BLACK),
     ("6. Actuals: paste monthly numbers from the app's Admin > Economics CSV export to compare reality with the model.", BLACK),
     ("", BLACK),
     ("COLOR LEGEND", BOLD),
@@ -184,7 +184,8 @@ blocks = [
         ("ent_scim", "Directory sync / SCIM (WorkOS) per company", 125.00, "$ / company / month", "WorkOS pricing via search " + CHECKED + "; billed separately from SSO", USD),
         ("ent_support", "Support / account management per company", 50.00, "$ / company / month", "User input: placeholder for support time", USD),
         ("ent_pay", "Invoice / ACH payment fee", 0.008, "% of invoice", "Stripe ACH ~0.8% (capped per payment); conservative, no cap applied", PCT),
-        ("ent_id_max", "Max identity cost as share of revenue", 0.05, "%", "Target used to compute minimum seats", PCT),
+        ("ent_id_max", "Max identity cost as share of revenue", 0.05, "%", "Target used to compute the WorkOS seat threshold (see Enterprise sheet)", PCT),
+        ("ent_workos_min", "Use WorkOS from this many seats (below: direct Microsoft/Google + own SCIM, $0)", 350, "seats", "Decision: direct for most companies, WorkOS for large-seat companies. Set near the computed threshold on the Enterprise sheet", NUM),
     ]),
 ]
 KEY = {"price", "free_ratio", "target_gm", "inapp", "ann_share", "ent_price"}
@@ -651,7 +652,10 @@ r += 1
 R_EUSE = erow("Seat usage costs (AI + infra + email)",
               lambda L: f"={L}{R_ES}*({REF['p1_blend']}+{REF['inapp']}*({REF['p2_blend']}-{REF['p1_blend']}))",
               note="Blended paid-user cost; no free users carried")
-R_EID = erow("Identity: SSO + directory sync (WorkOS)", lambda L: f"={REF['ent_sso']}+{REF['ent_scim']}")
+erow("Sign-in track", lambda L: f"=IF({L}{R_ES}>={REF['ent_workos_min']},\"WorkOS\",\"Direct\")", "@",
+     note="Direct = Sign in with Microsoft/Google + our own SCIM endpoint ($0 per company)")
+R_EID = erow("Identity: SSO + directory sync", lambda L: f"=IF({L}{R_ES}>={REF['ent_workos_min']},{REF['ent_sso']}+{REF['ent_scim']},0)",
+             note="WorkOS cost only for companies at or above the seat threshold")
 R_ESUP = erow("Support / account management", lambda L: f"={REF['ent_support']}")
 R_EPAY = erow("Invoice payment fees", lambda L: f"={L}{R_EREV}*{REF['ent_pay']}")
 R_ECOST = erow("Total cost", lambda L: f"={L}{R_EUSE}+{L}{R_EID}+{L}{R_ESUP}+{L}{R_EPAY}", USD0, True)
@@ -664,12 +668,12 @@ erow("Identity cost as % of revenue", lambda L: f"=IF({L}{R_EREV}=0,0,{L}{R_EID}
 erow("Annual contract value", lambda L: f"={L}{R_EREV}*12", USD0)
 erow("Income-to-cost ratio", lambda L: f"=IF({L}{R_ECOST}=0,0,{L}{R_EREV}/{L}{R_ECOST})", '0.00"x"', True)
 r += 1
-en.cell(row=r, column=1, value="Seats needed so identity cost stays under the target share").font = BOLD
+en.cell(row=r, column=1, value="Seats at which WorkOS costs stay under the target share").font = BOLD
 c = en.cell(row=r, column=2, value=f"=ROUNDUP(({REF['ent_sso']}+{REF['ent_scim']})/({REF['ent_id_max']}*{REF['ent_price']}),0)")
 c.number_format = NUM
 c.font = BOLD
 c.fill = KEY_FILL
-en.cell(row=r, column=5, value="Compare with the minimum seats on Assumptions").font = BLACK
+en.cell(row=r, column=5, value="Compare with the WorkOS seat threshold on Assumptions").font = BLACK
 en.freeze_panes = "B3"
 
 # ---------------------------------------------------------------- Actuals
