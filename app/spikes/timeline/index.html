@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Timeline spike: 2,000 tasks</title>
+<style>
+  body { margin: 0; font: 13px system-ui, sans-serif; color: #0f172a; background: #f6f7f9; }
+  #bar { padding: 8px 12px; background: #fff; border-bottom: 1px solid #e2e8f0; }
+  #view { position: relative; height: calc(100vh - 40px); overflow: auto; background: #fff; }
+  #inner { position: relative; }
+  .row { position: absolute; left: 0; height: 28px; display: flex; align-items: center; border-bottom: 1px solid #f1f5f9; }
+  .label { position: sticky; left: 0; width: 200px; flex: none; background: #fff; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 1; }
+  .bar { position: absolute; top: 8px; height: 12px; border-radius: 6px; background: #4f46e5; }
+  .bar.crit { box-shadow: 0 0 0 2px #fff, 0 0 0 3px #0f172a; }
+  .ghost { position: absolute; top: 5px; height: 18px; border-radius: 8px; border: 1.5px dashed #64748b; box-sizing: border-box; }
+</style>
+</head>
+<body>
+<div id="bar">Timeline spike: <span id="info"></span></div>
+<div id="view"><div id="inner"></div></div>
+<script type="module" src="./main.ts"></script>
+</body>
+</html>
