@@ -13,5 +13,8 @@ Files are `.dc.html` design components (one per screen) plus `canvas.json` (layo
 | Team workload | Workload.dc.html |
 | Portfolio | Portfolio.dc.html |
 | New plan + Plan Check | NewPlan.dc.html |
-| Desktop project view | Desktop.dc.html |
+| Update with my AI (round trip + change preview) | UpdateAI.dc.html |
+| Calendar | Calendar.dc.html |
+| Personal first run | FirstRun.dc.html |
+| Desktop project workspace (overview, grid + Gantt, RAID, status updates, task drawer) | Desktop.dc.html |
 | Desktop IT admin console | Admin.dc.html |

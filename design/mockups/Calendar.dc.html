@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Calendar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="padding: 12px 12px 8px; display: flex; align-items: center; gap: 4px">
+    <a href="Project.dc.html" aria-label="Back to project" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #0F172A">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+    </a>
+    <h1 style="flex: 1; margin: 0; font-size: 18px; font-weight: 700">December</h1>
+    <button aria-label="Subscribe in my calendar app" style="min-height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font: 600 13px Inter, sans-serif">Add to my calendar</button>
+  </header>
+
+  <section aria-label="Month" style="margin: 0 12px; background: #FFFFFF; border-radius: 18px; padding: 10px; box-shadow: 0 1px 2px rgba(15,23,42,0.06)">
+    <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; font-size: 11px; font-weight: 600; color: #475569; text-align: center; padding-bottom: 6px">
+      <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px">
+      <sc-for list="{{ days }}" as="d" hint-placeholder-count="35">
+        <button onClick="{{ d.pick }}" aria-label="{{ d.aria }}" aria-pressed="{{ d.pressed }}" style="{{ d.style }}">
+          <span style="{{ d.numStyle }}">{{ d.num }}</span>
+          <span style="display: flex; gap: 2px; justify-content: center; min-height: 6px">
+            <sc-for list="{{ d.dots }}" as="dot" hint-placeholder-count="1">
+              <span style="{{ dot }}"></span>
+            </sc-for>
+          </span>
+        </button>
+      </sc-for>
+    </div>
+  </section>
+
+  <main style="flex: 1; overflow-y: auto; padding: 14px 20px 24px; display: flex; flex-direction: column; gap: 10px">
+    <h2 style="margin: 0; font-size: 16px; font-weight: 600">{{ selTitle }}</h2>
+    <sc-for list="{{ items }}" as="it" hint-placeholder-count="3">
+      <div style="background: #FFFFFF; border-radius: 14px; padding: 12px 14px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; align-items: center; gap: 10px">
+        <span style="{{ it.barStyle }}"></span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+          <span style="font-size: 14px; font-weight: 600">{{ it.title }}</span>
+          <span style="font-size: 12px; color: #475569">{{ it.meta }}</span>
+        </div>
+      </div>
+    </sc-for>
+    <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+      <span style="font-size: 14px; color: #475569">Nothing scheduled this day.</span>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 12 };
+  }
+  renderVals() {
+    var self = this;
+    var ev = {
+      2: [['Set the budget', 'Done by Ana', '#4F46E5']],
+      3: [['Book the venue (starts)', 'Ana · 1 week', '#4F46E5'], ['Sponsor packet', 'Sam · 3 days', '#B45309']],
+      10: [['Book a speaker (starts)', 'Ana · 2 weeks', '#0E7490']],
+      12: [['Venue confirmed', 'Milestone', '#0F172A'], ['Book the venue (due)', 'Ana · 2 days late vs plan', '#4F46E5']],
+      18: [['Pitch businesses (due)', 'Sam', '#B45309']],
+      21: [['Shortlist caterers (starts)', 'Leo · 1 week', '#0E7490']],
+      23: [['Open ticket sales', 'Leo', '#B45309']]
+    };
+    var days = [];
+    for (var i = 1; i <= 35; i++) {
+      var n = i <= 31 ? i : i - 31;
+      var inMonth = i <= 31;
+      var on = inMonth && self.state.sel === n;
+      var today = inMonth && n === 11;
+      var list = inMonth ? (ev[n] || []) : [];
+      (function (n, on, list, inMonth, today) {
+        days.push({
+          num: n,
+          aria: (inMonth ? 'December ' : 'January ') + n + (list.length ? ', ' + list.length + ' items' : ''),
+          pressed: on ? 'true' : 'false',
+          pick: function () { if (inMonth) self.setState({ sel: n }); },
+          dots: list.slice(0, 3).map(function (e) { return 'width: 6px; height: 6px; border-radius: 3px; display: block; background: ' + e[2] + ';'; }),
+          style: 'min-height: 48px; border-radius: 10px; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-family: Inter, sans-serif; background: ' + (on ? '#EEF2FF' : 'transparent') + ';' + (on ? ' box-shadow: inset 0 0 0 2px #4F46E5;' : ''),
+          numStyle: 'font-size: 14px; font-weight: ' + (today ? '700' : '500') + '; color: ' + (!inMonth ? '#94A3B8' : today ? '#FFFFFF' : '#0F172A') + ';' + (today ? ' background: #DC2626; border-radius: 11px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;' : '')
+        });
+      })(n, on, list, inMonth, today);
+    }
+    var sel = ev[this.state.sel] || [];
+    return {
+      days: days,
+      selTitle: 'December ' + this.state.sel + (this.state.sel === 11 ? ' (today)' : ''),
+      items: sel.map(function (e) { return { title: e[0], meta: e[1], barStyle: 'width: 4px; align-self: stretch; border-radius: 2px; background: ' + e[2] + ';' }; }),
+      empty: sel.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>

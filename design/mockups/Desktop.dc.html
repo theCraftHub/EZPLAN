@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>EZPLAN desktop project view</title>
+<title>EZPLAN desktop project workspace</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -15,168 +15,392 @@ body{margin:0}
 a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
 </style>
 </helmet>
-<div style="min-height: 1000px; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-wrap: wrap">
+<div style="min-height: 1000px; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-direction: column">
 
-  <nav aria-label="Main" style="flex: 1 1 220px; max-width: 260px; min-width: 200px; background: #FFFFFF; border-right: 1px solid #E2E8F0; padding: 20px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
-    <span style="font-size: 20px; font-weight: 800; letter-spacing: -0.03em; padding: 4px 10px 18px; color: #4338CA">EZPLAN</span>
-    <a href="Main.dc.html" style="min-height: 44px; padding: 0 12px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; color: #334155">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"></path></svg>Home</a>
-    <a href="Portfolio.dc.html" aria-current="page" style="min-height: 44px; padding: 0 12px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: #3730A3; background: #EEF2FF">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"></rect><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>Projects</a>
-    <a href="Workload.dc.html" style="min-height: 44px; padding: 0 12px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; color: #334155">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><circle cx="17.5" cy="9" r="2.5"></circle><path d="M16 14.2A5 5 0 0 1 21.5 19"></path></svg>Team workload</a>
-    <a href="NewPlan.dc.html" style="margin-top: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 600; color: #FFFFFF; background: #4F46E5">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>New plan</a>
-    <span style="margin: 22px 12px 6px; font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.04em">Active projects</span>
-    <a href="Project.dc.html" style="min-height: 40px; padding: 0 12px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: #0F172A; background: #F1F5F9"><span style="width: 8px; height: 8px; border-radius: 4px; background: #4F46E5"></span>Spring Charity Gala</a>
-    <a href="Project.dc.html" style="min-height: 40px; padding: 0 12px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: #334155"><span style="width: 8px; height: 8px; border-radius: 4px; background: #B45309"></span>Kitchen Renovation</a>
-    <a href="Project.dc.html" style="min-height: 40px; padding: 0 12px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: #334155"><span style="width: 8px; height: 8px; border-radius: 4px; background: #0E7490"></span>Spring Product Launch</a>
+  <header style="background: #FFFFFF; border-bottom: 1px solid #E2E8F0; padding: 12px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px">
+    <a href="Portfolio.dc.html" style="font-size: 18px; font-weight: 800; letter-spacing: -0.03em; color: #4338CA">EZPLAN</a>
+    <span style="color: #94A3B8">/</span>
+    <h1 style="margin: 0; font-size: 18px; font-weight: 700">Spring Charity Gala</h1>
+    <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #9A3412; background: #FFEDD5; padding: 5px 10px; border-radius: 999px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2z"></path><path d="M12 10v5M12 18v.5"></path></svg>At risk</span>
+    <span style="flex: 1"></span>
+    <button style="min-height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #475569; font: 500 13px Inter, sans-serif; display: flex; align-items: center; gap: 8px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>Search or jump to… <span style="font-size: 11px; padding: 1px 5px; border: 1px solid #CBD5E1; border-radius: 4px">Ctrl K</span></button>
+    <a href="UpdateAI.dc.html" style="min-height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid #C7D2FE; background: #EEF2FF; color: #3730A3; font-size: 13px; font-weight: 600; display: flex; align-items: center">Update with my AI</a>
+    <button style="min-height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font: 600 13px Inter, sans-serif">Share</button>
+    <button style="min-height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font: 600 13px Inter, sans-serif">Export</button>
+    <button style="min-height: 38px; padding: 0 12px; border-radius: 10px; border: none; background: #0F172A; color: #FFFFFF; font: 600 13px Inter, sans-serif">Present</button>
+  </header>
+
+  <nav aria-label="Project views" style="background: #FFFFFF; border-bottom: 1px solid #E2E8F0; padding: 0 20px; display: flex; gap: 4px; overflow-x: auto">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="8">
+      <button onClick="{{ t.pick }}" aria-current="{{ t.current }}" style="{{ t.style }}">{{ t.label }}</button>
+    </sc-for>
   </nav>
 
-  <div style="flex: 999 1 560px; min-width: 0; padding: 28px 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px">
-    <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px">
-      <div style="flex: 1 1 320px; display: flex; flex-direction: column; gap: 4px">
-        <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em">Spring Charity Gala</h1>
-        <span style="font-size: 14px; color: #475569">Host a 200-guest fundraising dinner raising $50k · Dec 1 to Mar 14</span>
-      </div>
-      <span style="display: flex">
-        <span style="width: 34px; height: 34px; border-radius: 17px; border: 2px solid #F6F7F9; background: #4F46E5; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center">SL</span>
-        <span style="width: 34px; height: 34px; border-radius: 17px; border: 2px solid #F6F7F9; background: #B45309; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; margin-left: -8px">AN</span>
-        <span style="width: 34px; height: 34px; border-radius: 17px; border: 2px solid #F6F7F9; background: #0E7490; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; margin-left: -8px">LE</span>
-      </span>
-      <button style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font: 600 14px Inter, sans-serif">Share link</button>
-      <button style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font: 600 14px Inter, sans-serif">Export .ezplan</button>
-    </header>
+  <div style="flex: 1; display: flex; flex-wrap: wrap; align-items: flex-start">
 
-    <section aria-label="Key numbers" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px">
-      <div style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 4px">
-        <span style="font-size: 13px; color: #475569">Complete</span>
-        <span style="font-size: 26px; font-weight: 700">38%</span>
-        <span style="font-size: 13px; color: #475569">9 of 24 tasks</span>
-      </div>
-      <div style="background: #FFF7ED; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 4px">
-        <span style="font-size: 13px; color: #9A3412">Status</span>
-        <span style="font-size: 26px; font-weight: 700; color: #9A3412">At risk</span>
-        <span style="font-size: 13px; color: #9A3412">4 days behind original plan</span>
-      </div>
-      <div style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 4px">
-        <span style="font-size: 13px; color: #475569">Next milestone</span>
-        <span style="font-size: 20px; font-weight: 700">Venue confirmed</span>
-        <span style="font-size: 13px; color: #475569">Dec 12 (planned Dec 8)</span>
-      </div>
-      <div style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 4px">
-        <span style="font-size: 13px; color: #475569">Plan Check</span>
-        <span style="font-size: 26px; font-weight: 700; color: #115E59">86</span>
-        <span style="font-size: 13px; color: #475569">Looks good · 2 suggestions</span>
-      </div>
-    </section>
+    <aside aria-label="Plan outline" style="flex: 1 1 220px; max-width: 250px; min-width: 200px; padding: 16px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+      <span style="font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; padding: 0 8px 6px">Outline</span>
+      <sc-for list="{{ outline }}" as="o" hint-placeholder-count="12">
+        <button onClick="{{ o.pick }}" style="{{ o.style }}"><span style="{{ o.dotStyle }}"></span>{{ o.label }}</button>
+      </sc-for>
+    </aside>
 
-    <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
-      <section aria-labelledby="tl" style="flex: 999 1 520px; min-width: 0; background: #FFFFFF; border-radius: 18px; padding: 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 12px">
-        <div style="display: flex; justify-content: space-between; align-items: center">
-          <h2 id="tl" style="margin: 0; font-size: 17px; font-weight: 600">Timeline</h2>
-          <a href="Timeline.dc.html" style="font-size: 14px; font-weight: 500">Open full timeline</a>
-        </div>
-        <div style="overflow-x: auto">
-          <div style="min-width: 620px; display: flex; flex-direction: column">
-            <div style="display: grid; grid-template-columns: 180px 1fr; height: 30px; align-items: center; border-bottom: 1px solid #E2E8F0; font-size: 12px; color: #475569">
-              <span>Task</span>
-              <span style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr))"><span>December</span><span>January</span><span>February</span><span>March</span></span>
-            </div>
-            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="8">
-              <div style="display: grid; grid-template-columns: 180px 1fr; height: 36px; align-items: center; border-bottom: 1px solid #F1F5F9">
-                <span style="{{ r.labelStyle }}">{{ r.label }}</span>
-                <span style="position: relative; height: 36px; display: block">
-                  <span style="position: absolute; top: 0; bottom: 0; left: 10%; width: 2px; background: #DC2626"></span>
-                  <sc-if value="{{ r.hasGhost }}" hint-placeholder-val="{{ false }}"><span style="{{ r.ghostStyle }}"></span></sc-if>
-                  <sc-if value="{{ r.isBar }}" hint-placeholder-val="{{ true }}"><span style="{{ r.barStyle }}"><span style="{{ r.fillStyle }}"></span></span></sc-if>
-                  <sc-if value="{{ r.milestone }}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" style="{{ r.diamondStyle }}" aria-hidden="true"><path d="M12 2.5l9.5 9.5-9.5 9.5L2.5 12z" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.2"></path></svg></sc-if>
-                </span>
+    <main style="flex: 999 1 560px; min-width: 0; padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+
+      <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-direction: column; gap: 14px">
+          <section aria-label="Key numbers" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px">
+            <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="6">
+              <div style="{{ k.style }}">
+                <span style="font-size: 12px; color: #475569">{{ k.label }}</span>
+                <span style="{{ k.valueStyle }}">{{ k.value }}</span>
+                <span style="font-size: 12px; color: #475569">{{ k.sub }}</span>
               </div>
             </sc-for>
+          </section>
+          <section aria-labelledby="ms" style="background: #FFFFFF; border-radius: 16px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
+            <h2 id="ms" style="margin: 0; font-size: 15px; font-weight: 600">Milestones</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px">
+              <sc-for list="{{ milestones }}" as="m" hint-placeholder-count="4">
+                <div style="display: flex; gap: 8px; align-items: flex-start">
+                  <svg width="16" height="16" viewBox="0 0 24 24" style="flex: none; margin-top: 2px" aria-hidden="true"><path d="M12 2.5l9.5 9.5-9.5 9.5L2.5 12z" fill="{{ m.fill }}" stroke="#0F172A" stroke-width="2.2"></path></svg>
+                  <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; font-weight: 600">{{ m.name }}</span><span style="{{ m.subStyle }}">{{ m.sub }}</span></span>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px">
+            <section aria-labelledby="fc" style="background: #FFFFFF; border-radius: 16px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 8px">
+              <h2 id="fc" style="margin: 0; font-size: 15px; font-weight: 600">Progress vs original plan</h2>
+              <svg width="100%" height="150" viewBox="0 0 320 150" role="img" aria-label="Tasks done over time: 9 now, original plan expected 11 by today; forecast finish Mar 18, target Mar 14">
+                <line x1="24" y1="120" x2="312" y2="120" stroke="#CBD5E1"></line>
+                <polyline points="24,120 80,108 136,90 192,72 248,46 304,22" fill="none" stroke="#94A3B8" stroke-width="2" stroke-dasharray="5 4"></polyline>
+                <polyline points="24,120 80,112 136,99 164,83" fill="none" stroke="#4F46E5" stroke-width="3" stroke-linecap="round"></polyline>
+                <polyline points="164,83 312,22" fill="none" stroke="#4F46E5" stroke-width="2" stroke-dasharray="2 4"></polyline>
+                <line x1="164" y1="12" x2="164" y2="120" stroke="#DC2626" stroke-width="1.5"></line>
+                <text x="168" y="12" font-family="Inter, sans-serif" font-size="10" fill="#0F172A">Today</text>
+                <text x="170" y="98" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#4338CA">Actual 9</text>
+                <text x="232" y="40" font-family="Inter, sans-serif" font-size="10" fill="#475569">Original plan</text>
+                <text x="250" y="16" font-family="Inter, sans-serif" font-size="10" fill="#4338CA">Forecast Mar 18</text>
+                <text x="24" y="138" font-family="Inter, sans-serif" font-size="10" fill="#475569">Dec 1</text>
+                <text x="312" y="138" text-anchor="end" font-family="Inter, sans-serif" font-size="10" fill="#475569">Mar 14</text>
+              </svg>
+            </section>
+            <section aria-labelledby="bud" style="background: #FFFFFF; border-radius: 16px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
+              <h2 id="bud" style="margin: 0; font-size: 15px; font-weight: 600">Budget by phase (planned vs spent)</h2>
+              <sc-for list="{{ budget }}" as="b" hint-placeholder-count="4">
+                <div style="display: flex; flex-direction: column; gap: 4px">
+                  <span style="display: flex; justify-content: space-between; font-size: 13px"><span>{{ b.name }}</span><span style="{{ b.numStyle }}">{{ b.nums }}</span></span>
+                  <span style="height: 8px; border-radius: 4px; background: #E2E8F0; display: block; position: relative; overflow: hidden"><span style="{{ b.barStyle }}"></span></span>
+                </div>
+              </sc-for>
+            </section>
+            <section aria-labelledby="la" style="background: #FFFFFF; border-radius: 16px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 8px">
+              <h2 id="la" style="margin: 0; font-size: 15px; font-weight: 600">Next two weeks</h2>
+              <sc-for list="{{ lookahead }}" as="l" hint-placeholder-count="4">
+                <button onClick="{{ l.pick }}" style="min-height: 40px; border: none; background: transparent; text-align: left; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; font: 400 13px Inter, sans-serif; color: #0F172A; border-top: 1px solid #F1F5F9; padding: 8px 0 0">
+                  <span>{{ l.title }}</span><span style="{{ l.whenStyle }}">{{ l.when }}</span>
+                </button>
+              </sc-for>
+            </section>
+            <section aria-labelledby="rk" style="background: #FFFFFF; border-radius: 16px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 8px">
+              <div style="display: flex; justify-content: space-between; align-items: baseline">
+                <h2 id="rk" style="margin: 0; font-size: 15px; font-weight: 600">Top risks and issues</h2>
+                <button onClick="{{ goRaid }}" style="border: none; background: transparent; color: #4338CA; font: 600 13px Inter, sans-serif; cursor: pointer; min-height: 32px">RAID log</button>
+              </div>
+              <sc-for list="{{ topRisks }}" as="r" hint-placeholder-count="3">
+                <div style="display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.4">
+                  <span style="{{ r.tagStyle }}">{{ r.tag }}</span><span>{{ r.text }}</span>
+                </div>
+              </sc-for>
+            </section>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #475569">
+            <span>Dashboard: Project manager view</span>
+            <button style="min-height: 36px; padding: 0 12px; border-radius: 10px; border: 1px dashed #94A3B8; background: transparent; color: #334155; font: 600 13px Inter, sans-serif">+ Add widget</button>
           </div>
         </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: #334155">
-          <span style="display: flex; align-items: center; gap: 6px"><span style="width: 18px; height: 8px; border-radius: 4px; background: #4F46E5"></span>Scheduled (filled = done)</span>
-          <span style="display: flex; align-items: center; gap: 6px"><span style="width: 18px; height: 8px; border-radius: 4px; border: 1.5px dashed #64748B; box-sizing: border-box"></span>Original plan</span>
-          <span style="display: flex; align-items: center; gap: 6px"><span style="width: 2px; height: 12px; background: #DC2626"></span>Today</span>
-        </div>
-      </section>
+      </sc-if>
 
-      <div style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
-        <section aria-labelledby="pc" style="background: #FFFFFF; border-radius: 18px; padding: 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
-          <h2 id="pc" style="margin: 0; font-size: 17px; font-weight: 600">Plan Check suggestions</h2>
-          <div style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.4">
-            <span style="flex: none; font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 6px; color: #9A3412; background: #FFEDD5">High</span>
-            <span>Hold a backup venue until the contract is signed.</span>
+      <sc-if value="{{ isGrid }}" hint-placeholder-val="{{ false }}">
+        <section aria-label="Grid and Gantt" style="background: #FFFFFF; border-radius: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); overflow-x: auto">
+          <div style="min-width: 900px">
+            <div style="display: grid; grid-template-columns: 46px 190px 60px 96px 70px 70px 1fr; align-items: center; height: 34px; border-bottom: 1px solid #E2E8F0; font-size: 11px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.03em">
+              <span style="padding-left: 12px">ID</span><span>Task</span><span>Owner</span><span>Status</span><span>Days</span><span>Waits on</span>
+              <span style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-left: 1px solid #E2E8F0; padding-left: 6px"><span>Dec</span><span>Jan</span><span>Feb</span><span>Mar</span></span>
+            </div>
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="10">
+              <button onClick="{{ r.pick }}" style="{{ r.rowStyle }}">
+                <span style="padding-left: 12px; color: #475569">{{ r.id }}</span>
+                <span style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ r.name }}</span>
+                <span>{{ r.owner }}</span>
+                <span><span style="{{ r.statusStyle }}">{{ r.status }}</span></span>
+                <span>{{ r.days }}</span>
+                <span style="color: #475569">{{ r.dep }}</span>
+                <span style="position: relative; height: 38px; display: block; border-left: 1px solid #E2E8F0">
+                  <span style="position: absolute; top: 0; bottom: 0; left: 10.6%; width: 2px; background: #DC2626"></span>
+                  <sc-if value="{{ r.hasGhost }}" hint-placeholder-val="{{ false }}"><span style="{{ r.ghostStyle }}"></span></sc-if>
+                  <sc-if value="{{ r.isBar }}" hint-placeholder-val="{{ true }}"><span style="{{ r.barStyle }}"><span style="{{ r.fillStyle }}"></span></span></sc-if>
+                  <sc-if value="{{ r.isMs }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" style="{{ r.msStyle }}" aria-hidden="true"><path d="M12 2.5l9.5 9.5-9.5 9.5L2.5 12z" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.4"></path></svg></sc-if>
+                </span>
+              </button>
+            </sc-for>
           </div>
-          <div style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.4">
-            <span style="flex: none; font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 6px; color: #334155; background: #E2E8F0">Medium</span>
-            <span>"Thank-you notes" needs an owner.</span>
+          <div style="padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: #334155; border-top: 1px solid #E2E8F0">
+            <span>Dashed outline = baseline "Original"</span><span>Black ring = critical path</span><span>Red line = today</span><span>Drag a bar to preview the ripple, then Apply or Cancel</span>
           </div>
-          <button style="align-self: flex-start; min-height: 40px; padding: 0 14px; border-radius: 10px; border: none; background: #4F46E5; color: #FFFFFF; font: 600 13px Inter, sans-serif">Review fixes</button>
         </section>
-        <section aria-labelledby="wl" style="background: #FFFFFF; border-radius: 18px; padding: 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 12px">
-          <h2 id="wl" style="margin: 0; font-size: 17px; font-weight: 600">This week's workload</h2>
-          <sc-for list="{{ load }}" as="l" hint-placeholder-count="3">
-            <div style="display: flex; flex-direction: column; gap: 6px">
-              <span style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-weight: 500">{{ l.name }}</span><span style="{{ l.hoursStyle }}">{{ l.hours }}</span></span>
-              <span style="height: 8px; border-radius: 4px; background: #E2E8F0; display: block; overflow: hidden"><span style="{{ l.barStyle }}"></span></span>
+      </sc-if>
+
+      <sc-if value="{{ isRaid }}" hint-placeholder-val="{{ false }}">
+        <section aria-label="RAID log" style="display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <sc-for list="{{ raidFilters }}" as="f" hint-placeholder-count="5">
+              <button onClick="{{ f.pick }}" aria-pressed="{{ f.pressed }}" style="{{ f.style }}">{{ f.label }}</button>
+            </sc-for>
+            <span style="flex: 1"></span>
+            <button style="min-height: 36px; padding: 0 12px; border-radius: 10px; border: none; background: #4F46E5; color: #FFFFFF; font: 600 13px Inter, sans-serif">+ Add item</button>
+          </div>
+          <div style="background: #FFFFFF; border-radius: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); overflow-x: auto">
+            <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px">
+              <thead><tr style="text-align: left; color: #475569; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em">
+                <th style="padding: 10px 14px">Type</th><th style="padding: 10px 8px">Item</th><th style="padding: 10px 8px">Rating</th><th style="padding: 10px 8px">Owner</th><th style="padding: 10px 8px">Linked</th><th style="padding: 10px 14px">Next step</th>
+              </tr></thead>
+              <tbody>
+                <sc-for list="{{ raid }}" as="r" hint-placeholder-count="5">
+                  <tr style="border-top: 1px solid #F1F5F9">
+                    <td style="padding: 10px 14px"><span style="{{ r.typeStyle }}">{{ r.type }}</span></td>
+                    <td style="padding: 10px 8px; font-weight: 500">{{ r.text }}</td>
+                    <td style="padding: 10px 8px"><span style="{{ r.ratingStyle }}">{{ r.rating }}</span></td>
+                    <td style="padding: 10px 8px">{{ r.owner }}</td>
+                    <td style="padding: 10px 8px; color: #475569">{{ r.linked }}</td>
+                    <td style="padding: 10px 14px; color: #334155">{{ r.next }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <span style="font-size: 12px; color: #475569">Plan Check risk flags can be added here with one click. Items marked High show on the Overview.</span>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ isStatus }}" hint-placeholder-val="{{ false }}">
+        <section aria-label="Status updates" style="display: flex; flex-direction: column; gap: 12px">
+          <div style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px; border: 2px solid #C7D2FE">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap">
+              <h2 style="margin: 0; font-size: 16px; font-weight: 600">Draft: week of Nov 16</h2>
+              <div role="group" aria-label="Health" style="display: flex; gap: 6px">
+                <sc-for list="{{ rag }}" as="g" hint-placeholder-count="5">
+                  <button onClick="{{ g.pick }}" aria-pressed="{{ g.pressed }}" style="{{ g.style }}">{{ g.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <span style="font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.04em">Filled in from the plan (edit freely)</span>
+            <ul style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.6; color: #334155">
+              <li>Done since last update: Set the budget, Sponsor packet, 2 sponsors signed</li>
+              <li>Slipped: Book the venue, 4 days later than the original plan</li>
+              <li>Changed: goal raised to $60k, silent auction added (via Update with my AI)</li>
+              <li>Next: Venue confirmed (Dec 12), Shortlist caterers</li>
+              <li>Forecast finish: Mar 18 (target Mar 14)</li>
+            </ul>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap">
+              <button style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: none; background: #4F46E5; color: #FFFFFF; font: 600 13px Inter, sans-serif">Post and email 4 stakeholders</button>
+              <button style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font: 600 13px Inter, sans-serif">Polish wording with AI</button>
+              <button style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font: 600 13px Inter, sans-serif">One-page PDF</button>
+            </div>
+          </div>
+          <sc-for list="{{ history }}" as="h" hint-placeholder-count="3">
+            <div style="background: #FFFFFF; border-radius: 14px; padding: 12px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; gap: 12px; align-items: flex-start">
+              <span style="{{ h.chipStyle }}">{{ h.health }}</span>
+              <div style="display: flex; flex-direction: column; gap: 3px">
+                <span style="font-size: 13px; font-weight: 600">{{ h.when }}</span>
+                <span style="font-size: 13px; color: #334155">{{ h.text }}</span>
+              </div>
             </div>
           </sc-for>
         </section>
-        <section aria-labelledby="sr" style="background: #FFFFFF; border-radius: 18px; padding: 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
-          <h2 id="sr" style="margin: 0; font-size: 17px; font-weight: 600">Latest status report</h2>
-          <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #334155">Budget is set and two sponsors have signed. The venue contract slipped 4 days, which pushes catering. Ana is following up Friday.</p>
-          <button style="align-self: flex-start; min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; color: #0F172A; font: 600 13px Inter, sans-serif">Write this week's report</button>
+      </sc-if>
+
+      <sc-if value="{{ isOther }}" hint-placeholder-val="{{ false }}">
+        <section style="background: #FFFFFF; border-radius: 16px; padding: 20px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 6px">
+          <h2 style="margin: 0; font-size: 16px; font-weight: 600">{{ otherTitle }}</h2>
+          <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #334155">{{ otherText }}</p>
         </section>
+      </sc-if>
+    </main>
+
+    <aside aria-label="Task details" style="flex: 1 1 280px; max-width: 340px; min-width: 260px; background: #FFFFFF; border-left: 1px solid #E2E8F0; padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; align-self: stretch">
+      <span style="font-size: 12px; color: #475569">{{ d.id }} · {{ d.phase }}</span>
+      <h2 style="margin: 0; font-size: 18px; font-weight: 700">{{ d.name }}</h2>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; font-size: 13px">
+        <span style="color: #475569">Owner</span><span>{{ d.owner }}</span>
+        <span style="color: #475569">Status</span><span>{{ d.status }}</span>
+        <span style="color: #475569">Dates</span><span>{{ d.dates }}</span>
+        <span style="color: #475569">Original plan</span><span>{{ d.base }}</span>
+        <span style="color: #475569">Waits on</span><span>{{ d.dep }}</span>
+        <span style="color: #475569">Can slip</span><span>{{ d.slack }}</span>
+        <span style="color: #475569">Cost</span><span>{{ d.cost }}</span>
+        <span style="color: #475569">Time logged</span><span>{{ d.time }}</span>
       </div>
-    </div>
+      <div style="border-top: 1px solid #E2E8F0; padding-top: 10px; display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 13px; font-weight: 600">Notes</span>
+        <span style="font-size: 13px; color: #334155; line-height: 1.45">{{ d.notes }}</span>
+      </div>
+      <div style="border-top: 1px solid #E2E8F0; padding-top: 10px; display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 13px; font-weight: 600">Activity</span>
+        <sc-for list="{{ d.activity }}" as="a" hint-placeholder-count="3">
+          <span style="font-size: 12px; color: #475569">{{ a }}</span>
+        </sc-for>
+      </div>
+      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #334155">
+        Comment
+        <input type="text" placeholder="Write a comment, @mention someone" style="min-height: 40px; padding: 0 10px; border: 1px solid #CBD5E1; border-radius: 10px; font: 400 13px Inter, sans-serif">
+      </label>
+    </aside>
   </div>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
 class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'overview', task: 'T2', raidF: 'all', rag: 'At risk' };
+  }
   renderVals() {
-    var span = 104;
-    function pct(d) { return (d / span * 100).toFixed(2) + '%'; }
+    var self = this;
+    var S = this.state;
     var colors = { P1: '#4F46E5', P2: '#B45309', P3: '#0E7490', P4: '#BE185D' };
-    var items = [
-      { p: 'P1', label: 'Set the budget', s: 0, d: 2, done: 1 },
-      { p: 'P1', label: 'Book the venue', s: 2, d: 10, bs: 2, bd: 6, done: 0.7 },
-      { p: 'P1', label: 'Venue confirmed', s: 12, milestone: true },
-      { p: 'P2', label: 'Pitch businesses', s: 3, d: 14, done: 0.5 },
-      { p: 'P2', label: 'Ticket sales', s: 13, d: 70, bs: 9, bd: 70, done: 0 },
-      { p: 'P3', label: 'Shortlist caterers', s: 13, d: 7, bs: 9, bd: 7, done: 0 },
-      { p: 'P3', label: 'Book a speaker', s: 10, d: 14, done: 0 },
-      { p: 'P4', label: 'Final headcount', s: 90, d: 4, done: 0 },
-      { p: 'P4', label: 'Gala night', s: 103, milestone: true }
-    ];
-    var rows = items.map(function (it) {
-      var c = colors[it.p];
-      var r = { label: it.label, hasGhost: false, isBar: false, milestone: false,
-        labelStyle: 'font-size: 13px; padding-left: 10px; border-left: 4px solid ' + c + '; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' };
-      if (it.milestone) {
-        r.milestone = true;
-        r.diamondStyle = 'position: absolute; top: 10px; left: calc(' + pct(it.s) + ' - 8px);';
-        return r;
+    var tasks = {
+      T1: { phase: 'P1', name: 'Set the budget', owner: 'Sam', status: 'Done', days: 2, dep: '-', s: 0, d: 2, done: 1, crit: true, dates: 'Dec 1 to Dec 2', base: 'Dec 1 to Dec 2', slack: '0 days', cost: '$0 / $0', time: '6h / 8h', notes: 'Approved by the board.', act: ['Done by Ana · Dec 2', 'Owner set to Sam · Dec 1'] },
+      T2: { phase: 'P1', name: 'Book the venue', owner: 'Ana', status: 'In progress', days: 10, dep: 'T1', s: 2, d: 10, bs: 2, bd: 6, done: 0.7, crit: true, dates: 'Dec 3 to Dec 12', base: 'Dec 3 to Dec 8', slack: '0 days (critical)', cost: '$8,000 / $7,500', time: '14h / 40h', notes: 'Two venues hold the date; deposit due Friday.', act: ['Estimate changed 1w → 10d by Ana · Dec 9', 'Comment from Sam: "Can we confirm by Fri?"', 'Started by Ana · Dec 3'] },
+      M1: { phase: 'P1', name: 'Venue confirmed', owner: '-', status: 'To do', days: 0, dep: 'T2', s: 12, ms: true, crit: true, dates: 'Dec 12', base: 'Dec 8', slack: '0 days (critical)', cost: '-', time: '-', notes: 'Milestone.', act: ['Moved Dec 8 → Dec 12 (follows T2)'] },
+      T4: { phase: 'P2', name: 'Sponsor packet', owner: 'Sam', status: 'Done', days: 3, dep: '-', s: 0, d: 3, done: 1, dates: 'Dec 1 to Dec 3', base: 'Dec 1 to Dec 3', slack: '10 days', cost: '$200 / $250', time: '10h / 24h', notes: 'Sent to 12 businesses.', act: ['Done by Sam · Dec 3'] },
+      T5: { phase: 'P2', name: 'Pitch businesses', owner: 'Sam', status: 'In progress', days: 14, dep: 'T4', s: 3, d: 14, done: 0.5, dates: 'Dec 4 to Dec 18', base: 'Dec 4 to Dec 18', slack: '6 days', cost: '$0 / $0', time: '20h / 80h', notes: '2 of 10 signed.', act: ['Started by Sam · Dec 4'] },
+      T6: { phase: 'P2', name: 'Open ticket sales', owner: 'Leo', status: 'To do', days: 70, dep: 'M1', s: 13, d: 70, bs: 9, bd: 70, done: 0, crit: true, dates: 'Dec 13 to Feb 20', base: 'Dec 9 to Feb 16', slack: '0 days (critical)', cost: '$300 / $300', time: '0h', notes: 'Use the free ticketing tool.', act: ['Waiting on M1'] },
+      T3: { phase: 'P3', name: 'Shortlist caterers', owner: 'Leo', status: 'To do', days: 7, dep: 'M1', s: 13, d: 7, bs: 9, bd: 7, done: 0, dates: 'Dec 13 to Dec 21', base: 'Dec 9 to Dec 17', slack: '3 days', cost: '$0 / $0', time: '0h', notes: '-', act: ['Waiting on M1'] },
+      T7: { phase: 'P3', name: 'Book a speaker', owner: 'Ana', status: 'In progress', days: 14, dep: '-', s: 10, d: 14, done: 0.2, dates: 'Dec 11 to Dec 31', base: 'Dec 11 to Dec 31', slack: '20 days', cost: '$1,500 / $1,500', time: '3h', notes: 'Two candidates.', act: ['Started by Ana · Dec 11'] },
+      M2: { phase: 'P4', name: 'Gala night', owner: '-', status: 'To do', days: 0, dep: 'T6', s: 103, ms: true, crit: true, dates: 'Mar 14', base: 'Mar 14', slack: '0 days (critical)', cost: '-', time: '-', notes: 'The event.', act: ['Forecast Mar 18 at current pace'] }
+    };
+    var order = ['T1', 'T2', 'M1', 'T4', 'T5', 'T6', 'T3', 'T7', 'M2'];
+    var span = 104;
+    function pct(x) { return (x / span * 100).toFixed(2) + '%'; }
+    function pickTask(id) { return function () { self.setState({ task: id }); }; }
+    var statusCss = { 'Done': 'color: #FFFFFF; background: #0F766E;', 'In progress': 'color: #1E3A8A; background: #DBEAFE;', 'To do': 'color: #334155; background: #F1F5F9;' };
+
+    var tabList = [['overview', 'Overview'], ['grid', 'Grid + Gantt'], ['board', 'Board'], ['calendar', 'Calendar'], ['workload', 'Workload'], ['raid', 'RAID log'], ['status', 'Status updates'], ['changes', 'Changes']];
+    var tabs = tabList.map(function (t) {
+      var on = S.tab === t[0];
+      return { label: t[1], current: on ? 'page' : 'false', pick: function () { self.setState({ tab: t[0] }); },
+        style: 'min-height: 44px; padding: 0 12px; border: none; background: transparent; cursor: pointer; white-space: nowrap; font: ' + (on ? '600' : '500') + ' 14px Inter, sans-serif; color: ' + (on ? '#0F172A' : '#475569') + '; box-shadow: inset 0 -2px 0 ' + (on ? '#4F46E5' : 'transparent') + ';' };
+    });
+
+    var phaseNames = { P1: 'Venue and budget', P2: 'Sponsors and tickets', P3: 'Food and program', P4: 'Event week' };
+    var outline = [];
+    var seen = {};
+    order.forEach(function (id) {
+      var t = tasks[id];
+      if (!seen[t.phase]) {
+        seen[t.phase] = true;
+        outline.push({ label: phaseNames[t.phase], pick: function () {}, dotStyle: 'width: 8px; height: 8px; border-radius: 4px; flex: none; background: ' + colors[t.phase] + ';',
+          style: 'min-height: 32px; padding: 0 8px; border: none; background: transparent; text-align: left; display: flex; align-items: center; gap: 8px; font: 700 12px Inter, sans-serif; color: #334155; text-transform: uppercase; letter-spacing: 0.03em; margin-top: 6px;' });
       }
+      var on = S.task === id;
+      outline.push({ label: id + '  ' + t.name, pick: pickTask(id), dotStyle: 'display: none;',
+        style: 'min-height: 34px; padding: 0 8px 0 24px; border: none; border-radius: 8px; text-align: left; cursor: pointer; display: flex; align-items: center; font: ' + (on ? '600' : '400') + ' 13px Inter, sans-serif; color: #0F172A; background: ' + (on ? '#EEF2FF' : 'transparent') + ';' + (t.status === 'Done' ? ' text-decoration: line-through; color: #64748B;' : '') });
+    });
+
+    var rows = order.map(function (id) {
+      var t = tasks[id];
+      var on = S.task === id;
+      var r = { id: id, name: t.name, owner: t.owner, status: t.status, days: t.ms ? '◆' : t.days, dep: t.dep, pick: pickTask(id),
+        statusStyle: 'font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 999px; white-space: nowrap; ' + statusCss[t.status],
+        rowStyle: 'width: 100%; display: grid; grid-template-columns: 46px 190px 60px 96px 70px 70px 1fr; align-items: center; min-height: 38px; border: none; border-top: 1px solid #F1F5F9; text-align: left; cursor: pointer; font: 400 13px Inter, sans-serif; color: #0F172A; padding: 0; background: ' + (on ? '#EEF2FF' : '#FFFFFF') + ';',
+        hasGhost: false, isBar: false, isMs: false };
+      if (t.ms) { r.isMs = true; r.msStyle = 'position: absolute; top: 12px; left: calc(' + pct(t.s) + ' - 7px);'; return r; }
       r.isBar = true;
-      r.barStyle = 'position: absolute; top: 11px; height: 14px; border-radius: 7px; overflow: hidden; left: ' + pct(it.s) + '; width: ' + pct(Math.max(it.d, 1)) + '; background: ' + c + '33;';
-      r.fillStyle = 'display: block; height: 100%; width: ' + Math.round(it.done * 100) + '%; background: ' + c + ';';
-      if (it.bs !== undefined) {
-        r.hasGhost = true;
-        r.ghostStyle = 'position: absolute; top: 8px; height: 20px; border-radius: 9px; border: 1.5px dashed #64748B; box-sizing: border-box; left: ' + pct(it.bs) + '; width: ' + pct(it.bd) + ';';
-      }
+      r.barStyle = 'position: absolute; top: 12px; height: 14px; border-radius: 7px; overflow: hidden; left: ' + pct(t.s) + '; width: ' + pct(Math.max(t.d, 1)) + '; background: ' + colors[t.phase] + '33;' + (t.crit ? ' box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 3.5px #0F172A;' : '');
+      r.fillStyle = 'display: block; height: 100%; width: ' + Math.round(t.done * 100) + '%; background: ' + colors[t.phase] + ';';
+      if (t.bs !== undefined) { r.hasGhost = true; r.ghostStyle = 'position: absolute; top: 9px; height: 20px; border-radius: 9px; border: 1.5px dashed #64748B; box-sizing: border-box; left: ' + pct(t.bs) + '; width: ' + pct(t.bd) + ';'; }
       return r;
     });
-    var load = [['Sam', 52], ['Ana', 36], ['Leo', 22]].map(function (l) {
-      var over = l[1] > 40;
-      return { name: l[0], hours: l[1] + ' of 40h' + (over ? ' · overloaded' : ''),
-        hoursStyle: 'font-weight: 600; color: ' + (over ? '#9A3412' : '#334155') + ';',
-        barStyle: 'display: block; height: 100%; width: ' + Math.min(100, Math.round(l[1] / 40 * 100)) + '%; background: ' + (over ? '#C2410C' : '#818CF8') + ';' };
+
+    var kpiBox = 'background: #FFFFFF; border-radius: 14px; padding: 12px 14px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 2px;';
+    var warnBox = 'background: #FFF7ED; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px;';
+    var kpis = [
+      ['Complete', '38%', '9 of 24 tasks', false],
+      ['Schedule', '+4 days', 'vs original plan', true],
+      ['Forecast finish', 'Mar 18', 'target Mar 14', true],
+      ['Budget', '-$450', 'spent vs planned so far', true],
+      ['Overdue', '2', 'tasks', true],
+      ['Plan Check', '86', 'Looks good', false]
+    ].map(function (k) { return { label: k[0], value: k[1], sub: k[2], style: k[3] ? warnBox : kpiBox, valueStyle: 'font-size: 22px; font-weight: 700; color: ' + (k[3] ? '#9A3412' : '#0F172A') + ';' }; });
+
+    var milestones = [
+      { name: 'Budget approved', sub: 'Done Dec 2', fill: '#0F766E', late: false },
+      { name: 'Venue confirmed', sub: 'Dec 12 · 4 days late', fill: '#FFFFFF', late: true },
+      { name: 'Tickets on sale', sub: 'Dec 13 · 4 days late', fill: '#FFFFFF', late: true },
+      { name: 'Gala night', sub: 'Mar 14 · forecast Mar 18', fill: '#FFFFFF', late: true }
+    ].map(function (m) { return { name: m.name, sub: m.sub, fill: m.fill, subStyle: 'font-size: 12px; color: ' + (m.late ? '#9A3412' : '#475569') + ';' }; });
+
+    var budget = [['Venue and budget', 8000, 7500], ['Sponsors and tickets', 500, 550], ['Food and program', 1500, 1500], ['Event week', 0, 2000]].map(function (b) {
+      var over = b[1] > b[2];
+      var max = Math.max(b[1], b[2], 1);
+      return { name: b[0], nums: '$' + b[1].toLocaleString() + ' / $' + b[2].toLocaleString(),
+        numStyle: 'font-weight: 600; color: ' + (over ? '#9A3412' : '#334155') + ';',
+        barStyle: 'display: block; height: 100%; width: ' + Math.min(100, Math.round(b[1] / max * 100)) + '%; background: ' + (over ? '#C2410C' : '#4F46E5') + ';' };
     });
-    return { rows: rows, load: load };
+
+    var lookahead = [['T2', 'Book the venue', 'Due Dec 12 · late'], ['M1', 'Venue confirmed', 'Dec 12'], ['T5', 'Pitch businesses', 'Due Dec 18'], ['T3', 'Shortlist caterers', 'Starts Dec 13']].map(function (l) {
+      return { title: l[0] + '  ' + l[1], when: l[2], pick: pickTask(l[0]), whenStyle: 'flex: none; color: ' + (l[2].indexOf('late') >= 0 ? '#9A3412' : '#475569') + '; font-weight: 600;' };
+    });
+
+    var tagCss = { Risk: 'color: #9A3412; background: #FFEDD5;', Issue: 'color: #991B1B; background: #FEE2E2;', Assumption: 'color: #1E3A8A; background: #DBEAFE;', Decision: 'color: #115E59; background: #CCFBF1;' };
+    var raidAll = [
+      { type: 'Issue', text: 'Venue contract delayed', rating: 'High', owner: 'Ana', linked: 'T2, M1', next: 'Sign by Fri or switch to venue B' },
+      { type: 'Risk', text: 'Only one venue option', rating: 'High · likely', owner: 'Ana', linked: 'T2', next: 'Hold venue B until signed' },
+      { type: 'Risk', text: 'Sponsor goal may fall short', rating: 'Medium', owner: 'Sam', linked: 'T5', next: 'Add silent auction (done)' },
+      { type: 'Assumption', text: '200 guests at $150 per ticket', rating: '-', owner: 'Leo', linked: 'T6', next: 'Check after first 2 weeks of sales' },
+      { type: 'Decision', text: 'Live band removed from budget', rating: '-', owner: 'Sam', linked: 'T8', next: 'Decided Dec 5 by board' }
+    ];
+    var raidFilters = [['all', 'All'], ['Risk', 'Risks'], ['Assumption', 'Assumptions'], ['Issue', 'Issues'], ['Decision', 'Decisions']].map(function (f) {
+      var on = S.raidF === f[0];
+      return { label: f[1], pressed: on ? 'true' : 'false', pick: function () { self.setState({ raidF: f[0] }); },
+        style: 'min-height: 36px; padding: 0 12px; border-radius: 999px; cursor: pointer; font: 600 13px Inter, sans-serif; ' + (on ? 'background: #0F172A; color: #FFFFFF; border: 1px solid #0F172A;' : 'background: #FFFFFF; color: #334155; border: 1px solid #CBD5E1;') };
+    });
+    var raid = raidAll.filter(function (r) { return S.raidF === 'all' || r.type === S.raidF; }).map(function (r) {
+      return Object.assign({}, r, { typeStyle: 'font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 6px; ' + tagCss[r.type],
+        ratingStyle: 'font-weight: 600; color: ' + (r.rating.indexOf('High') === 0 ? '#9A3412' : '#334155') + ';' });
+    });
+    var topRisks = raidAll.slice(0, 3).map(function (r) { return { tag: r.type, text: r.text + ' (' + r.owner + ')', tagStyle: 'flex: none; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px; ' + tagCss[r.type] }; });
+
+    var healthCss = { 'On track': 'color: #115E59; background: #CCFBF1;', 'At risk': 'color: #9A3412; background: #FFEDD5;', 'Off track': 'color: #991B1B; background: #FEE2E2;', 'On hold': 'color: #334155; background: #E2E8F0;', 'Complete': 'color: #115E59; background: #CCFBF1;' };
+    var rag = ['On track', 'At risk', 'Off track', 'On hold', 'Complete'].map(function (h) {
+      var on = S.rag === h;
+      return { label: h, pressed: on ? 'true' : 'false', pick: function () { self.setState({ rag: h }); },
+        style: 'min-height: 32px; padding: 0 10px; border-radius: 999px; cursor: pointer; font: 600 12px Inter, sans-serif; ' + (on ? healthCss[h] + ' border: 2px solid #0F172A;' : 'background: #FFFFFF; color: #475569; border: 1px solid #CBD5E1;') };
+    });
+    var history = [['At risk', 'Nov 9', 'Venue contract slipped 4 days; catering pushed. Ana following up Friday.'], ['On track', 'Nov 2', 'Budget set, sponsor packet out to 12 businesses.'], ['On track', 'Oct 26', 'Project kicked off, plan checked (score 82).']].map(function (h) {
+      return { health: h[0], when: 'Week of ' + h[1], text: h[2], chipStyle: 'flex: none; font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 999px; ' + healthCss[h[0]] };
+    });
+
+    var other = {
+      board: ['Board', 'Columns by status, owner or phase; drag cards to move them. Same tasks, same live updates.'],
+      calendar: ['Calendar', 'Month and week views with tasks and milestones, plus "Add to my calendar" (live feed for Google, Outlook, Apple).'],
+      workload: ['Workload', 'People × weeks heatmap of hours vs capacity, time off and holidays included; drag to reassign. See the phone Team workload screen.'],
+      changes: ['Changes', 'Every change to scope, dates and budget vs the baseline: who, when, why, and which update it came from (manual, file import or Update with my AI). Can require approval.']
+    };
+    var o = other[S.tab] || ['', ''];
+    var t = tasks[S.task];
+    return {
+      tabs: tabs, outline: outline, rows: rows, kpis: kpis, milestones: milestones, budget: budget, lookahead: lookahead,
+      raid: raid, raidFilters: raidFilters, topRisks: topRisks, rag: rag, history: history,
+      goRaid: function () { self.setState({ tab: 'raid' }); },
+      isOverview: S.tab === 'overview', isGrid: S.tab === 'grid', isRaid: S.tab === 'raid', isStatus: S.tab === 'status', isOther: !!other[S.tab],
+      otherTitle: o[0], otherText: o[1],
+      d: { id: S.task, phase: phaseNames[t.phase], name: t.name, owner: t.owner, status: t.status, dates: t.dates, base: t.base, dep: t.dep, slack: t.slack, cost: t.cost, time: t.time, notes: t.notes, activity: t.act }
+    };
   }
 }
 </script>

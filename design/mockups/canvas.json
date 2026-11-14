@@ -12,14 +12,17 @@
     "Workload.dc.html": {"x": 1880, "y": 0, "w": 390, "h": 844, "title": "Team workload", "is_interactive": true},
     "Portfolio.dc.html": {"x": 2350, "y": 0, "w": 390, "h": 844, "title": "Portfolio", "is_interactive": true},
     "NewPlan.dc.html": {"x": 2820, "y": 0, "w": 390, "h": 844, "title": "New plan + Plan Check", "is_interactive": true},
-    "Desktop.dc.html": {"x": 0, "y": 1400, "w": 1440, "h": 1000, "title": "Desktop: project view", "expand": "fill", "is_interactive": true},
-    "Admin.dc.html": {"x": 1520, "y": 1400, "w": 1440, "h": 1000, "title": "Desktop: IT admin console", "expand": "fill", "is_interactive": true}
+    "UpdateAI.dc.html": {"x": 3290, "y": 0, "w": 390, "h": 844, "title": "Update with my AI", "is_interactive": true},
+    "Calendar.dc.html": {"x": 3760, "y": 0, "w": 390, "h": 844, "title": "Calendar", "is_interactive": true},
+    "FirstRun.dc.html": {"x": 4230, "y": 0, "w": 390, "h": 844, "title": "Personal first run", "is_interactive": true},
+    "Desktop.dc.html": {"x": 0, "y": 1400, "w": 1440, "h": 1000, "title": "Desktop: project workspace", "expand": "fill", "is_interactive": true},
+    "Admin.dc.html": {"x": 1520, "y": 1400, "w": 1440, "h": 1000, "title": "Desktop: IT admin console (Gate B rework pending)", "expand": "fill", "is_interactive": true}
   },
-  "order": ["Main.dc.html", "Project.dc.html", "Checklist.dc.html", "Timeline.dc.html", "Workload.dc.html", "Portfolio.dc.html", "NewPlan.dc.html", "Desktop.dc.html", "Admin.dc.html"],
+  "order": ["Main.dc.html", "Project.dc.html", "Checklist.dc.html", "Timeline.dc.html", "Workload.dc.html", "Portfolio.dc.html", "NewPlan.dc.html", "UpdateAI.dc.html", "Calendar.dc.html", "FirstRun.dc.html", "Desktop.dc.html", "Admin.dc.html"],
   "notes": {
-    "phoneTitle": {"x": 0, "y": -300, "text": "EZPLAN on a phone: tap through with Play", "kind": "title1", "maxW": 3210},
+    "phoneTitle": {"x": 0, "y": -300, "text": "EZPLAN on a phone: tap through with Play", "kind": "title1", "maxW": 4620},
     "deskTitle": {"x": 0, "y": 1110, "text": "EZPLAN on desktop + company IT admin", "kind": "title1", "maxW": 2960},
-    "lookNote": {"x": 3290, "y": 0, "w": 320, "text": "Look: calm and clear. Status always shows icon + word + color (colorblind-safe). Plain language for any industry. Sample project: a charity gala.", "fill": "blue"}
+    "lookNote": {"x": 4700, "y": 0, "w": 320, "text": "Look: calm and clear. Status always shows icon + word + color (colorblind-safe). Plain language for any industry. Sample project: a charity gala.", "fill": "blue"}
   },
   "designSystems": []
 }
