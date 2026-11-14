@@ -1,0 +1,13 @@
+{
+  "name": "@ezplan/app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@ezplan/shared": "0.0.0"
+  }
+}

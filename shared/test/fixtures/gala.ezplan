@@ -1,0 +1,26 @@
+---
+ezplan: 1
+id: 7f3a
+title: Spring Charity Gala
+goal: Host a 200-guest fundraising dinner raising $50k.
+done_when: Event held, $50k raised, thank-you notes sent.
+start: 2026-12-01
+team: Sam <sam@co.com>, Ana <ana@co.com>
+baseline_set: 2026-12-01
+---
+
+## P1: Venue and budget
+> Lock the basics before anything else.
+
+- [x] T1: Set budget (2d) @Sam done: 2026-12-02 by Ana
+- [/] T2: Book venue (1w) @Ana due: 2026-12-10 depends: T1
+  planned: 2026-12-03 → 2026-12-09
+  notes: Two venues hold the date; deposit due Friday.
+  - [x] Shortlist 3 venues
+  - [ ] Sign contract
+- [ ] M1: Venue confirmed (milestone) depends: T2
+
+## P2: Sponsors and tickets
+
+- [ ] T3: Pitch 10 local businesses (2w) @Sam !high #sponsors depends: T1
+- [-] T4: Live band (3d) @Ana skipped: 2026-12-05 by Sam

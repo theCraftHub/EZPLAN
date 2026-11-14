@@ -1,0 +1,13 @@
+---
+ezplan: 1
+title: Broken bits
+start: 2026-13-45
+---
+
+## P1: Things
+
+- [ ] T1: Has a bad due date due: next tuesday
+- [ ] T2: Bad planned (1d)
+  planned: soon → later
+- [ ] T3: Unknown key kept (2d)
+  future_field: some value

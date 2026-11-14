@@ -1,0 +1,9 @@
+---
+ezplan: 1
+title: Attack <script>alert(1)</script>Plan
+---
+
+## P1: Bad stuff
+
+- [ ] T1: Click [here](javascript:alert(1)) now
+- [ ] T2: Hidden​text <img src=x onerror=alert(1)>

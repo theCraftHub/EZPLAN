@@ -1,0 +1,9 @@
+{
+  "name": "@ezplan/worker",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "@ezplan/shared": "0.0.0"
+  }
+}
