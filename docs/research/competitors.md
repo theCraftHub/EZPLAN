@@ -62,3 +62,62 @@ Deliberately skipped for now (complexity users complain about): custom fields ev
 - [GetApp: Gantt / task scheduling reviews](https://www.getapp.com/project-management-planning-software/gantt-chart/f/task-scheduling)
 - [GetApp: customizable templates reviews](https://www.getapp.com/project-management-planning-software/project-planning/f/customizable-templates/)
 - [Teamwork: PM tool comparison](https://www.teamwork.com/project-management-software/)
+
+---
+
+## 5. Project views and dashboards (added 2026-11-14)
+
+| Tool | What its project view does well | Gaps users report |
+|---|---|---|
+| **Asana** | Overview tab is the project hub: brief, key resources, milestones, chronological status updates (on track / at risk / off track / on hold / complete); updates roll up to portfolios; AI can draft updates | Overview/brief historically limited on mobile |
+| **Linear** | Project updates auto-summarize what changed since the last one (issues done, milestone progress, target-date and lead changes); gray marker when an update is missing; progress graph predicts finish vs target | Built for software teams |
+| **Smartsheet** | Grid + Gantt, four dependency types with lag, critical path; widget dashboards across sheets | One baseline per sheet; baselines not shown in dashboards, reports or print; resource management is a paid add-on (~$19/user) |
+| **Microsoft Planner** | Grid, board, timeline, charts, goals, sprints | Critical path, baselines, lead/lag and portfolios only in the ~$30/user Plan 3; timeline is a lightweight Gantt; AI needs a paid Copilot add-on |
+| **monday.com** | Drag-and-drop dashboards (30 to 50+ widgets incl. workload "battery"), easy for non-technical users | Critical-path analysis not a first-class view |
+| **ClickUp** | Widest choice of dashboard cards | Gantt slows past ~200 linked tasks |
+| **Wrike** | Strong reporting, personal productivity dashboard | No portfolio Gantt |
+
+**Recurring complaints across tools:** Gantt "falls apart" when a task shifts; weak cross-project portfolio views; painful PDF/printing of large Gantts; budget reports and scheduling depth locked to top tiers.
+
+**Recurring requests:** a single-page status report (owner, color-coded milestones, issues, risks, budget vs actual); dashboards that can be sent to stakeholders like reports; an executive/big-screen view; a RAID log (risks, assumptions, issues, decisions).
+
+## 6. AI import and update
+
+- **Asana** has a ChatGPT app that creates projects from a chat and connectors for several AI tools; users report some settings (owner, team) must still be changed in Asana itself.
+- **monday.com**'s ChatGPT plugin was reported (third-party) as read-only.
+- **Updating an existing plan from an AI chat** is not clearly offered by any tool reviewed; integrations are tied to one AI vendor's app. EZPLAN's "Update with my AI" works with any assistant by copy/paste (and later MCP/API) and preserves progress.
+
+## 7. Admin consoles
+
+- **Asana:** SCIM provisioning, admin console, Audit Log API (Enterprise+ or Enterprise with a compliance add-on), SIEM/DLP integrations; SSO/SCIM/audit API at top tiers.
+- **Enterprise-readiness checklists** (vendor-written) agree on: SCIM-based offboarding as a security control, tamper-evident per-tenant audit logs streamable to SIEM, role-based and delegated admin, support access off by default and time-limited.
+- **EZPLAN position:** every business admin feature included in the Business plan; only SIEM streaming, legal hold, IP allowlist, extended retention and SOC 2 materials form the Enterprise Security add-on; custom SAML is quoted.
+
+## 8. Scheduling depth by tier (summary)
+
+| Capability | Typical competitor tier | EZPLAN |
+|---|---|---|
+| Critical path | Mid/top tier (Smartsheet Pro+, Planner Plan 3) | Included |
+| Baselines | Top tier, often one only | Multiple, included |
+| Lead/lag, 4 dependency types | Mid/top tier | Included |
+| Resource/workload view | Add-on or top tier | Included |
+| Portfolio timeline | Top tier or missing | Included |
+
+## More sources (added 2026-11-14)
+- [Asana: project progress & status updates](https://help.asana.com/s/article/project-progress-and-status-updates?language=en_US&language=en_US%3D)
+- [Asana Community: Project Overview, Brief and Messages](https://forum.asana.com/t/introducing-project-overview-project-brief-and-messages/105593)
+- [Linear: Introducing Initiatives](https://linear.app/changelog/2024-06-25-introducing-initiatives)
+- [Linear project updates (third-party guide)](https://feedvote.app/blog/linear-project)
+- [Smartsheet review 2026 (ClickUp)](https://clickup.com/learn/topic/project-management/tools/smartsheet/)
+- [Smartsheet Gantt guide (ProjectManager)](https://www.projectmanager.com/blog/smartsheet-gantt-chart)
+- [Microsoft Planner Premium licensing 2026 (Wellingtone)](https://wellingtone.com/microsoft-planner-premium-licensing-plans-pricing-2026/)
+- [Microsoft Planner review (TechRepublic)](https://www.techrepublic.com/article/microsoft-planner-review/)
+- [monday.com dashboards (Cloudwards)](https://www.cloudwards.net/monday-com-dashboards/)
+- [Best Gantt chart software 2026 (Productive)](https://productive.io/blog/gantt-chart-software/)
+- [Project Insight RAID log](https://projectinsight.com/features/raid)
+- [Asana app in ChatGPT](https://asana.com/resources/chatgpt-asana-integration)
+- [Asana admin & security](https://asana.com/features/admin-security.md)
+- [Asana SCIM provisioning](https://help.asana.com/s/article/provisioning-and-deprovisioning-users-with-scim)
+- [WorkOS enterprise readiness checklist 2026](https://workos.com/blog/enterprise-readiness-checklist-2026)
+- [SSOJet: enterprise-ready SaaS checklist](https://ssojet.com/blog/enterprise-ready-saas-checklist)
+- [Adobe Workfront ideas: project status report](https://experienceleaguecommunities.adobe.com/t5/workfront-ideas/project-status-report/idi-p/527049/page/2)
