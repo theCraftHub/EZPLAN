@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { allTasks, estimateToDays, exportPlan, parseDepends, parseEstimate, parsePlan, Plan } from "../src";
 
-const fixture = (name: string) => readFileSync(join(__dirname, "fixtures", name), "utf8");
+const fixture = (name: string) => readFileSync(join(import.meta.dirname, "fixtures", name), "utf8");
 const task = (plan: Plan, id: string) => allTasks(plan).find((t) => t.id === id)!;
 
 describe("strict EZPLAN format", () => {

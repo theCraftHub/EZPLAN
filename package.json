@@ -12,6 +12,7 @@
     "check": "npm run typecheck && npm test"
   },
   "devDependencies": {
+    "@types/node": "22.20.5",
     "typescript": "5.9.3",
     "vitest": "4.1.12"
   },
