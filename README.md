@@ -16,6 +16,7 @@ Turn any project description into a clear, good-looking, AI-checked plan your te
 | `docs/research/competitors.md` | Competitor pricing + design research |
 | `docs/finance/ezplan-unit-economics.xlsx` | Unit economics model (edit blue cells on Assumptions) |
 | `scripts/build_finance_model.py` | Regenerates the finance model template |
+| `docs/PLAN.md` | The full approved build plan |
 | `design/mockups/` | Clickable UI mockups for review |
 
 ## Roadmap
