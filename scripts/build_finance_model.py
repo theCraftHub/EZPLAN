@@ -178,7 +178,7 @@ blocks = [
     ]),
     ("Personal plan levers", [
         ("price", "Personal list price (monthly billing)", 10.00, "$ / user / month", "Key lever. Market band $5 to $11 (see docs/research/competitors.md)", USD),
-        ("ann_disc", "Annual plan discount", 0.20, "%", "Market norm ~15-20%", PCT),
+        ("pers_annual", "Personal annual price per month (billed yearly)", 8.00, "$ / user / month", "Whole dollars only: $8 x 12 = $96/year (20% off $10)", USD),
         ("ann_share", "Share of payers on annual billing", 0.60, "%", "Estimate", PCT),
         ("free_ratio", "Free users per paying user", 25, "users", "~3-5% free-to-paid conversion means 20-33 free users per payer", NUM),
         ("target_gm", "Target gross margin", 0.80, "%", "SaaS norm 75-85%", PCT),
@@ -187,11 +187,12 @@ blocks = [
         ("mix_t", "Paid users: share typical", 0.35, "%", "Estimate", PCT),
         ("mix_h", "Paid users: share heavy", 0.15, "%", "Estimate; light + typical + heavy should total 100%", PCT),
         ("pers_collab", "Free collaborators per Personal payer", 1, "users", "Invited to a payer's projects; open decision on the limit", NUM2),
-        ("pers_byok_price", "Personal BYOK add-on price", 2.50, "$ / month", "Placeholder ($2 to $3 in the plan)", USD),
+        ("pers_byok_price", "Personal BYOK add-on price", 3.00, "$ / month", "Placeholder; whole dollars only", USD),
         ("pers_byok_up", "Share of Personal payers buying the BYOK add-on", 0.05, "%", "Estimate", PCT),
     ]),
     ("Business plan", [
         ("ent_price", "Business seat price (per month)", 15.00, "$ / seat / month", "Key lever. Placeholder ($12 to $15 in the plan); every business feature included", USD),
+        ("biz_annual", "Business annual price per seat per month (billed yearly)", 12.00, "$ / seat / month", "Whole dollars only: $12 x 12 = $144/year (20% off $15)", USD),
         ("ent_min", "Minimum seats (1 = no minimum)", 1, "seats", "No minimum planned; change to test one", NUM),
         ("ent_sso", "SSO connection (WorkOS) per company", 125.00, "$ / company / month", "WorkOS pricing via search " + CHECKED + "; volume discounts down to ~$65", USD),
         ("ent_scim", "Directory sync / SCIM (WorkOS) per company", 125.00, "$ / company / month", "WorkOS pricing via search " + CHECKED + "; billed separately from SSO", USD),
@@ -227,6 +228,11 @@ for title, items in blocks:
 ws.cell(row=row, column=1, value="Check: paid mix total (must be 100%)").font = BOLD
 c = ws.cell(row=row, column=2, value=f"={REF['mix_l']}+{REF['mix_t']}+{REF['mix_h']}")
 c.number_format = PCT
+row += 1
+ws.cell(row=row, column=1, value="Check: all customer prices are whole dollars").font = BOLD
+prices = ["price", "pers_annual", "pers_byok_price", "ent_price", "biz_annual", "biz_sec_price", "ent_saml_fee"]
+c = ws.cell(row=row, column=2, value="=IF(" + "+".join(f"(MOD({REF[x]},1)<>0)" for x in prices) + ",\"Use whole dollars\",\"OK\")")
+c.font = BOLD
 row += 2
 
 # Usage block (per user per month), columns B..E = Light, Typical, Heavy, Free
@@ -421,8 +427,11 @@ r = 2
 section(pr, r, "Billing mechanics", 8)
 r += 1
 mech = [
-    ("k", "Effective revenue factor (monthly/annual mix after discount)",
-     f"=(1-{REF['ann_share']})+{REF['ann_share']}*(1-{REF['ann_disc']})", NUM3, "Revenue per user per month = list price x this"),
+    ("k", "Personal revenue factor (monthly/annual mix)",
+     f"=(1-{REF['ann_share']})+{REF['ann_share']}*{REF['pers_annual']}/{REF['price']}", NUM3, "Revenue per user per month = monthly price x this; annual set as a whole-dollar price"),
+    ("kb", "Business revenue factor (monthly/annual mix)",
+     f"=(1-{REF['ann_share']})+{REF['ann_share']}*{REF['biz_annual']}/{REF['ent_price']}", NUM3, "Same, from Business monthly and annual seat prices"),
+    ("disc", "Implied annual discount (Personal)", f"=1-{REF['pers_annual']}/{REF['price']}", PCT, "Result of the two whole-dollar prices"),
     ("f", "Percentage payment fees", f"={REF['st_pct']}+{REF['st_bill']}", PCT, "Card % + Billing %"),
     ("F0", "Fixed payment fee per payer per month", f"={REF['st_fix']}*((1-{REF['ann_share']})+{REF['ann_share']}/12)", USD4, "Annual payers pay the $0.30 once a year"),
     ("fixed_total", "Fixed costs per month (incl. Cloudflare base)",
@@ -449,11 +458,12 @@ minp = [
 for label, key in minp:
     pr.cell(row=r, column=1, value=label).font = BOLD
     f = f"=({REF[key]}+{REF['F0']})/({REF['k']}*(1-{REF['f']}-{REF['target_gm']}))"
+    pr.cell(row=r, column=3, value=f"=ROUNDUP(B{r},0)").number_format = USD0
     c = pr.cell(row=r, column=2, value=f)
     c.number_format = USD
     c.font = BOLD
     c.fill = KEY_FILL
-    pr.cell(row=r, column=8, value="$ / user / month (monthly list price). Solves: margin = target").font = BLACK
+    pr.cell(row=r, column=8, value="Column B: exact. Column C: lowest whole-dollar price you could charge").font = BLACK
     style_row(pr, r, 8)
     r += 1
 r += 1
@@ -659,7 +669,7 @@ AI_ON = f"({REF['aicore_blend']}+{REF['inapp']}*{REF['aiapp_blend']})"
 R_LP = plrow("List price (monthly billing)", f"={REF['price']}", f"={REF['ent_price']}")
 R_REV = plrow("Revenue (after annual mix) incl. add-ons",
               f"=B{R_LP}*{REF['k']}+{REF['pers_byok_price']}*{REF['pers_byok_up']}",
-              f"=C{R_LP}*{REF['k']}+{REF['biz_sec_price']}*{REF['biz_sec_up']}", USD, True,
+              f"=C{R_LP}*{REF['kb']}+{REF['biz_sec_price']}*{REF['biz_sec_up']}", USD, True,
               "Personal: + BYOK add-on x uptake. Business: + Enterprise Security add-on x uptake")
 R_FEE = plrow("Payment fees", f"=B{R_REV}*{REF['f']}+{REF['F0']}", f"=C{R_REV}*{REF['f']}+{REF['F0']}")
 R_AI = plrow("AI (checks, reports, moderation; in-app AI if on)", f"={AI_ON}", f"={AI_ON}*(1-{REF['biz_byok']})",
@@ -673,8 +683,10 @@ for col in (2, 3):
     pl.cell(row=R_PM, column=col).fill = KEY_FILL
 plrow("Minimum list price for the target margin",
       f"=(B{R_AI}+B{R_IE}+B{R_FREE}+{REF['F0']}-{REF['pers_byok_price']}*{REF['pers_byok_up']}*(1-{REF['f']}-{REF['target_gm']}))/({REF['k']}*(1-{REF['f']}-{REF['target_gm']}))",
-      f"=(C{R_AI}+C{R_IE}+C{R_FREE}+{REF['F0']}-{REF['biz_sec_price']}*{REF['biz_sec_up']}*(1-{REF['f']}-{REF['target_gm']}))/({REF['k']}*(1-{REF['f']}-{REF['target_gm']}))",
+      f"=(C{R_AI}+C{R_IE}+C{R_FREE}+{REF['F0']}-{REF['biz_sec_price']}*{REF['biz_sec_up']}*(1-{REF['f']}-{REF['target_gm']}))/({REF['kb']}*(1-{REF['f']}-{REF['target_gm']}))",
       USD, True, "Solves margin = target, counting add-on revenue")
+R_MIN = r - 1
+plrow("Lowest whole-dollar price that meets the target", f"=ROUNDUP(B{R_MIN},0)", f"=ROUNDUP(C{R_MIN},0)", USD0, True, "Prices are always whole dollars")
 plrow("Contribution per payer / seat ($)", f"=B{R_REV}-B{R_PC}", f"=C{R_REV}-C{R_PC}")
 pl.freeze_panes = "B2"
 

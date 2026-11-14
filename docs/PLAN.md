@@ -517,6 +517,19 @@ Architecture map (one diagram), list of every vendor account and what it's for, 
 - **End-to-end (Playwright, iPhone + desktop)**: prompt → paste → check → invite second user → live edit seen by both → timeline/workload/dashboards render → share link → export → re-import.
 - Commit and push to the branch after each sub-phase; no PR unless asked.
 
+## 12b. Next steps after Gate A approval (Nov 14)
+1. **GitHub:** retry `git push -u origin claude/project-mgmt-markdown-parser-6ikcpy` (9 local commits). If it still returns 403, re-attach the repo with push access and check the GitHub access documentation page; report exactly which step fails. Keep the backup bundle until the push succeeds.
+2. **Finance model, whole dollars** (`scripts/build_finance_model.py` → `docs/finance/ezplan-unit-economics.xlsx`):
+   - Replace "annual discount %" with whole-dollar inputs: Personal annual price per month ($8), Business annual price per month ($12); the revenue factor is computed from monthly/annual prices and the annual share.
+   - Personal BYOK add-on $3; Enterprise Security add-on $3/seat and SAML connection fee $300 stay whole.
+   - Candidate price rows on the Pricing sheet use whole dollars only ($5 to $15).
+   - "Minimum price for target margin" also shows the **next whole dollar up** (ROUNDUP), labeled as the minimum price you could actually charge.
+   - A **price check** cell on Assumptions turns red ("Use whole dollars") if any price input has cents (MOD(price,1)<>0).
+   - Rebuild, recalc with zero errors, hand-check one Personal and one Business revenue figure, send the workbook.
+3. **Plan copy in repo:** sync `docs/PLAN.md` with this file; commit.
+4. **Start Phase 1a** (owner-only build): scaffold repo (`shared/`, `app/`, `worker/`), format spec v1 + parser + tests first, then the two week-one spikes (offline + live editing sync; timeline at 2,000 tasks). Everything runs locally (Wrangler's local mode, Vitest, Playwright), so 1a work starts before Cloudflare/Anthropic accounts exist; deploying needs the "Before 1a" accounts in section 10.
+5. **Gate B mockups** (IT admin prototype + business onboarding) built alongside 1a, for approval before 1b.
+
 ## 13. Review: open decisions and risks (Nov 13)
 **Fixed in the second review:**
 - **Moderation loophole closed:** a customer's own AI could have been used to wave everything through; EZPLAN's own classifier now always covers Personal accounts and anything leaving a company (4c).
@@ -529,7 +542,11 @@ Architecture map (one diagram), list of every vendor account and what it's for, 
 
 **Fixed in the first review:** one health-status set everywhere; AI-neutral wording in format/parser sections; "tiers" wording removed (fair-use caps, Personal + Business plans, Enterprise Security add-on); one roles model; file re-import vs AI-reply trust rule; support access default-deny for everyone; stale finance numbers updated; D1 table list; phase table now includes every section (1b workspace, 2b, 3b, 5c, 5d); connector auth no longer tied to beta login; missing basics added (Terms/Privacy, analytics, Stripe Tax, currency/locale, Personal data export/deletion); format spec reserves fields for later features.
 
-**Decided:**
+**Decided (Nov 14):**
+- **Gate A mockups approved.** Phase 1a may start; Gate B (admin + business onboarding) must be approved before 1b.
+- **Whole-dollar prices only:** every subscription price, add-on and AI pack the customer sees is a whole dollar amount, monthly and annual. Annual billing is set as a whole-dollar **monthly-equivalent price** (e.g. Personal $10 monthly / $8 per month billed annually = $96/year; Business $15 / $12 = $144/year) instead of a discount percentage that can create cents. Personal BYOK add-on placeholder becomes **$3** (was $2.50).
+
+**Decided (earlier):**
 - **Specialized pricing only for SAML / unsupported sign-in** (never by company size); sign-in questions split into short plain-language steps with a confirmation summary (5d); direct track extended to any OIDC provider (Okta, JumpCloud, OneLogin...).
 - **No outside access until fully functional:** private build through phase 4, then the tester program (phase 5), then public launch (phase 6).
 
@@ -537,7 +554,7 @@ Architecture map (one diagram), list of every vendor account and what it's for, 
 1. **What may follow the public launch instead of preceding it.** The plan has grown to a very large first release. Candidates that the core product doesn't depend on: native app-store apps (the installable website already works on phones), the connector (phase 3), imports from MS Project XML, Slack/Teams notifications, SIEM streaming and legal hold (until a customer asks), custom dashboard chart widget, change-list update format. Recommendation: build everything else first and decide on these at the phase 4 gate.
 2. **Legal approach:** lawyer package vs. template service plus lawyer review (section 14). Needed before phase 4 for the entity, before phase 5 for the documents.
 3. **Free Personal limits:** active projects, AI checks per month, and how many free collaborators a Personal project can have; set from the finance model.
-4. **Prices:** Personal (~$8 to $10), Business seat (~$12 to $15), Personal BYOK add-on (~$2 to $3), Enterprise Security add-on, SAML connection fee: all placeholders until the finance model split is done.
+4. **Prices (whole dollars):** Personal $10 monthly / $8 annual-per-month, Business seat $15 / $12, Personal BYOK add-on $3, Enterprise Security add-on $3/seat, SAML connection fee $300/company: all placeholders to confirm with real usage data.
 5. **Launch region:** worldwide, or US (and Canada) first to narrow which privacy laws apply (section 14b); decide with the lawyer.
 
 **Risks to watch:**
