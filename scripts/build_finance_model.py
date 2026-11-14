@@ -81,7 +81,8 @@ lines = [
     ("3. Pricing: gross margin at candidate prices, and the MINIMUM price per user to hit the target margin.", BLACK),
     ("4. Scenarios: total monthly profit/loss at 100 / 1k / 10k / 100k total users (free + paid), with real included allowances.", BLACK),
     ("5. TierCaps: how many AI uses a paid tier can include before margin drops below target.", BLACK),
-    ("5b. Enterprise: profit per company-wide customer (25 / 200 / 1,000 seats) (direct sign-in below the WorkOS seat threshold, WorkOS above it).", BLACK),
+    ("5b. Plans: margin per Personal payer and per Business seat, incl. add-ons, guests/collaborators and BYOK.", BLACK),
+    ("5c. Enterprise: profit per Business customer (25 / 200 / 1,000 seats); WorkOS cost only when the company needs SAML.", BLACK),
     ("6. Actuals: paste monthly numbers from the app's Admin > Economics CSV export to compare reality with the model.", BLACK),
     ("", BLACK),
     ("COLOR LEGEND", BOLD),
@@ -131,6 +132,8 @@ blocks = [
         ("gen_out", "In-app plan generation (Sonnet) output, phase 2", 8000, "tokens", SRC_EST, NUM),
         ("hp_in", "In-app helper: re-plan / next / break down (Haiku) input, phase 2", 5000, "tokens", SRC_EST, NUM),
         ("hp_out", "In-app helper (Haiku) output, phase 2", 2500, "tokens", SRC_EST, NUM),
+        ("mod_in", "Moderation check (Haiku) input", 1500, "tokens", "Changed text + classifier instructions. " + SRC_EST, NUM),
+        ("mod_out", "Moderation check (Haiku) output", 200, "tokens", "Short structured verdict. " + SRC_EST, NUM),
     ]),
     ("Cloudflare (Workers Paid plan)", [
         ("cf_base", "Workers Paid base fee", 5.00, "$ / month", SRC_CF, USD),
@@ -165,9 +168,16 @@ blocks = [
         ("fx_tools", "Other tools / monitoring / misc", 30.00, "$ / month", "User input: placeholder", USD),
         ("fx_legal", "Accounting / legal / company fees", 0.00, "$ / month", "User input: set when known", USD),
         ("fx_owner", "Owner pay target", 0.00, "$ / month", "User input: set to see the users needed to pay yourself", USD),
+        ("fx_insure", "Insurance (cyber + errors & omissions)", 1500 / 12, "$ / month", "Placeholder until quoted (section 14 of the plan)", USD),
+        ("fx_support", "Support time (contractor)", 0.00, "$ / month", "User input: 0 while the owner answers support", USD),
     ]),
-    ("Business levers", [
-        ("price", "List price (monthly billing) per user", 10.00, "$ / user / month", "Key lever. Market band $5 to $11 (see docs/research/competitors.md)", USD),
+    ("One-time costs (spread over months below)", [
+        ("ot_legal", "Legal: Terms + Privacy + DPA bundle, lawyer review", 2750.00, "$ one-time", "Public price pages of solo SaaS lawyers ($2,500 to $2,750), via search " + CHECKED, USD),
+        ("ot_entity", "Business entity formation + registered agent", 500.00, "$ one-time", "Placeholder; varies by state", USD),
+        ("ot_months", "Months to spread one-time costs over", 12, "months", "User input", NUM),
+    ]),
+    ("Personal plan levers", [
+        ("price", "Personal list price (monthly billing)", 10.00, "$ / user / month", "Key lever. Market band $5 to $11 (see docs/research/competitors.md)", USD),
         ("ann_disc", "Annual plan discount", 0.20, "%", "Market norm ~15-20%", PCT),
         ("ann_share", "Share of payers on annual billing", 0.60, "%", "Estimate", PCT),
         ("free_ratio", "Free users per paying user", 25, "users", "~3-5% free-to-paid conversion means 20-33 free users per payer", NUM),
@@ -176,19 +186,25 @@ blocks = [
         ("mix_l", "Paid users: share light", 0.50, "%", "Estimate", PCT),
         ("mix_t", "Paid users: share typical", 0.35, "%", "Estimate", PCT),
         ("mix_h", "Paid users: share heavy", 0.15, "%", "Estimate; light + typical + heavy should total 100%", PCT),
+        ("pers_collab", "Free collaborators per Personal payer", 1, "users", "Invited to a payer's projects; open decision on the limit", NUM2),
+        ("pers_byok_price", "Personal BYOK add-on price", 2.50, "$ / month", "Placeholder ($2 to $3 in the plan)", USD),
+        ("pers_byok_up", "Share of Personal payers buying the BYOK add-on", 0.05, "%", "Estimate", PCT),
     ]),
-    ("Enterprise (company-wide licenses)", [
-        ("ent_price", "Enterprise price per seat (annual contract, per month)", 15.00, "$ / seat / month", "Key lever. Placeholder; market Business/Enterprise tiers ~$12-25", USD),
-        ("ent_min", "Minimum seats per Enterprise contract", 25, "seats", "Keeps fixed identity costs a small share of revenue", NUM),
+    ("Business plan", [
+        ("ent_price", "Business seat price (per month)", 15.00, "$ / seat / month", "Key lever. Placeholder ($12 to $15 in the plan); every business feature included", USD),
+        ("ent_min", "Minimum seats (1 = no minimum)", 1, "seats", "No minimum planned; change to test one", NUM),
         ("ent_sso", "SSO connection (WorkOS) per company", 125.00, "$ / company / month", "WorkOS pricing via search " + CHECKED + "; volume discounts down to ~$65", USD),
         ("ent_scim", "Directory sync / SCIM (WorkOS) per company", 125.00, "$ / company / month", "WorkOS pricing via search " + CHECKED + "; billed separately from SSO", USD),
         ("ent_support", "Support / account management per company", 50.00, "$ / company / month", "User input: placeholder for support time", USD),
         ("ent_pay", "Invoice / ACH payment fee", 0.008, "% of invoice", "Stripe ACH ~0.8% (capped per payment); conservative, no cap applied", PCT),
-        ("ent_id_max", "Max identity cost as share of revenue", 0.05, "%", "Target used to compute the WorkOS seat threshold (see Enterprise sheet)", PCT),
-        ("ent_workos_min", "Use WorkOS from this many seats (below: direct Microsoft/Google + own SCIM, $0)", 350, "seats", "Decision: direct for most companies, WorkOS for large-seat companies. Set near the computed threshold on the Enterprise sheet", NUM),
+        ("ent_saml_fee", "Custom sign-in (SAML) connection fee, quoted per company", 300.00, "$ / company / month", "Placeholder; must cover WorkOS SSO + SCIM (Enterprise sheet)", USD),
+        ("biz_guests", "Free guests per paid Business seat", 0.20, "users", "Outside collaborators; same-domain people can't be guests", NUM2),
+        ("biz_sec_price", "Enterprise Security add-on price per seat", 3.00, "$ / seat / month", "Placeholder; self-serve add-on", USD),
+        ("biz_sec_up", "Share of Business seats with the Enterprise Security add-on", 0.15, "%", "Estimate", PCT),
+        ("biz_byok", "Share of Business seats using their own AI (BYOK)", 0.20, "%", "Their AI cost is $0 to us (outbound moderation still ours, small)", PCT),
     ]),
 ]
-KEY = {"price", "free_ratio", "target_gm", "inapp", "ann_share", "ent_price"}
+KEY = {"price", "free_ratio", "target_gm", "inapp", "ann_share", "ent_price", "ent_saml_fee"}
 for title, items in blocks:
     section(ws, row, title, 4)
     row += 1
@@ -229,6 +245,7 @@ USAGE = [
     ("u_sr", "Status reports", (1, 4, 12, 0), NUM, "One tap AI summary"),
     ("u_gen", "In-app plan generations (phase 2)", (1, 4, 12, 0), NUM, "Sonnet; free tier excluded"),
     ("u_hp", "In-app helper calls (phase 2)", (2, 10, 40, 0), NUM, "Re-plan / What's next / Break down"),
+    ("u_mod", "Moderation checks (imports + edits)", (5, 15, 40, 3), NUM, "Only changed text is checked"),
     ("u_em", "Emails (reminders/digests/invites)", (4, 22, 30, 4), NUM, "Daily digest ~22 workdays"),
     ("u_req", "Worker requests (API + page loads)", (1500, 5000, 15000, 500), NUM, SRC_EST),
     ("u_dor", "Durable Object requests (live edits, WebSocket msgs)", (500, 3000, 12000, 100), NUM, "Incoming WebSocket messages billed 20:1 per third-party calculators; conservative 1:1 here"),
@@ -263,6 +280,7 @@ CALLS = [
     ("cpc_sr", "Status report", "sr", "haiku"),
     ("cpc_gen", "In-app plan generation", "gen", "sonnet"),
     ("cpc_hp", "In-app helper call", "hp", "haiku"),
+    ("cpc_mod", "Moderation check", "mod", "haiku"),
 ]
 for name, label, key, model in CALLS:
     uc.cell(row=r, column=1, value=label).font = BLACK
@@ -325,8 +343,8 @@ def line(label, formula_for_col, note="", fmt=USD4, bold=False, blended=True):
     return out
 
 
-R_AICORE = line("AI: Plan Checks + status reports (phase 1)",
-                lambda L: f"={L}{UROW['u_qc']}*{REF['cpc_qc']}+{L}{UROW['u_dc']}*{REF['cpc_dc']}+{L}{UROW['u_sr']}*{REF['cpc_sr']}")
+R_AICORE = line("AI: Plan Checks + status reports + moderation (phase 1)",
+                lambda L: f"={L}{UROW['u_qc']}*{REF['cpc_qc']}+{L}{UROW['u_dc']}*{REF['cpc_dc']}+{L}{UROW['u_sr']}*{REF['cpc_sr']}+{L}{UROW['u_mod']}*{REF['cpc_mod']}")
 R_AIAPP = line("AI: in-app generation + helpers (phase 2)",
                lambda L: f"={L}{UROW['u_gen']}*{REF['cpc_gen']}+{L}{UROW['u_hp']}*{REF['cpc_hp']}")
 R_INFRA = line("Cloudflare (marginal, ignores included allowances)",
@@ -408,7 +426,7 @@ mech = [
     ("f", "Percentage payment fees", f"={REF['st_pct']}+{REF['st_bill']}", PCT, "Card % + Billing %"),
     ("F0", "Fixed payment fee per payer per month", f"={REF['st_fix']}*((1-{REF['ann_share']})+{REF['ann_share']}/12)", USD4, "Annual payers pay the $0.30 once a year"),
     ("fixed_total", "Fixed costs per month (incl. Cloudflare base)",
-     f"={REF['cf_base']}+{REF['fx_domain']}+{REF['fx_apple']}+{REF['fx_google']}+{REF['fx_tools']}+{REF['fx_legal']}+{REF['fx_owner']}", USD, "From Assumptions"),
+     f"={REF['cf_base']}+{REF['fx_domain']}+{REF['fx_apple']}+{REF['fx_google']}+{REF['fx_tools']}+{REF['fx_legal']}+{REF['fx_owner']}+{REF['fx_insure']}+{REF['fx_support']}+({REF['ot_legal']}+{REF['ot_entity']})/{REF['ot_months']}", USD, "From Assumptions, incl. one-time costs spread monthly"),
 ]
 for name, label, f, fmt, note in mech:
     pr.cell(row=r, column=1, value=label).font = BLACK
@@ -537,7 +555,7 @@ R_SEM = srow("Email (Resend)",
              lambda L: (f"=IF({tot('u_em')(L)}<={REF['em_free']},0,"
                         f"{REF['em_pro']}+MAX(0,{tot('u_em')(L)}-{REF['em_pro_incl']})/1000*{REF['em_over']})"),
              note="Above ~100k emails/month a higher Resend tier is cheaper; check pricing")
-R_SFIX = srow("Other fixed costs", lambda L: f"={REF['fixed_total']}-{REF['cf_base']}", note="Domain, app stores, tools, legal, owner pay")
+R_SFIX = srow("Other fixed costs", lambda L: f"={REF['fixed_total']}-{REF['cf_base']}", note="Domain, app stores, tools, legal, insurance, support, owner pay, one-time costs spread")
 R_SCOST = srow("Total costs", lambda L: f"={L}{R_SFEE}+{L}{R_SAI}+{L}{R_SCF}+{L}{R_SEM}+{L}{R_SFIX}", USD0, True)
 r += 1
 R_SPROF = srow("PROFIT / (LOSS) per month", lambda L: f"={L}{R_SREV}-{L}{R_SCOST}", USD0, True)
@@ -614,10 +632,56 @@ r += 1
 tc.cell(row=r, column=1, value="Caps OK? (worst case at or above target margin)").font = BOLD
 tc.cell(row=r, column=2, value=f"=IF(B{R_WCM}>={REF['target_gm']},\"OK\",\"Lower caps or raise price\")").font = BOLD
 
+# ---------------------------------------------------------------- Plans
+PL = "Plans"
+pl = wb.create_sheet(PL)
+header(pl, 1, ["Per paying user / seat, per month", "Personal", "Business seat", "Note"], [56, 16, 16, 70])
+r = 2
+
+
+def plrow(label, fp, fb, fmt=USD, bold=False, note=""):
+    global r
+    pl.cell(row=r, column=1, value=label).font = BOLD if bold else BLACK
+    for col, f in ((2, fp), (3, fb)):
+        c = pl.cell(row=r, column=col, value=f)
+        c.number_format = fmt
+        if bold:
+            c.font = BOLD
+    if note:
+        pl.cell(row=r, column=4, value=note).font = BLACK
+    style_row(pl, r, 4)
+    out = r
+    r += 1
+    return out
+
+
+AI_ON = f"({REF['aicore_blend']}+{REF['inapp']}*{REF['aiapp_blend']})"
+R_LP = plrow("List price (monthly billing)", f"={REF['price']}", f"={REF['ent_price']}")
+R_REV = plrow("Revenue (after annual mix) incl. add-ons",
+              f"=B{R_LP}*{REF['k']}+{REF['pers_byok_price']}*{REF['pers_byok_up']}",
+              f"=C{R_LP}*{REF['k']}+{REF['biz_sec_price']}*{REF['biz_sec_up']}", USD, True,
+              "Personal: + BYOK add-on x uptake. Business: + Enterprise Security add-on x uptake")
+R_FEE = plrow("Payment fees", f"=B{R_REV}*{REF['f']}+{REF['F0']}", f"=C{R_REV}*{REF['f']}+{REF['F0']}")
+R_AI = plrow("AI (checks, reports, moderation; in-app AI if on)", f"={AI_ON}", f"={AI_ON}*(1-{REF['biz_byok']})",
+             note="Business: BYOK seats cost us no AI")
+R_IE = plrow("Cloudflare + email", f"={REF['infra_email_blend']}", f"={REF['infra_email_blend']}")
+R_FREE = plrow("Free people carried", f"={REF['sub1']}+{REF['pers_collab']}*{REF['free_cost']}",
+               f"={REF['biz_guests']}*{REF['free_cost']}", note="Personal: free users + collaborators. Business: guests only")
+R_PC = plrow("Total variable cost", f"=B{R_FEE}+B{R_AI}+B{R_IE}+B{R_FREE}", f"=C{R_FEE}+C{R_AI}+C{R_IE}+C{R_FREE}", USD, True)
+R_PM = plrow("Gross margin", f"=IF(B{R_REV}=0,0,(B{R_REV}-B{R_PC})/B{R_REV})", f"=IF(C{R_REV}=0,0,(C{R_REV}-C{R_PC})/C{R_REV})", PCT, True)
+for col in (2, 3):
+    pl.cell(row=R_PM, column=col).fill = KEY_FILL
+plrow("Minimum list price for the target margin",
+      f"=(B{R_AI}+B{R_IE}+B{R_FREE}+{REF['F0']}-{REF['pers_byok_price']}*{REF['pers_byok_up']}*(1-{REF['f']}-{REF['target_gm']}))/({REF['k']}*(1-{REF['f']}-{REF['target_gm']}))",
+      f"=(C{R_AI}+C{R_IE}+C{R_FREE}+{REF['F0']}-{REF['biz_sec_price']}*{REF['biz_sec_up']}*(1-{REF['f']}-{REF['target_gm']}))/({REF['k']}*(1-{REF['f']}-{REF['target_gm']}))",
+      USD, True, "Solves margin = target, counting add-on revenue")
+plrow("Contribution per payer / seat ($)", f"=B{R_REV}-B{R_PC}", f"=C{R_REV}-C{R_PC}")
+pl.freeze_panes = "B2"
+
 # ---------------------------------------------------------------- Enterprise
 E = "Enterprise"
 en = wb.create_sheet(E)
-header(en, 1, ["Per Enterprise customer, per month", "Customer A", "Customer B", "Customer C", "Note"], [56, 16, 16, 16, 62])
+header(en, 1, ["Per Business customer (company), per month", "Customer A", "Customer B", "Customer C", "Note"], [56, 16, 16, 16, 62])
 r = 2
 en.cell(row=r, column=1, value="Seats (employees licensed)").font = BOLD
 for j, n in enumerate([25, 200, 1000]):
@@ -625,6 +689,14 @@ for j, n in enumerate([25, 200, 1000]):
     c.font = BLUE
     c.number_format = NUM
 R_ES = r
+r += 1
+en.cell(row=r, column=1, value="Needs custom SAML sign-in? (1 = yes, 0 = no)").font = BOLD
+for j, n in enumerate([0, 0, 1]):
+    c = en.cell(row=r, column=2 + j, value=n)
+    c.font = BLUE
+    c.fill = KEY_FILL
+R_SAML = r
+en.cell(row=r, column=5, value="Company size never decides this; only the sign-in system does").font = BLACK
 r += 1
 EC = [2, 3, 4]
 
@@ -647,34 +719,32 @@ def erow(label, fn, fmt=USD0, bold=False, note=""):
 
 
 R_EB = erow("Billed seats (minimum applies)", lambda L: f"=MAX({L}{R_ES},{REF['ent_min']})", NUM)
-R_EREV = erow("Revenue", lambda L: f"={L}{R_EB}*{REF['ent_price']}", USD0, True)
+R_EREV = erow("Revenue", lambda L: f"={L}{R_EB}*{ref(PL, 3, R_REV)}+{L}{R_SAML}*{REF['ent_saml_fee']}", USD0, True,
+              "Seats x Business revenue per seat (Plans sheet) + SAML connection fee if quoted")
 r += 1
-R_EUSE = erow("Seat usage costs (AI + infra + email)",
-              lambda L: f"={L}{R_ES}*({REF['p1_blend']}+{REF['inapp']}*({REF['p2_blend']}-{REF['p1_blend']}))",
-              note="Blended paid-user cost; no free users carried")
-erow("Sign-in track", lambda L: f"=IF({L}{R_ES}>={REF['ent_workos_min']},\"WorkOS\",\"Direct\")", "@",
-     note="Direct = Sign in with Microsoft/Google + our own SCIM endpoint ($0 per company)")
-R_EID = erow("Identity: SSO + directory sync", lambda L: f"=IF({L}{R_ES}>={REF['ent_workos_min']},{REF['ent_sso']}+{REF['ent_scim']},0)",
-             note="WorkOS cost only for companies at or above the seat threshold")
+R_EUSE = erow("Seat costs (AI, infra, email, guests)",
+              lambda L: f"={L}{R_ES}*({ref(PL, 3, R_AI)}+{ref(PL, 3, R_IE)}+{ref(PL, 3, R_FREE)})")
+erow("Sign-in track", lambda L: f"=IF({L}{R_SAML}=1,\"WorkOS (SAML)\",\"Direct\")", "@",
+     note="Direct = Microsoft / Google / any OIDC + our own SCIM endpoint ($0 per company)")
+R_EID = erow("Identity: SSO + directory sync", lambda L: f"={L}{R_SAML}*({REF['ent_sso']}+{REF['ent_scim']})",
+             note="WorkOS cost only for SAML companies")
 R_ESUP = erow("Support / account management", lambda L: f"={REF['ent_support']}")
-R_EPAY = erow("Invoice payment fees", lambda L: f"={L}{R_EREV}*{REF['ent_pay']}")
+R_EPAY = erow("Payment fees", lambda L: f"={L}{R_EREV}*{REF['ent_pay']}", note="Invoice/ACH rate; card checkout costs more (Plans sheet)")
 R_ECOST = erow("Total cost", lambda L: f"={L}{R_EUSE}+{L}{R_EID}+{L}{R_ESUP}+{L}{R_EPAY}", USD0, True)
 r += 1
 R_EPROF = erow("PROFIT per month", lambda L: f"={L}{R_EREV}-{L}{R_ECOST}", USD0, True)
 for col in EC:
     en.cell(row=R_EPROF, column=col).fill = KEY_FILL
 erow("Gross margin", lambda L: f"=IF({L}{R_EREV}=0,0,{L}{R_EPROF}/{L}{R_EREV})", PCT, True)
-erow("Identity cost as % of revenue", lambda L: f"=IF({L}{R_EREV}=0,0,{L}{R_EID}/{L}{R_EREV})", PCT)
 erow("Annual contract value", lambda L: f"={L}{R_EREV}*12", USD0)
 erow("Income-to-cost ratio", lambda L: f"=IF({L}{R_ECOST}=0,0,{L}{R_EREV}/{L}{R_ECOST})", '0.00"x"', True)
 r += 1
-en.cell(row=r, column=1, value="Seats at which WorkOS costs stay under the target share").font = BOLD
-c = en.cell(row=r, column=2, value=f"=ROUNDUP(({REF['ent_sso']}+{REF['ent_scim']})/({REF['ent_id_max']}*{REF['ent_price']}),0)")
-c.number_format = NUM
+en.cell(row=r, column=1, value="SAML connection fee check: fee minus WorkOS cost (should be 0 or more)").font = BOLD
+c = en.cell(row=r, column=2, value=f"={REF['ent_saml_fee']}-({REF['ent_sso']}+{REF['ent_scim']})")
+c.number_format = USD0
 c.font = BOLD
 c.fill = KEY_FILL
-en.cell(row=r, column=5, value="Compare with the WorkOS seat threshold on Assumptions").font = BLACK
-en.freeze_panes = "B3"
+en.freeze_panes = "B4"
 
 # ---------------------------------------------------------------- Actuals
 AC = "Actuals"
