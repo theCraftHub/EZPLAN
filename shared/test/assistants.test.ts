@@ -11,6 +11,8 @@ const cases = [
   { file: "chatgpt-renovation.txt", phases: 6, tasks: 36, milestones: 6, people: ["Jordan", "Priya"], start: "2027-01-04" },
   // Pasted as rendered text: no code fence around the plan.
   { file: "copilot-renovation.txt", phases: 6, tasks: 29, milestones: 6, people: ["Jordan", "Priya"], start: "2027-01-04" },
+  // No blank line between phase descriptions and tasks; uses subtasks.
+  { file: "gemini-renovation.txt", phases: 4, tasks: 16, milestones: 3, subtasks: 5, people: ["Jordan", "Priya"], start: "2027-01-04" },
 ];
 
 describe("replies from other AI assistants", () => {
@@ -26,6 +28,7 @@ describe("replies from other AI assistants", () => {
         expect(tasks).toHaveLength(c.tasks);
         expect(tasks.filter((t) => t.milestone)).toHaveLength(c.milestones);
         expect(r.plan.start).toBe(c.start);
+        expect(tasks.reduce((n, t) => n + t.subtasks.length, 0)).toBe(c.subtasks ?? 0);
       });
 
       it("uses only the people named in the notes", () => {

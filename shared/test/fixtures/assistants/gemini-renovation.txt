@@ -1,0 +1,42 @@
+---
+ezplan: 1
+title: Kitchen Remodel
+goal: Complete kitchen renovation including new cabinets, countertops, and updated wiring within a $30,000 budget.
+done_when: Cabinets and counters installed, electrical wiring updated, final inspection passed, and budget reconciled.
+start: 2027-01-04
+---
+
+## P1: Planning, Permits and Budgeting
+> Establish budget controls, finalize design, and obtain required permits.
+- [ ] T1: Set up budget tracking system (2d) @Priya !high
+- [ ] T2: Finalize kitchen design and material selection (1w) @Jordan !high depends: T1
+  notes: Select specific cabinets, countertops, and electrical layout.
+  - [ ] Choose cabinet style and layout
+  - [ ] Select countertop material
+  - [ ] Plan electrical outlet and fixture locations
+- [ ] T3: Submit building and electrical permit applications (1d) @Priya !high depends: T2
+- [ ] T4: Secure contractor quotes and schedule trades (1w) @Jordan depends: T2
+- [ ] M1: Permits approved and contractors scheduled depends: T3, T4
+
+## P2: Demolition and Rough-In
+> Clear the old kitchen and update infrastructure before installation.
+- [ ] T5: Clear kitchen and execute demolition (3d) @Jordan depends: M1
+  - [ ] Remove old cabinets and countertops
+  - [ ] Disconnect and store appliances
+- [ ] T6: Rough-in electrical wiring and updates (4d) @Jordan depends: T5
+  notes: Must align with new layout before walls are closed up.
+- [ ] T7: Rough-in electrical inspection (1d) @Priya depends: T6
+- [ ] M2: Rough-in inspection passed depends: T7
+
+## P3: Installation and Finishes
+> Install major components and complete finish work.
+- [ ] T8: Install new cabinets (3d) @Jordan depends: M2
+- [ ] T9: Template, fabricate, and install countertops (1w) @Jordan depends: T8
+- [ ] T10: Connect electrical fixtures, outlets, and appliances (2d) @Jordan depends: T9
+
+## P4: Final Inspection and Wrap-Up
+> Complete official checks, final touches, and budget review.
+- [ ] T11: Schedule and pass final permit inspection (1d) @Priya !high depends: T10
+- [ ] T12: Perform punch list touch-ups and cleanup (2d) @Jordan depends: T11
+- [ ] T13: Reconcile final project expenses against $30k budget (2d) @Priya depends: T12
+- [ ] M3: Project complete and inspected depends: T11, T13
