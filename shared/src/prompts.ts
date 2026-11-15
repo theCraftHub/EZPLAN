@@ -54,16 +54,54 @@ export function promptExample(): string {
   return EXAMPLE(BRAND.formatKey);
 }
 
-export function generatePrompt(notes = ""): string {
+export interface GeneratePromptOptions {
+  /**
+   * "conversation" (default, the main use): pasted into an existing chat where the project
+   * was discussed; the assistant plans from that conversation. "notes": a fresh chat, with the
+   * project described in `notes` (typed by the user or built by the plan wizard, see wizard.ts).
+   */
+  source?: "conversation" | "notes";
+  /** Project description (required for "notes"; optional extra details for "conversation"). */
+  notes?: string;
+  /** Which project to plan when the conversation covers several (e.g. "the spring launch"). */
+  focus?: string;
+}
+
+export function generatePrompt(input: string | GeneratePromptOptions = {}): string {
+  const opts: GeneratePromptOptions = typeof input === "string" ? { source: "notes", notes: input } : input;
+  const source = opts.source ?? "conversation";
+  const notes = opts.notes?.trim() ?? "";
+  const focus = opts.focus?.trim();
   const key = BRAND.formatKey;
+  const intro =
+    source === "conversation"
+      ? [
+          `You are an experienced project planner. Turn the project we have been discussing in this conversation into a clear, realistic plan of action in the ${BRAND.name} plan format described below.`,
+          "",
+          "USE THIS CONVERSATION",
+          `- ${focus ? `Plan only this project: ${focus}.` : "If this conversation covers more than one project, plan the main one we have been working on."}`,
+          "- Use everything we discussed: the goal, decisions made, deadlines, budget, people and their roles, constraints, risks and open questions.",
+          "- Work this conversation says is already finished gets [x]; work that is underway gets [/].",
+          "- Where something important was never discussed (a date, a budget, who does what), make a sensible assumption and say so in a notes: line starting with \"Assumption:\". Do not ask me questions first; I will correct the plan afterwards.",
+          "- If we haven't discussed any project yet, reply only: \"Tell me about your project first, then paste this again.\"",
+        ]
+      : [
+          `You are an experienced project planner. Turn my project notes into a clear, realistic plan of action in the ${BRAND.name} plan format described below. It works for any kind of project (events, construction, marketing, software, research, personal projects). Where something important is missing from my notes, make a sensible assumption and say so in a notes: line starting with \"Assumption:\".`,
+        ];
+  const tail =
+    source === "conversation"
+      ? notes
+        ? ["", "EXTRA DETAILS FROM ME", notes]
+        : []
+      : ["", "MY PROJECT NOTES", notes || "<paste or describe your project here>"];
   return [
-    `You are an experienced project planner. Turn my project notes into a clear, realistic plan of action in the ${BRAND.name} plan format described below. It works for any kind of project (events, construction, marketing, software, research, personal projects).`,
+    ...intro,
     "",
     "WHAT A GOOD PLAN HAS",
     "- A specific goal and a clear \"done when\".",
     "- 3 to 8 phases in a sensible order, each with concrete tasks someone can actually do.",
     "- Realistic time estimates, dependencies where one task truly has to wait for another, and a few milestones.",
-    "- Owners only if my notes name people. Do not invent people.",
+    `- Owners only for people ${source === "conversation" ? "named in this conversation" : "my notes name"}. Do not invent people.`,
     "- Practical steps people often forget (permits, approvals, buffers, follow-ups) when they apply.",
     "- Waiting time as its own task with a realistic duration: approvals, permits, deliveries, lead times, drying or curing. A milestone takes no time, so never use one to stand for waiting. Work that needs the approval or delivery must list the waiting task in depends. Tag waiting tasks #wait.",
     "",
@@ -73,9 +111,7 @@ export function generatePrompt(notes = ""): string {
     "```",
     EXAMPLE(key),
     "```",
-    "",
-    "MY PROJECT NOTES",
-    notes.trim() || "<paste or describe your project here>",
+    ...tail,
   ].join("\n");
 }
 
