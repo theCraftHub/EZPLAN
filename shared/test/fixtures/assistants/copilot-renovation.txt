@@ -1,0 +1,62 @@
+---
+ezplan: 1
+title: Kitchen Remodel
+goal: Complete a full kitchen renovation within the $30k budget, including new cabinets, countertops, and updated wiring, with all required permits and inspections approved before spring.
+done_when: Kitchen is fully functional, all construction work is complete, final inspection is passed, and total project costs remain within budget.
+start: 2027-01-04
+---
+
+## P1: Planning and approvals
+> Define scope, confirm budget, and secure required approvals before construction begins.
+
+- [ ] T1: Finalize renovation scope and requirements (3d) @Jordan !high
+  notes: Confirm cabinet layout, countertop materials, electrical requirements, and desired finishes.
+- [ ] T2: Establish detailed project budget (2d) @Priya !high depends: T1
+  notes: Include a 10% contingency reserve for unexpected costs.
+- [ ] T3: Obtain contractor and supplier quotes (1w) @Jordan depends: T1
+- [ ] T4: Apply for building and electrical permits (1w) @Priya !high depends: T2, T3
+- [ ] M1: Permits approved depends: T4
+
+## P2: Design and procurement
+> Lock in design decisions and order long-lead materials.
+
+- [ ] T5: Select cabinets, countertops, fixtures, and finishes (1w) @Jordan depends: T2
+- [ ] T6: Place orders for cabinets (1d) @Priya depends: T5, M1
+- [ ] T7: Place orders for countertops (1d) @Priya depends: T5, M1
+- [ ] T8: Order electrical materials and fixtures (2d) @Priya depends: T5, M1
+- [ ] M2: Materials ordered depends: T6, T7, T8
+
+## P3: Demolition and site preparation
+> Remove existing kitchen components and prepare for construction.
+
+- [ ] T9: Clear kitchen and protect adjacent areas (1d) @Jordan depends: M2
+- [ ] T10: Demolish existing cabinets and countertops (3d) @Jordan depends: T9
+- [ ] T11: Remove outdated electrical components as needed (2d) @Jordan depends: T10
+- [ ] M3: Site ready for installation depends: T11
+
+## P4: Electrical and infrastructure work
+> Complete required wiring upgrades before finishes are installed.
+
+- [ ] T12: Install new wiring and electrical circuits (1w) @Jordan !high depends: M3
+- [ ] T13: Schedule rough-in inspection (1d) @Priya depends: T12
+- [ ] T14: Pass rough-in inspection (1d) @Priya !high depends: T13
+- [ ] M4: Electrical work approved depends: T14
+
+## P5: Cabinet and countertop installation
+> Build the permanent kitchen structure.
+
+- [ ] T15: Install new cabinets (1w) @Jordan depends: M4, T6
+- [ ] T16: Measure and template countertops (1d) @Jordan depends: T15
+- [ ] T17: Install countertops (3d) @Jordan depends: T16, T7
+- [ ] M5: Major fixtures installed depends: T17
+
+## P6: Finishes and final inspection
+> Complete remaining work and obtain final approval.
+
+- [ ] T18: Install lighting, outlets, and electrical fixtures (3d) @Jordan depends: M5, T8
+- [ ] T19: Complete finish work and adjustments (3d) @Jordan depends: T18
+- [ ] T20: Conduct final cleanup and punch-list review (2d) @Jordan depends: T19
+- [ ] T21: Schedule final inspection (1d) @Priya depends: T20
+- [ ] T22: Pass final inspection (1d) @Priya !high depends: T21
+- [ ] T23: Close out budget and document actual costs (1d) @Priya depends: T22
+- [ ] M6: Kitchen remodel complete depends: T23

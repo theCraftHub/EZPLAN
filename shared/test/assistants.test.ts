@@ -9,6 +9,8 @@ import { allTasks, checkPlan, exportPlan, parsePlan, schedulePlan } from "../src
 
 const cases = [
   { file: "chatgpt-renovation.txt", phases: 6, tasks: 36, milestones: 6, people: ["Jordan", "Priya"], start: "2027-01-04" },
+  // Pasted as rendered text: no code fence around the plan.
+  { file: "copilot-renovation.txt", phases: 6, tasks: 29, milestones: 6, people: ["Jordan", "Priya"], start: "2027-01-04" },
 ];
 
 describe("replies from other AI assistants", () => {
