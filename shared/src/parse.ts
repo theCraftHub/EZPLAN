@@ -417,11 +417,19 @@ function splitInlineAttributes(text: string): { head: string; attrs: { key: stri
     marks.push({ key: m[2]!.toLowerCase(), start: keyStart, valueStart });
   }
   if (marks.length === 0) return { head: text, attrs: [] };
-  const head = text.slice(0, marks[0]!.start);
-  const attrs = marks.map((mk, i) => ({
-    key: mk.key === "after" ? "depends" : mk.key,
-    value: text.slice(mk.valueStart, i + 1 < marks.length ? marks[i + 1]!.start : undefined).trim(),
-  }));
+  let head = text.slice(0, marks[0]!.start);
+  const attrs = marks.map((mk, i) => {
+    const key = mk.key === "after" ? "depends" : mk.key;
+    let value = text.slice(mk.valueStart, i + 1 < marks.length ? marks[i + 1]!.start : undefined).trim();
+    if (key === "depends" || key === "due") {
+      // AI replies sometimes put !priority, #tags or @Owner after these ("depends: T9 !high").
+      // Move them back to the task text so they aren't lost. (done:/skipped: keep "by @Name".)
+      const moved: string[] = [];
+      value = value.replace(/(^|\s)(![a-z]+|#[\w-]+|@"[^"]+"|@\S+)(?=\s|$)/gi, (_m, _sp, tok: string) => (moved.push(tok), "")).trim();
+      if (moved.length) head = `${head.trimEnd()} ${moved.join(" ")} `;
+    }
+    return { key, value };
+  });
   return { head, attrs };
 }
 

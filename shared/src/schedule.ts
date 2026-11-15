@@ -4,7 +4,7 @@
  * suggested health, and workload per person per week.
  */
 import { Calendar, todayIso, toDay, type WorkCalendar } from "./calendar";
-import { allTasks, estimateToDays, HOURS_PER_DAY, type Plan, type Task } from "./schema";
+import { allTasks, estimateToDays, HOURS_PER_DAY, isWaiting, type Plan, type Task } from "./schema";
 
 export type Health = "On track" | "At risk" | "Off track" | "On hold" | "Complete";
 
@@ -249,7 +249,7 @@ export function workloadByWeek(plan: Plan, schedule: Schedule, opts: ScheduleOpt
   const cal = new Calendar(opts.calendar);
   const out = new Map<string, Map<string, number>>();
   for (const t of allTasks(plan)) {
-    if (!t.owner || t.milestone || t.status === "done" || t.status === "skipped") continue;
+    if (!t.owner || t.milestone || isWaiting(t) || t.status === "done" || t.status === "skipped") continue;
     const s = schedule.tasks.get(t.id);
     if (!s || s.durationDays <= 0) continue;
     const days = Math.max(1, Math.ceil(s.durationDays - EPS));

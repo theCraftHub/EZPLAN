@@ -65,7 +65,7 @@ export function generatePrompt(notes = ""): string {
     "- Realistic time estimates, dependencies where one task truly has to wait for another, and a few milestones.",
     "- Owners only if my notes name people. Do not invent people.",
     "- Practical steps people often forget (permits, approvals, buffers, follow-ups) when they apply.",
-    "- Waiting time as its own task with a realistic duration: approvals, permits, deliveries, lead times, drying or curing. A milestone takes no time, so never use one to stand for waiting. Work that needs the approval or delivery must list the waiting task in depends.",
+    "- Waiting time as its own task with a realistic duration: approvals, permits, deliveries, lead times, drying or curing. A milestone takes no time, so never use one to stand for waiting. Work that needs the approval or delivery must list the waiting task in depends. Tag waiting tasks #wait.",
     "",
     SPEC(key),
     "",

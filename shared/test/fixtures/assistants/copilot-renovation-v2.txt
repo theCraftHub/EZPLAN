@@ -1,0 +1,63 @@
+---
+ezplan: 1
+title: Kitchen Remodel by Spring 2027
+goal: Complete a full kitchen remodel with new cabinets, countertops, and upgraded wiring within the $30,000 budget and all required permits approved.
+done_when: Kitchen remodel is complete, final inspection passes, all contractor work is paid, and the kitchen is ready for normal use.
+start: 2027-01-04
+---
+
+## P1: Planning and budgeting
+> Define scope, budget, and project requirements before committing to purchases.
+
+- [ ] T1: Finalize remodel scope and requirements (3d) @Jordan
+  notes: Confirm cabinet layout, countertop materials, electrical upgrades, and desired finishes.
+- [ ] T2: Establish detailed project budget (3d) @Priya depends: T1
+  notes: Reserve a contingency of 10-15% for unexpected costs.
+- [ ] T3: Obtain contractor and supplier quotes (1w) @Jordan depends: T1
+- [ ] M1: Scope and budget approved depends: T2, T3
+
+## P2: Design, permits, and procurement
+> Secure approvals and order long-lead items early.
+
+- [ ] T4: Prepare final design and specifications (1w) @Jordan depends: M1
+- [ ] T5: Submit permit application (2d) @Priya depends: T4
+- [ ] T6: Permit review and approval wait time (3w) @Priya depends: T5
+  notes: Duration may vary by jurisdiction.
+- [ ] T7: Order cabinets and countertops (1d) @Jordan depends: M1
+- [ ] T8: Manufacturing and delivery lead time (6w) depends: T7
+- [ ] M2: Permit approved depends: T6
+- [ ] M3: Materials delivered depends: T8
+
+## P3: Demolition and rough-in work
+> Remove existing kitchen and complete behind-the-wall work.
+
+- [ ] T9: Demolish existing kitchen (3d) @Jordan depends: M2, M3
+- [ ] T10: Complete electrical rough-in and wiring upgrades (1w) @Jordan depends: T9 !high
+- [ ] T11: Rough-in inspection (1d) @Jordan depends: T10
+- [ ] T12: Inspection approval wait time (3d) depends: T11
+- [ ] M4: Rough-in work approved depends: T12
+
+## P4: Cabinet and countertop installation
+> Install major kitchen components.
+
+- [ ] T13: Install new cabinets (1w) @Jordan depends: M4
+- [ ] T14: Template countertops for fabrication (1d) @Jordan depends: T13
+- [ ] T15: Countertop fabrication wait time (2w) depends: T14
+- [ ] T16: Install countertops (2d) @Jordan depends: T15
+- [ ] M5: Cabinets and countertops installed depends: T16
+
+## P5: Finishing and final inspection
+> Complete finish work and obtain final approval.
+
+- [ ] T17: Install fixtures, outlets, and finish electrical connections (3d) @Jordan depends: M5
+- [ ] T18: Complete punch-list corrections and cleanup (2d) @Jordan depends: T17
+- [ ] T19: Schedule final inspection (1d) @Priya depends: T18
+- [ ] T20: Final inspection and approval wait time (5d) @Priya depends: T19
+- [ ] M6: Final inspection passed depends: T20
+
+## P6: Project closeout
+> Verify completion, payments, and handoff.
+
+- [ ] T21: Review completed work against scope and budget (1d) @Jordan depends: M6
+- [ ] T22: Pay final invoices and collect documentation (1d) @Priya depends: T21
+- [ ] M7: Kitchen remodel complete depends: T22

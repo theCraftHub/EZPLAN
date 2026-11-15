@@ -118,3 +118,11 @@ export function estimateToDays(e: Estimate | undefined): number {
 export function allTasks(plan: Plan): Task[] {
   return plan.phases.flatMap((p) => p.tasks);
 }
+
+/**
+ * Waiting time (permit review, delivery lead time, curing): takes calendar time but nobody's
+ * working hours. Marked with the #wait tag, or recognized from titles AI assistants write.
+ */
+export function isWaiting(t: Task): boolean {
+  return t.tags.some((g) => g.toLowerCase() === "wait") || /\b(wait|waiting|lead[ -]time)\b/i.test(t.title);
+}

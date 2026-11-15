@@ -3,7 +3,7 @@
  * plain language for non-technical users and points at the tasks involved.
  */
 import { schedulePlan, type Schedule, type ScheduleOptions } from "./schedule";
-import { allTasks, type Plan } from "./schema";
+import { allTasks, isWaiting, type Plan } from "./schema";
 
 export type FindingSeverity = "problem" | "warning" | "tip";
 
@@ -51,7 +51,7 @@ export function checkPlan(plan: Plan, opts: ScheduleOptions & { schedule?: Sched
   for (const p of plan.phases) if (p.tasks.length === 0) add("empty-phase", "tip", `The phase "${p.title}" has no tasks.`);
 
   const open = tasks.filter((t) => t.status !== "done" && t.status !== "skipped");
-  const noOwner = open.filter((t) => !t.milestone && !t.owner);
+  const noOwner = open.filter((t) => !t.milestone && !isWaiting(t) && !t.owner);
   if (noOwner.length) add("no-owner", noOwner.length > 3 ? "warning" : "tip", `${noOwner.length} task${s(noOwner.length)} ${noOwner.length === 1 ? "has" : "have"} no owner.`, noOwner.map((t) => t.id));
   const noEstimate = open.filter((t) => !t.milestone && !t.estimate);
   if (noEstimate.length) add("no-estimate", "warning", `${noEstimate.length} task${s(noEstimate.length)} ${noEstimate.length === 1 ? "has" : "have"} no time estimate, so 1 day was assumed.`, noEstimate.map((t) => t.id));
@@ -75,7 +75,7 @@ export function checkPlan(plan: Plan, opts: ScheduleOptions & { schedule?: Sched
   }
   const openIds = new Set(open.map((t) => t.id));
   const critOpen = new Set(schedule.criticalPath.filter((id) => openIds.has(id)));
-  const critTasks = tasks.filter((t) => critOpen.has(t.id) && !t.milestone);
+  const critTasks = tasks.filter((t) => critOpen.has(t.id) && !t.milestone && !isWaiting(t));
   const unassignedCrit = critTasks.filter((t) => !t.owner);
   if (unassignedCrit.length) add("critical-unassigned", "warning", `${unassignedCrit.length} task${s(unassignedCrit.length)} that decide the finish date ${unassignedCrit.length === 1 ? "has" : "have"} no owner.`, unassignedCrit.map((t) => t.id));
   if (critTasks.length >= 3) {
@@ -87,7 +87,7 @@ export function checkPlan(plan: Plan, opts: ScheduleOptions & { schedule?: Sched
   }
   for (const t of open) {
     const st = schedule.tasks.get(t.id);
-    if (st && !t.milestone && st.durationDays > LONG_TASK_DAYS && t.subtasks.length === 0) add("long-task", "tip", `${t.id} "${t.title}" is ${Math.round(st.durationDays)} working days long. Consider breaking it down.`, [t.id]);
+    if (st && !t.milestone && !isWaiting(t) && st.durationDays > LONG_TASK_DAYS && t.subtasks.length === 0) add("long-task", "tip", `${t.id} "${t.title}" is ${Math.round(st.durationDays)} working days long. Consider breaking it down.`, [t.id]);
   }
   const byEnd = new Map<string, string[]>();
   for (const t of open) {

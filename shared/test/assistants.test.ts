@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { allTasks, checkPlan, exportPlan, parsePlan, schedulePlan } from "../src";
+import { allTasks, checkPlan, exportPlan, isWaiting, parsePlan, schedulePlan, workloadByWeek } from "../src";
 
 const cases = [
   { file: "chatgpt-renovation.txt", phases: 6, tasks: 36, milestones: 6, people: ["Jordan", "Priya"], start: "2027-01-04" },
@@ -15,6 +15,8 @@ const cases = [
   { file: "gemini-renovation.txt", phases: 4, tasks: 16, milestones: 3, subtasks: 5, people: ["Jordan", "Priya"], start: "2027-01-04" },
   // Second run with the waiting-time rule. Reused the ID M2 and left the permit wait unconnected.
   { file: "gemini-renovation-v2.txt", phases: 4, tasks: 16, milestones: 3, subtasks: 2, people: ["Jordan", "Priya"], start: "2027-01-04" },
+  // Second run with the waiting-time rule: waits as tasks (some unowned), "depends: T9 !high".
+  { file: "copilot-renovation-v2.txt", phases: 6, tasks: 29, milestones: 7, people: ["Jordan", "Priya"], start: "2027-01-04" },
 ];
 
 describe("replies from other AI assistants", () => {
@@ -55,5 +57,23 @@ describe("replies from other AI assistants", () => {
     expect(last.depends.map((d) => d.id)).toEqual(["T13"]);
     const loose = checkPlan(r.plan, { today: "2027-01-04" }).findings.filter((f) => f.code === "loose-end");
     expect(loose.map((f) => f.taskIds[0])).toEqual(["T4"]);
+  });
+
+  it("keeps a priority written after depends, and treats waits as calendar time, not work", () => {
+    const plan = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "assistants", "copilot-renovation-v2.txt"), "utf8")).plan;
+    const t = (id: string) => allTasks(plan).find((x) => x.id === id)!;
+    expect(t("T10").priority).toBe("high");
+    expect(t("T10").depends.map((d) => d.id)).toEqual(["T9"]);
+    expect(["T6", "T8", "T12", "T15", "T20"].every((id) => isWaiting(t(id)))).toBe(true);
+    expect(isWaiting(t("T9"))).toBe(false);
+    const s = schedulePlan(plan, {});
+    expect(s.finish).toBe("2027-04-27");
+    const codes = checkPlan(plan, { today: "2027-01-04", schedule: s }).findings.map((f) => f.code);
+    expect(codes).not.toContain("no-owner");
+    expect(codes).not.toContain("critical-unassigned");
+    expect(codes).not.toContain("long-task");
+    // Priya "owns" the 3-week permit wait, but it isn't 120 hours of her work.
+    const priya = workloadByWeek(plan, s).get("Priya")!;
+    expect(Math.max(...priya.values())).toBeLessThanOrEqual(40);
   });
 });
