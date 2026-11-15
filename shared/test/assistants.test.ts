@@ -13,6 +13,8 @@ const cases = [
   { file: "copilot-renovation.txt", phases: 6, tasks: 29, milestones: 6, people: ["Jordan", "Priya"], start: "2027-01-04" },
   // No blank line between phase descriptions and tasks; uses subtasks.
   { file: "gemini-renovation.txt", phases: 4, tasks: 16, milestones: 3, subtasks: 5, people: ["Jordan", "Priya"], start: "2027-01-04" },
+  // Second run with the waiting-time rule. Reused the ID M2 and left the permit wait unconnected.
+  { file: "gemini-renovation-v2.txt", phases: 4, tasks: 16, milestones: 3, subtasks: 2, people: ["Jordan", "Priya"], start: "2027-01-04" },
 ];
 
 describe("replies from other AI assistants", () => {
@@ -24,6 +26,7 @@ describe("replies from other AI assistants", () => {
 
       it("imports with no errors", () => {
         expect(r.issues.filter((i) => i.severity === "error")).toEqual([]);
+        expect(new Set(tasks.map((t) => t.id)).size).toBe(tasks.length);
         expect(r.plan.phases).toHaveLength(c.phases);
         expect(tasks).toHaveLength(c.tasks);
         expect(tasks.filter((t) => t.milestone)).toHaveLength(c.milestones);
@@ -43,4 +46,14 @@ describe("replies from other AI assistants", () => {
       });
     });
   }
+
+  it("a reused ID is renamed with a warning, and an unconnected wait is pointed out", () => {
+    const r = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "assistants", "gemini-renovation-v2.txt"), "utf8"));
+    expect(r.issues).toContainEqual(expect.objectContaining({ severity: "warning", message: expect.stringMatching(/M2 "Final inspection passed.*new ID/) }));
+    const last = allTasks(r.plan).at(-1)!;
+    expect(last.id).toBe("M3");
+    expect(last.depends.map((d) => d.id)).toEqual(["T13"]);
+    const loose = checkPlan(r.plan, { today: "2027-01-04" }).findings.filter((f) => f.code === "loose-end");
+    expect(loose.map((f) => f.taskIds[0])).toEqual(["T4"]);
+  });
 });

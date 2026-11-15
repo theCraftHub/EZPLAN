@@ -576,7 +576,15 @@ function finalize(plan: Plan, issues: ParseIssue[]): void {
     usedP.add(p.id);
   }
   const used = new Set<string>();
-  for (const t of plan.phases.flatMap((p) => p.tasks)) if (t.id) used.add(t.id);
+  const dupes: string[] = [];
+  for (const t of plan.phases.flatMap((p) => p.tasks)) {
+    if (!t.id) continue;
+    if (used.has(t.id)) {
+      // AI replies sometimes reuse an ID (e.g. two "M2"). Keep the first; the later one gets a new ID below.
+      dupes.push(`${t.id} "${t.title}"`);
+      t.id = undefined as unknown as string;
+    } else used.add(t.id);
+  }
   let ti = 1;
   let mi = 1;
   let assigned = 0;
@@ -592,6 +600,8 @@ function finalize(plan: Plan, issues: ParseIssue[]): void {
     used.add(t.id);
     assigned++;
   }
+  for (const d of dupes) issues.push({ severity: "warning", message: `The ID in ${d} was already used by another task, so it was given a new ID.` });
+  assigned -= dupes.length;
   if (assigned > 0) issues.push({ severity: "warning", message: `${assigned} task${assigned === 1 ? "" : "s"} had no ID, so one was added.` });
   if (!plan.title) plan.title = "Untitled plan";
 }

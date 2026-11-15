@@ -1,0 +1,41 @@
+```
+---
+ezplan: 1
+title: Kitchen Renovation Project
+goal: Complete a kitchen remodel featuring new cabinets, counters, and wiring by spring with an approved permit and inspection.
+done_when: Kitchen renovation finished, permit inspected and closed out, and budget reconciled.
+start: 2027-01-04
+---
+
+## P1: Planning and Permits
+> Secure permits, finalize layout, and lock in the budget.
+- [ ] T1: Finalize budget and contractor estimates (3d) @Priya
+- [ ] T2: Prepare architectural and wiring plans for permit submission (1w) @Jordan depends: T1
+- [ ] T3: Submit permit application to local building department (1d) @Priya due: 2027-01-15 depends: T2
+- [ ] M1: Permit application submitted
+- [ ] T4: Wait for permit approval and processing (3w) @Priya depends: T3
+  notes: Buffer time for municipal review and potential revisions.
+
+## P2: Procurement and Demolition
+> Order materials and clear out the old kitchen workspace.
+- [ ] T5: Order new cabinets, countertops, and electrical supplies (1w) @Jordan depends: T1
+- [ ] T6: Wait for material fabrication and shipping lead times (2w) @Jordan depends: T5
+- [ ] T7: Clear out old kitchen and disconnect existing utilities (2d) @Jordan depends: M1
+  - [ ] Remove all appliances and stored items
+  - [ ] Shut off water and power to kitchen area
+- [ ] T8: Demolish old cabinets, counters, and strip old wiring (3d) @Jordan depends: T7
+
+## P3: Rough-In and Installation
+> Install new electrical wiring, cabinets, and countertops.
+- [ ] T9: Perform rough-in electrical wiring and inspection prep (4d) @Jordan depends: T8
+- [ ] T10: Install new cabinetry (4d) @Jordan depends: T6, T9
+- [ ] T11: Template and install new countertops (3d) @Jordan depends: T10
+- [ ] M2: Cabinetry and counters installed
+
+## P4: Final Inspection and Handover
+> Complete final hookups and pass municipal inspection.
+- [ ] T12: Complete final electrical hookups, lighting, and trim (2d) @Jordan depends: T11
+- [ ] T13: Schedule and complete final municipal building and electrical inspection (1d) @Priya depends: T12
+- [ ] M2: Final inspection passed and project closed out depends: T13
+
+```

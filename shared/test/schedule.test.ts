@@ -102,6 +102,7 @@ describe("free Plan Check", () => {
         "- [ ] T1: A (2d) depends: T9", "- [ ] T1: Duplicate (1d)", "- [ ] T2: Loop one (1d) depends: T3",
         "- [ ] T3: Loop two (1d) depends: T2", "- [ ] T4: Huge job (4w) @Kim due: 2026-12-02", "## P2: Empty"].join("\n"),
     ).plan;
+    p.phases[0]!.tasks[1]!.id = "T1"; // the parser renames duplicates, so recreate one as an in-app edit could
     const r = checkPlan(p, { today: "2026-12-01" });
     const codes = r.findings.map((f) => f.code);
     expect(codes).toEqual(expect.arrayContaining(["duplicate-id", "unknown-dependency", "dependency-loop", "missing-goal", "missing-done-when", "no-owner", "after-due-date", "long-task"]));

@@ -56,6 +56,16 @@ export function checkPlan(plan: Plan, opts: ScheduleOptions & { schedule?: Sched
   const noEstimate = open.filter((t) => !t.milestone && !t.estimate);
   if (noEstimate.length) add("no-estimate", "warning", `${noEstimate.length} task${s(noEstimate.length)} ${noEstimate.length === 1 ? "has" : "have"} no time estimate, so 1 day was assumed.`, noEstimate.map((t) => t.id));
   if (tasks.length >= 8 && !tasks.some((t) => t.milestone)) add("no-milestones", "tip", "Add a milestone or two (key moments like \"Venue confirmed\") to make progress easier to see.");
+  // Loose ends: work outside the last phase that nothing waits on can't move the finish date,
+  // which usually means a missing link (e.g. a permit wait that demolition should depend on).
+  if (tasks.some((t) => t.depends.length)) {
+    const waitedOn = new Set(tasks.flatMap((t) => t.depends.map((d) => d.id)));
+    const last = plan.phases.at(-1);
+    for (const t of plan.phases.filter((p) => p !== last).flatMap((p) => p.tasks)) {
+      if (t.milestone || waitedOn.has(t.id) || !open.includes(t)) continue;
+      add("loose-end", "tip", `Nothing waits on ${t.id} "${t.title}", so it doesn't affect the finish date. Should a later task depend on it?`, [t.id]);
+    }
+  }
   for (const m of tasks.filter((t) => t.milestone && t.depends.length === 0 && tasks.length > 1)) add("milestone-no-predecessors", "tip", `Milestone ${m.id} "${m.title}" doesn't wait on any task, so it can't show progress.`, [m.id]);
 
   // Risks
