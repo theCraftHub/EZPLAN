@@ -2,8 +2,9 @@
  * The free Plan Check: instant, deterministic, no AI. Every finding is written in
  * plain language for non-technical users and points at the tasks involved.
  */
+import { Calendar } from "./calendar";
 import { schedulePlan, type Schedule, type ScheduleOptions } from "./schedule";
-import { allTasks, isWaiting, type Plan } from "./schema";
+import { allTasks, estimateToDays, isWaiting, type Plan } from "./schema";
 
 export type FindingSeverity = "problem" | "warning" | "tip";
 
@@ -60,15 +61,37 @@ export function checkPlan(plan: Plan, opts: ScheduleOptions & { schedule?: Sched
   // which usually means a missing link (e.g. a permit wait that demolition should depend on).
   if (tasks.some((t) => t.depends.length)) {
     const waitedOn = new Set(tasks.flatMap((t) => t.depends.map((d) => d.id)));
-    const last = plan.phases.at(-1);
-    for (const t of plan.phases.filter((p) => p !== last).flatMap((p) => p.tasks)) {
+    const phaseOf = new Map(plan.phases.flatMap((p, i) => p.tasks.map((t) => [t.id, i] as const)));
+    // A phase "feeds forward" when a task in a later phase waits on something in it. Only then is a
+    // task in it that nothing waits on likely a missing link (not, say, an ongoing or separate item).
+    const feedsForward = new Set<number>();
+    for (const t of tasks) for (const d of t.depends) {
+      const from = phaseOf.get(d.id);
+      if (from !== undefined && from < phaseOf.get(t.id)!) feedsForward.add(from);
+    }
+    for (const t of plan.phases.filter((_, i) => feedsForward.has(i)).flatMap((p) => p.tasks)) {
       if (t.milestone || waitedOn.has(t.id) || !open.includes(t)) continue;
       add("loose-end", "tip", `Nothing waits on ${t.id} "${t.title}", so it doesn't affect the finish date. Should a later task depend on it?`, [t.id]);
     }
   }
-  for (const m of tasks.filter((t) => t.milestone && t.depends.length === 0 && tasks.length > 1)) add("milestone-no-predecessors", "tip", `Milestone ${m.id} "${m.title}" doesn't wait on any task, so it can't show progress.`, [m.id]);
+  for (const m of open.filter((t) => t.milestone && t.depends.length === 0 && tasks.length > 1)) add("milestone-no-predecessors", "tip", `Milestone ${m.id} "${m.title}" doesn't wait on any task, so it can't show progress.`, [m.id]);
 
   // Risks
+  // The schedule runs independent tasks side by side. If one person owns more work than fits
+  // before the scheduled finish, the real finish is later. (Waiting tasks aren't anyone's work.)
+  const workDays = new Map<string, number>();
+  for (const t of open) {
+    if (!t.owner || t.milestone || isWaiting(t)) continue;
+    const left = (t.estimate ? estimateToDays(t.estimate) : 1) * (t.status === "progress" ? 0.5 : 1);
+    workDays.set(t.owner, (workDays.get(t.owner) ?? 0) + left);
+  }
+  const cal = new Calendar(opts.calendar);
+  for (const [owner, days] of workDays) {
+    const oneAtATime = cal.dateAt(schedule.projectStart, Math.max(0, Math.ceil(days) - 1));
+    if (oneAtATime > schedule.finish) {
+      add("overloaded", "warning", `${owner} has about ${Math.round(days)} working days of tasks, but the schedule runs them side by side and finishes ${schedule.finish}. Doing one at a time, ${owner}'s work alone runs to about ${oneAtATime}.`, open.filter((t) => t.owner === owner && !t.milestone && !isWaiting(t)).map((t) => t.id));
+    }
+  }
   for (const t of open) {
     const st = schedule.tasks.get(t.id);
     if (st && t.due && st.end > t.due) add("after-due-date", "warning", `${t.id} "${t.title}" is scheduled to finish ${st.end}, after its due date ${t.due}.`, [t.id]);
@@ -78,7 +101,8 @@ export function checkPlan(plan: Plan, opts: ScheduleOptions & { schedule?: Sched
   const critTasks = tasks.filter((t) => critOpen.has(t.id) && !t.milestone && !isWaiting(t));
   const unassignedCrit = critTasks.filter((t) => !t.owner);
   if (unassignedCrit.length) add("critical-unassigned", "warning", `${unassignedCrit.length} task${s(unassignedCrit.length)} that decide the finish date ${unassignedCrit.length === 1 ? "has" : "have"} no owner.`, unassignedCrit.map((t) => t.id));
-  if (critTasks.length >= 3) {
+  const owners = new Set(tasks.map((t) => t.owner).filter(Boolean));
+  if (critTasks.length >= 3 && owners.size > 1) {
     const counts = new Map<string, number>();
     for (const t of critTasks) if (t.owner) counts.set(t.owner, (counts.get(t.owner) ?? 0) + 1);
     for (const [owner, n] of counts) {
@@ -91,7 +115,8 @@ export function checkPlan(plan: Plan, opts: ScheduleOptions & { schedule?: Sched
   }
   const byEnd = new Map<string, string[]>();
   for (const t of open) {
-    const end = t.due ?? schedule.tasks.get(t.id)?.end;
+    // Only dates people set: scheduled finish dates bunching up is a workload question (see "overloaded").
+    const end = t.due;
     if (end && !t.milestone) (byEnd.get(end) ?? byEnd.set(end, []).get(end)!).push(t.id);
   }
   for (const [day, list] of byEnd) if (list.length >= SAME_DAY_CROWD) add("crowded-day", "tip", `${list.length} tasks are due on ${day}. Spread them out if you can.`, list);

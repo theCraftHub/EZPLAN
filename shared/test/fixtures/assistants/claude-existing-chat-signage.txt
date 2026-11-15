@@ -1,0 +1,87 @@
+---
+ezplan: 1
+title: Showroom Screens — Site-Wide Signage Platform
+goal: Deliver a self-hosted, multi-screen display system that replaces the Google Slides prototype, adds a customer-facing video/audio signage mode, auto-recovers CRM sessions, and ships a de-specialized open-source core.
+done_when: Front-door video signs are live, sales boards run the in-house app with per-screen config and access, CRM auto-login passes its on-site acceptance test, and the FOSS "OpenSig" core is published.
+start: 2026-11-16
+---
+
+## P1: Core in-house system (DONE)
+> The prototype-to-product work already completed and deployed on SIGNSRV.
+
+- [x] T1: Build ASP.NET Core 8 app (control panel, kiosk display, JSON API)
+- [x] T2: Stand up SIGNSRV VM, IIS, .NET 8 hosting bundle, publish the app
+- [x] T3: Build board.ps1 CLI + WinForms GUI for screens/groups/members
+- [x] T4: Route around RSAT with native ADSI group creation
+  notes: RSAT would not install ("not applicable to this system"); ADSI/LDAP was the fix.
+- [x] T5: Add screen chooser + "you are updating X" banner
+- [x] T6: Rebuild Tampermonkey rotator for in-house API (single-tab hash rotation)
+- [x] T7: Create Acme Board Admins group, add members, lock Acme Sales to it
+- [x] T8: Write staff guide, kiosk setup sheet, kiosk build guide
+- [x] M1: Acme Sales board live on in-house system
+
+## P2: Display fixes and deploy hardening (DONE)
+- [x] T9: Fix screenshot sizing (object-fit: contain)
+- [x] T10: Fix first-image flash (play-once-then-hold rotation)
+- [x] T11: Harden publish.ps1 to stop/start the app pool (file-lock fix)
+- [x] T12: Confirm upload→display refresh works end to end
+
+## P3: FOSS core "OpenSig" (IN PROGRESS)
+> De-specialized open-source version, built in a separate Claude Code session.
+
+- [/] T13: De-specialize code + docs, rename to OpenSig, add MIT LICENSE / SECURITY.md / .gitignore (3d) @Alex
+- [ ] T14: Confirm code ownership (employment IP clause) + give client courtesy heads-up (2d) @Alex !high
+  notes: Assumption: Alex built this on own time; ownership likely clear but must be verified before any public push.
+- [ ] T15: Full secret-scan of tree + git history (corpdom, STORE1, 10.0.0.10, names) (0.5d) @Alex depends: T13 !high
+- [ ] T16: Review the de-specialization diff and merge (0.5d) @Alex depends: T13
+- [ ] T17: Publish public repo, tag v0.1.0 (0.5d) @Alex depends: T14, T15, T16
+- [ ] M2: OpenSig FOSS core published depends: T17
+
+## P4: CRM auto-login (BUILT, AWAITING ACCEPTANCE)
+> Works around the CRM's ~8-hour session cap. Built; needs on-site verification.
+
+- [x] T18: Build credential endpoint (token + IP allowlist + HTTPS), DPAPI store, setcred/setkiosktoken, Playwright watchdog
+- [ ] T19: Set up on SIGNSRV: SMTP relay + IT alert address, real kiosk IPs, run setcred/setkiosktoken (0.5d) @Alex
+  notes: Secrets entered on the server, never in chat.
+- [ ] T20: Run --inspect-login against the LIVE the CRM page, adjust selectors if drifted (0.5d) @Alex depends: T19 !high
+  notes: Everything so far tested against a mock; this is first contact with the real site.
+- [ ] T21: Acceptance test — force logout → confirm recovery AND break token → confirm alert email arrives (0.5d) @Alex depends: T20 !high
+  notes: Do not skip the failure half; the alert path is the whole safety argument.
+- [ ] M3: Auto-login signed off in production depends: T21
+
+## P5: Signage expansion design & decisions
+> Turn the platform into site-wide signage. Decide before building.
+
+- [ ] T22: Lock the 6 open decisions: audio schedule, max clip length cap, per-user overrides defer, web vs server config editing, upload-progress UI, screen-Id naming scheme (1d) @Alex !high
+  notes: Ids are permanent (used in URLs/folders); settle the naming scheme before creating many screens.
+- [ ] T23: Decide the area/role AD-group map (Sales, Service, Marketing Signage, Signage Admins) (0.5d) @Alex
+  notes: Assumption: groups map to areas/roles, not per-screen, to avoid group explosion (confirmed in conversation).
+- [ ] M4: Expansion design frozen depends: T22, T23
+
+## P6: Signage expansion build
+> Build on the per-screen mode foundation first; protect the live sales boards.
+
+- [ ] T24: Per-screen Mode + per-screen config overrides (salesboard = exact current behavior) (3d) @Alex depends: M4 !high
+- [ ] T25: Change AdminGroup → AdminGroups list with single-string back-compat (1d) @Alex depends: T24
+- [ ] T26: Regression-check existing Acme sales board unchanged (0.5d) @Alex depends: T24, T25 !high
+- [ ] T27: Media content type — video+audio upload (500MB cap + IIS limit + progress), playlist display, autoplay flag, no-expiry lifecycle, graceful customer-facing failure (4d) @Alex depends: T26
+- [ ] T28: Revamp management GUI into full per-screen config console (mode-aware) (3d) @Alex depends: T24, T25
+- [ ] T29: Write media-kiosk build guide (autoplay flag, no CRM/Tampermonkey steps) + update CLI README (1d) @Alex depends: T27, T28
+- [ ] M5: Signage platform features complete depends: T27, T28, T29
+
+## P7: Front-door rollout
+> First real media deployment, then expand site-wide.
+
+- [ ] T30: Create front-door screen(s) + Marketing Signage group; load initial photo/video content (0.5d) @Alex depends: M5
+- [ ] T31: Procure/mount front-door displays + kiosk PCs (hardware lead time) (2w) #wait
+  notes: Assumption: hardware not yet ordered; 2-week procurement/mount window.
+- [ ] T32: Build front-door kiosk(s) from the media build guide (standard user, autologin, autoplay Chrome, lockdown) (1d) @Alex depends: T30, T31
+- [ ] T33: On-site acceptance — video plays with audio, loops cleanly, fails to neutral state not an error (0.5d) @Alex depends: T32 !high
+- [ ] M6: Front-door signage live depends: T33
+- [ ] T34: Roll out remaining screens area by area using the same pattern (ongoing) @Alex depends: M6
+
+## P8: Separate IT follow-up
+> Unrelated finding surfaced during this project.
+
+- [ ] T35: Resolve OldReplica broken Hyper-V Replica (Critical since 2022-01) — re-seed or retire after confirming what "Old" VM is (1d) @Alex
+  notes: Email already sent to Morgan; this is Alex's open task, independent of the signage platform.

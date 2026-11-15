@@ -17,6 +17,8 @@ const cases = [
   { file: "gemini-renovation-v2.txt", phases: 4, tasks: 16, milestones: 3, subtasks: 2, people: ["Jordan", "Priya"], start: "2027-01-04" },
   // Second run with the waiting-time rule: waits as tasks (some unowned), "depends: T9 !high".
   { file: "copilot-renovation-v2.txt", phases: 6, tasks: 29, milestones: 7, people: ["Jordan", "Priya"], start: "2027-01-04" },
+  // Conversation mode, pasted into a long-running chat about a real project (anonymized).
+  { file: "claude-existing-chat-signage.txt", phases: 8, tasks: 41, milestones: 6, people: ["Alex"], start: "2026-11-16" },
 ];
 
 describe("replies from other AI assistants", () => {
@@ -75,5 +77,18 @@ describe("replies from other AI assistants", () => {
     // Priya "owns" the 3-week permit wait, but it isn't 120 hours of her work.
     const priya = workloadByWeek(plan, s).get("Priya")!;
     expect(Math.max(...priya.values())).toBeLessThanOrEqual(40);
+  });
+
+  it("conversation mode: past work comes in done, current work in progress, guesses marked", () => {
+    const plan = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "assistants", "claude-existing-chat-signage.txt"), "utf8")).plan;
+    const tasks = allTasks(plan);
+    expect(tasks.filter((t) => t.status === "done")).toHaveLength(14); // T1-T12, M1, T18
+    expect(tasks.filter((t) => t.status === "progress").map((t) => t.id)).toEqual(["T13"]);
+    expect(tasks.filter((t) => t.notes.some((n) => n.startsWith("Assumption:"))).map((t) => t.id)).toEqual(["T14", "T23", "T31"]);
+    const findings = checkPlan(plan, { today: "2026-11-16" }).findings;
+    // A one-person project: no "share the work" advice, no tips about finished milestones,
+    // no loose-end tip for a separate follow-up phase; the real risk is one person's load.
+    expect(findings.map((f) => f.code).sort()).toEqual(["no-estimate", "overloaded"]);
+    expect(findings.find((f) => f.code === "overloaded")!.message).toMatch(/Alex has about 25 working days.*finishes 2026-12-03.*about 2026-12-18/);
   });
 });
