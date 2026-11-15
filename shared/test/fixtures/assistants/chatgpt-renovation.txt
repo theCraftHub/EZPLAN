@@ -1,0 +1,75 @@
+text
+
+```text
+---
+ezplan: 1
+title: Kitchen Renovation
+goal: Complete a kitchen renovation by spring 2027 with new cabinets, countertops, and updated wiring while staying within the $30,000 budget and meeting permit and inspection requirements.
+done_when: Cabinets and countertops are installed, electrical wiring is completed and approved, required inspections are passed, the kitchen is functional, final costs are within $30,000, and all outstanding contractor payments and documentation are settled.
+start: 2027-01-04
+---
+
+## P1: Planning, design and budget
+> Establish the scope, costs and renovation requirements before committing to work.
+
+- [ ] T1: Define renovation scope and kitchen layout (2d) @Jordan !high
+- [ ] T2: Establish detailed $30,000 project budget and contingency (2d) @Priya !high
+  notes: Reserve approximately 10–15% ($3,000–$4,500) for unexpected costs.
+- [ ] T3: Select cabinet, countertop and electrical specifications (1w) @Jordan depends: T1, T2
+- [ ] T4: Obtain contractor quotes and confirm availability (1w) @Jordan depends: T3
+- [ ] T5: Confirm final budget and approve renovation plan (1d) @Priya depends: T4
+- [ ] M1: Renovation scope and budget approved depends: T5
+
+## P2: Permits and procurement
+> Secure approvals and order materials early to avoid construction delays.
+
+- [ ] T6: Confirm local building and electrical permit requirements (2d) @Priya !high
+- [ ] T7: Prepare and submit permit applications (3d) @Priya depends: T3, T6
+- [ ] T8: Obtain required permits and approvals (2w) @Priya depends: T7
+  notes: Do not begin permit-controlled work until approvals are issued.
+- [ ] T9: Order cabinets, countertops and required materials (2d) @Jordan depends: M1
+- [ ] T10: Confirm delivery dates and inspect incoming materials (2h) @Jordan depends: T9
+- [ ] M2: Permits approved and materials ordered depends: T8, T9
+
+## P3: Kitchen preparation and demolition
+> Prepare the space safely for installation and electrical work.
+
+- [ ] T11: Arrange temporary kitchen facilities and protect adjacent areas (1d) @Jordan depends: M2
+- [ ] T12: Schedule utility disconnections and contractor access (1d) @Jordan depends: T11
+- [ ] T13: Remove existing cabinets, countertops and fixtures (2d) @Jordan depends: T12
+- [ ] T14: Inspect exposed walls, plumbing and electrical conditions (1d) @Jordan depends: T13
+  notes: Document hidden damage or unexpected wiring issues and obtain approval for any additional costs.
+- [ ] T15: Resolve unexpected structural or utility issues (3d) @Jordan depends: T14
+- [ ] M3: Kitchen cleared and ready for renovation depends: T15
+
+## P4: Electrical work and installation
+> Complete wiring and install the major kitchen components.
+
+- [ ] T16: Complete required electrical rewiring and upgrades (3d) @Jordan depends: M3, T8
+  notes: Use appropriately licensed electrical contractors where required.
+- [ ] T17: Arrange electrical inspection and approval (1d) @Priya depends: T16
+- [ ] T18: Install new cabinets and verify alignment (4d) @Jordan depends: T10, M3
+- [ ] T19: Measure and template countertops after cabinet installation (1d) @Jordan depends: T18
+- [ ] T20: Fabricate and deliver countertops (2w) @Jordan depends: T19
+- [ ] T21: Install countertops and complete finishing work (2d) @Jordan depends: T20
+- [ ] M4: Cabinets, countertops and electrical work completed depends: T17, T21
+
+## P5: Inspection and final finishing
+> Verify compliance, correct defects and make the kitchen fully functional.
+
+- [ ] T22: Schedule required final building and electrical inspections (1d) @Priya depends: M4
+- [ ] T23: Complete final inspections and obtain approvals (2d) @Priya depends: T22
+- [ ] T24: Complete remaining fixtures, hardware and finishing details (3d) @Jordan depends: M4
+- [ ] T25: Create a punch list and resolve outstanding defects (2d) @Jordan depends: T24
+- [ ] T26: Clean kitchen and complete final walkthrough (1d) @Jordan depends: T23, T25
+- [ ] M5: Kitchen renovation passed inspection and is functionally complete depends: T26
+
+## P6: Budget closeout and handover
+> Close out payments, documentation and outstanding follow-ups.
+
+- [ ] T27: Reconcile final expenses against the $30,000 budget (2h) @Priya depends: M5
+- [ ] T28: Collect permits, inspection approvals, warranties and contractor documentation (2h) @Priya depends: M5
+- [ ] T29: Resolve final contractor payments and outstanding issues (1d) @Priya depends: T27, T28
+- [ ] T30: Confirm completed renovation and formally close project (2h) @Jordan depends: T29
+- [ ] M6: Project closed and kitchen ready for everyday use depends: T30
+```
