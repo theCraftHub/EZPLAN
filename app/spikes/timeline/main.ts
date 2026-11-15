@@ -3,7 +3,7 @@
  * Approach: schedule with the shared engine, then render only the rows in view
  * (virtualized), absolutely positioned. Metrics are exposed on window for Playwright.
  */
-import { parsePlan, schedulePlan, type Plan, type Schedule } from "@ezplan/shared";
+import { BRAND, parsePlan, schedulePlan, type Plan, type Schedule } from "@ezplan/shared";
 
 const N = 2000;
 const ROW = 28;
@@ -11,7 +11,7 @@ const DAY_PX = 8;
 const LABEL = 200;
 
 function makePlan(): Plan {
-  const lines: string[] = ["---", "ezplan: 1", "title: Big plan", "start: 2026-12-01", "---"];
+  const lines: string[] = ["---", `${BRAND.formatKey}: 1`, "title: Big plan", "start: 2026-12-01", "---"];
   for (let p = 0; p < 20; p++) {
     lines.push(`## P${p + 1}: Phase ${p + 1}`);
     for (let i = 0; i < N / 20; i++) {

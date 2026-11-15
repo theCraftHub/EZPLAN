@@ -530,6 +530,40 @@ Architecture map (one diagram), list of every vendor account and what it's for, 
 4. **Start Phase 1a** (owner-only build): scaffold repo (`shared/`, `app/`, `worker/`), format spec v1 + parser + tests first, then the two week-one spikes (offline + live editing sync; timeline at 2,000 tasks). Everything runs locally (Wrangler's local mode, Vitest, Playwright), so 1a work starts before Cloudflare/Anthropic accounts exist; deploying needs the "Before 1a" accounts in section 10.
 5. **Gate B mockups** (IT admin prototype + business onboarding) built alongside 1a, for approval before 1b.
 
+**Progress (Nov 14):** steps 1 to 3 done (push works, whole-dollar finance model pushed, plan synced). Step 4 started: npm workspaces `shared/`, `app/`, `worker/` created with TypeScript 5.9.3 and Vitest 4.1.12 installed (`.npmrc` sets `legacy-peer-deps=true` to work around an npm crash on Vitest's optional peer packages). Not committed yet. Remaining for this step: CI workflow, then format spec v1 (`docs/format.md`), `shared/src/schema.ts`, `parse.ts`, `export.ts` with fixtures and tests, then free checks + scheduler, then the two spikes.
+
+## 12c. Name conflict: build brand-free now, brand later (Nov 15)
+**Situation:** "EZPLAN" (and its domain) is used by a direct competitor. Using a name a direct competitor already uses in the same market is a trademark risk, so the product will most likely be renamed, not just given a different domain. "EZPLAN" stays only as an **internal working codename** until the new name is chosen.
+
+**1. Make the brand a single swappable setting (do now, small):**
+- New `shared/src/brand.ts`: product name, short name, file extension(s), format header key, website domain, support/security emails, colors and logo placeholders. All UI copy, emails, exports, prompts and the manifest read from it; nothing else hard-codes "EZPLAN".
+- **File format stays compatible across the rename:** the parser accepts a list of header keys (`ezplan:` plus the future brand's key) and both extensions; the exporter writes the current brand's key. Files created before the rename import forever. `docs/format.md` notes the key is brand-dependent.
+- Existing code that says "EZPLAN" (prompts, messages, export footer, docs) moves to `brand.ts` in the same change; tests assert no other source file contains the brand name.
+
+**2. What can be built and used without a name or domain (continues as planned):**
+- Everything in phases **1a, 1b, 1c, 2 and 3**: app, server, sync, AI features, moderation, admin console, maintenance tooling, Gate B mockups.
+- **Private hosting without a domain:** the owner-only build deploys to Cloudflare's free `*.workers.dev` address (Cloudflare Access login works there). Needs only a Cloudflare account.
+- **Email without a domain:** built and tested with a mock sender; real sending limited to the owner's own inbox via Resend's test sender until a domain exists.
+- "Before 1a" accounts shrink to: Cloudflare (no domain), Anthropic API key, Sentry, UptimeRobot. Resend and the custom domain move to the branding phase.
+
+**3. What waits for the name (new "Branding" phase B, must finish before phase 4):**
+| Item | Why it needs the name |
+|---|---|
+| Name shortlist + **trademark clearance** (USPTO search in software classes 9 and 42, plus common-law/web search), ideally confirmed by the lawyer | Avoid another conflict |
+| Domain + matching social handles | Website, email, sign-in screens |
+| Business entity name (LLC) | Legal documents, Stripe, Microsoft verification |
+| Logo, colors, typography (design system) | Website, app icon, mockups |
+| Email domain setup (SPF/DKIM/DMARC) | Reminders and invites reaching inboxes |
+| Microsoft publisher verification, Google sign-in consent screen | Show the company and domain |
+| Marketing site, help center address, status page name | Public pages |
+| Legal documents (Terms, Privacy, DPA) | Name the company and product |
+| File extension decision (e.g. `.<newname>`) | Desktop "open with" registration |
+| Rename sweep: `brand.ts`, mockups, docs, repo name (optional) | One change thanks to step 1 |
+
+**Decided:** naming happens later, in Branding phase B; "EZPLAN" is the internal codename until then.
+
+**4. Order:** brand isolation (this step) → continue 1a (import pipeline, prompts, website screens) → 1b … → Branding phase B in parallel whenever the owner is ready → phase 4.
+
 ## 13. Review: open decisions and risks (Nov 13)
 **Fixed in the second review:**
 - **Moderation loophole closed:** a customer's own AI could have been used to wave everything through; EZPLAN's own classifier now always covers Personal accounts and anything leaving a company (4c).

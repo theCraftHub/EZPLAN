@@ -1,5 +1,5 @@
 /**
- * The EZPLAN data model. Everything in a `.ezplan` file maps onto these types,
+ * The plan data model. Everything in a plan file maps onto these types,
  * and the parser (`parse.ts`) and exporter (`export.ts`) convert between them.
  * See `docs/format.md` for the human-readable spec.
  */

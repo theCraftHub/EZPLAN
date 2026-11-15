@@ -1,7 +1,8 @@
 /**
- * Writes a Plan back out in the EZPLAN format. `parsePlan(exportPlan(p))`
+ * Writes a Plan back out in the plan file format. `parsePlan(exportPlan(p))`
  * returns the same plan (the round-trip guarantee, covered by tests).
  */
+import { BRAND } from "./brand";
 import { FORMAT_VERSION, type Dependency, type Estimate, type Plan, type Subtask, type Task, type TaskStatus } from "./schema";
 
 const BOX: Record<TaskStatus, string> = { todo: "[ ]", progress: "[/]", done: "[x]", skipped: "[-]" };
@@ -44,7 +45,7 @@ export interface ExportOptions {
 }
 
 export function exportPlan(plan: Plan, opts: ExportOptions = {}): string {
-  const out: string[] = ["---", `ezplan: ${FORMAT_VERSION}`];
+  const out: string[] = ["---", `${BRAND.formatKey}: ${FORMAT_VERSION}`];
   if (plan.id) out.push(`id: ${fmValue(plan.id)}`);
   out.push(`title: ${fmValue(plan.title)}`);
   if (plan.goal) out.push(`goal: ${fmValue(plan.goal)}`);
@@ -64,7 +65,7 @@ export function exportPlan(plan: Plan, opts: ExportOptions = {}): string {
     for (const t of phase.tasks) out.push(...taskLines(t));
   }
   if (opts.footer) {
-    out.push("", "<!-- Exported from EZPLAN. Comments, time logs and activity history stay in the app. -->");
+    out.push("", `<!-- Exported from ${BRAND.name}. Comments, time logs and activity history stay in the app. -->`);
   }
   return out.join("\n") + "\n";
 }

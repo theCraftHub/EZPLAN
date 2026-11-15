@@ -1,4 +1,6 @@
-# EZPLAN
+# EZPLAN (working name)
+
+> "EZPLAN" is an internal codename: another company uses the name, so the product will be renamed. The name, file extension and domain live in `shared/src/brand.ts`.
 
 Turn any project description into a clear, good-looking, AI-checked plan your team can track together, on phone or desktop.
 

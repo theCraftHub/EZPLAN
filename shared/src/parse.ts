@@ -1,8 +1,8 @@
 /**
- * Parser for the EZPLAN format (see docs/format.md).
+ * Parser for the plan file format (see docs/format.md).
  *
  * Two modes:
- *  - strict: the text has an `ezplan:` front-matter block. Rules follow the spec,
+ *  - strict: the text has a front-matter block with the format key (see brand.ts). Rules follow the spec,
  *    with forgiving handling of the ways AI assistants format output.
  *  - tolerant: plain markdown (any checklist / headings). Headings become phases,
  *    list items become tasks, and missing IDs are assigned.
@@ -10,6 +10,7 @@
  * The parser never throws on bad input: it returns the best plan it could build
  * plus line-numbered issues the UI shows as friendly hints.
  */
+import { BRAND, FORMAT_KEYS } from "./brand";
 import {
   FORMAT_VERSION,
   type Attribution,
@@ -47,7 +48,7 @@ export const LIMITS = {
 };
 
 const KNOWN_FRONT_MATTER = new Set([
-  "ezplan",
+  ...FORMAT_KEYS,
   "id",
   "title",
   "goal",
@@ -67,16 +68,23 @@ interface Line {
   text: string;
 }
 
-export function parsePlan(input: string): ParseResult {
+export interface ParseOptions {
+  /** Header keys that mark a plan file; defaults to every key the product has used. */
+  formatKeys?: readonly string[];
+}
+
+export function parsePlan(input: string, opts: ParseOptions = {}): ParseResult {
+  const keys = opts.formatKeys ?? FORMAT_KEYS;
+  const keyRe = new RegExp(`^\\s*(?:${keys.map(escapeRe).join("|")})\\s*:`, "i");
   const issues: ParseIssue[] = [];
-  const lines = preprocess(input, issues);
-  const fm = findFrontMatter(lines);
+  const lines = preprocess(input, issues, keyRe);
+  const fm = findFrontMatter(lines, keyRe);
   if (fm) {
     if (fm.start > 0 && lines.slice(0, fm.start).some((l) => l.text.trim() !== "")) {
       issues.push({ line: lines[0]?.n, severity: "warning", message: "Text before the plan was ignored (for example an assistant's introduction)." });
     }
     const plan = emptyPlan();
-    readFrontMatter(lines.slice(fm.start + 1, fm.end), plan, issues);
+    readFrontMatter(lines.slice(fm.start + 1, fm.end), plan, issues, new Set(keys.map((k) => k.toLowerCase())));
     readBody(lines.slice(fm.end + 1), plan, issues, true);
     finalize(plan, issues);
     return { plan, issues, mode: "strict" };
@@ -84,7 +92,7 @@ export function parsePlan(input: string): ParseResult {
   const plan = emptyPlan();
   readBody(lines, plan, issues, false);
   finalize(plan, issues);
-  issues.push({ severity: "warning", message: "This isn't in EZPLAN format, so it was read as a plain checklist. Add a goal so the Plan Check has something to measure against." });
+  issues.push({ severity: "warning", message: `This isn't in ${BRAND.name} format, so it was read as a plain checklist. Add a goal so the Plan Check has something to measure against.` });
   return { plan, issues, mode: "tolerant" };
 }
 
@@ -99,7 +107,11 @@ const INVISIBLE_RE = /[​-‏‪-‮⁠-⁤﻿]/g;
 // eslint-disable-next-line no-control-regex
 const CONTROL_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 
-function preprocess(input: string, issues: ParseIssue[]): Line[] {
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function preprocess(input: string, issues: ParseIssue[], keyRe: RegExp): Line[] {
   let text = input;
   if (text.length > LIMITS.maxBytes) {
     issues.push({ severity: "error", message: `The text is too long (over ${LIMITS.maxBytes.toLocaleString("en-US")} characters). Only the first part was read.` });
@@ -116,11 +128,11 @@ function preprocess(input: string, issues: ParseIssue[]): Line[] {
     issues.push({ severity: "error", message: `The text has too many lines (over ${LIMITS.maxLines.toLocaleString("en-US")}). Only the first part was read.` });
     raw = raw.slice(0, LIMITS.maxLines);
   }
-  return unwrapFence(raw);
+  return unwrapFence(raw, keyRe);
 }
 
 /** If the plan is inside a ``` code block (common in AI replies), keep only that block. */
-function unwrapFence(lines: Line[]): Line[] {
+function unwrapFence(lines: Line[], keyRe: RegExp): Line[] {
   const opens: number[] = [];
   lines.forEach((l, i) => {
     if (/^\s*(```|~~~)/.test(l.text)) opens.push(i);
@@ -129,25 +141,25 @@ function unwrapFence(lines: Line[]): Line[] {
     const a = opens[k]!;
     const b = opens[k + 1]!;
     const inner = lines.slice(a + 1, b);
-    if (inner.some((l) => /^\s*ezplan\s*:/i.test(l.text) || /^\s*-\s*\[.\]/.test(l.text))) return inner;
+    if (inner.some((l) => keyRe.test(l.text) || /^\s*-\s*\[.\]/.test(l.text))) return inner;
   }
   return lines;
 }
 
-function findFrontMatter(lines: Line[]): { start: number; end: number } | null {
+function findFrontMatter(lines: Line[], keyRe: RegExp): { start: number; end: number } | null {
   for (let i = 0; i < lines.length; i++) {
     if (lines[i]!.text.trim() !== "---") continue;
     const next = lines.slice(i + 1, i + 40);
     const endRel = next.findIndex((l) => l.text.trim() === "---");
     if (endRel < 0) continue;
-    if (next.slice(0, endRel).some((l) => /^\s*ezplan\s*:/i.test(l.text))) return { start: i, end: i + 1 + endRel };
+    if (next.slice(0, endRel).some((l) => keyRe.test(l.text))) return { start: i, end: i + 1 + endRel };
   }
   return null;
 }
 
 // ---------------------------------------------------------------- front matter
 
-function readFrontMatter(lines: Line[], plan: Plan, issues: ParseIssue[]): void {
+function readFrontMatter(lines: Line[], plan: Plan, issues: ParseIssue[], formatKeys: Set<string>): void {
   for (const l of lines) {
     const t = l.text.trim();
     if (!t || t.startsWith("#")) continue;
@@ -159,13 +171,13 @@ function readFrontMatter(lines: Line[], plan: Plan, issues: ParseIssue[]): void 
     const key = m[1]!.toLowerCase().replace(/-/g, "_");
     const rawValue = stripQuotes(m[2]!.replace(/[“”]/g, '"').replace(/[‘’]/g, "'"));
     const value = cleanText(rawValue, l.n, issues);
+    if (formatKeys.has(key)) {
+      const v = Number(value);
+      if (!Number.isInteger(v) || v < 1) issues.push({ line: l.n, severity: "warning", message: `Unknown format version "${value}", read as version 1.` });
+      else if (v > FORMAT_VERSION) issues.push({ line: l.n, severity: "warning", message: `This file uses a newer format (version ${v}); some details may not be shown.` });
+      continue;
+    }
     switch (key) {
-      case "ezplan": {
-        const v = Number(value);
-        if (!Number.isInteger(v) || v < 1) issues.push({ line: l.n, severity: "warning", message: `Unknown format version "${value}", read as version 1.` });
-        else if (v > FORMAT_VERSION) issues.push({ line: l.n, severity: "warning", message: `This file uses a newer format (version ${v}); some details may not be shown.` });
-        break;
-      }
       case "id": plan.id = value; break;
       case "title": plan.title = value; break;
       case "goal": plan.goal = value; break;

@@ -1,4 +1,6 @@
-# The EZPLAN format (version 1)
+# The plan file format (version 1)
+
+> **Working name:** "EZPLAN", the `ezplan:` header key and the `.ezplan` extension are placeholders until the product is renamed (another company uses the name). The header key and extensions come from `shared/src/brand.ts`; files written with any earlier key keep importing after a rename.
 
 A `.ezplan` file is plain text (Markdown). People can read and edit it in any app, AI assistants can write it, and EZPLAN reads it back without losing progress. Files ending in `.ezplan.md` are the same format.
 
