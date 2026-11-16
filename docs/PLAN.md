@@ -172,6 +172,34 @@ Principle: **every core planning job works with AI turned off**: free plan, a co
 - **1b:** time off + part-time capacity + holidays, rule-based re-leveling, comments/mentions/watchers/activity, approvals, recurring tasks, template libraries, offline editing.
 - **1c:** imports from other tools, budget/cost tracking, time logging, what-if mode, multiple baselines, extra dependency types + constraints, live calendar feed, Slack/Teams webhooks, Board view.
 
+## 3c. Availability-aware scheduling (Nov 16)
+Real replies showed the gap: schedules assumed every person works on this one project 40 hours a week and runs all their tasks side by side (a one-person IT project showed Dec 3; one person's work alone runs to about Dec 18). Dates are only trustworthy if they know **who is actually available, and how much**.
+
+**1. Ask for known availability (manual, AI-free, always available)**
+- **At import / plan creation** (the preview screen, one short step, skippable): for each person on the plan, *"How many hours a week can {name} give this project?"* (quick picks: a few hours, about half time, full time, custom) and *"Any days off coming up?"* Solo plans ask once: *"How much time can you give this project each week?"*
+- **Per person, editable any time:** working days, hours per week **for this project** (others' projects take the rest), time off (date ranges), part-time patterns; company holidays per workspace (Business) or per country.
+- Stored once per person and reused across their projects; per-project allocation stored on the membership.
+
+**2. Calendar tie-in (optional, read availability only, never meeting details)**
+| Source | How | Who | Phase |
+|---|---|---|---|
+| **Calendar feed link** (private iCal/ICS URL from Google, Outlook, Apple, Proton...) | User pastes their calendar's secret address; we read busy times only | Anyone, no sign-in setup | 1c |
+| **Connect Google Calendar** | OAuth with the free/busy-only scope `calendar.freebusy` (narrowest scope; Google verification needed for sensitive scopes, typically a few business days) | Personal + Business users with Google | 4 (needs the branded Google app) |
+| **Connect Microsoft 365 / Outlook** | Microsoft Graph `getSchedule`, least-privileged permission `Calendars.ReadBasic` (delegated: the user connects their own calendar) | Personal + Business users with Microsoft work accounts (personal Microsoft accounts aren't supported by getSchedule) | 4 |
+| **Company-wide (Business)** | The IT admin turns it on once in the admin console: Graph application permission with admin consent (all employees' free/busy, no per-user steps), optionally limited to a group; Google Workspace equivalent via domain-wide setup | Business, per policy | 4 (admin console 5c) |
+- **What we keep:** only busy blocks reduced to "hours busy per day", refreshed daily and on demand; no event titles, attendees or locations are stored or shown. Meetings reduce that day's available hours; all-day "Out of office"/vacation events become time off automatically.
+- **Controls:** each person sees exactly what's read and can disconnect at any time; Business admins choose allow / require / off; audit log records connections (5c). Privacy Policy and DPA list it (section 14).
+
+**3. Scheduler uses it (`shared/schedule.ts`)**
+- **Person-aware (resource-leveled) scheduling:** one person's tasks no longer overlap beyond their available hours per day; tasks are placed by priority, critical path and due date, then by plan order. Waiting tasks (`#wait`) use calendar time, nobody's hours.
+- Every date explains itself: *"Starts Dec 2 because Alex is on T13 until then"* / *"Dec 24 to 26: Alex is off."*
+- Plan Check uses the same data: the current "overloaded" warning becomes exact (who, which weeks), plus "no availability set for Priya: assumed full time".
+- What-if: "If Jordan gave this 10 more hours a week, you'd finish 9 days earlier."
+
+**Phasing (pulled forward because dates are core):** manual availability + person-aware scheduling + import step in **1a**; calendar feed link and holidays by country in **1c**; Google/Microsoft connect and company-wide admin switch in **4** (they need the branded Google/Microsoft apps from Branding phase B).
+
+**Verification:** a solo plan with 25 working days of tasks at 10 hours/week finishes ~5x later than at full time; two people's tasks never overlap beyond their hours; time off and holidays skip days; a calendar feed with a 3-hour meeting reduces that day by 3 hours and an all-day OOO removes it; no event titles reach storage (checked in tests); disconnecting deletes the stored busy data.
+
 ## 4. AI features (Claude via `@anthropic-ai/sdk`, metered per user)
 | Feature | Model | Approx. cost |
 |---|---|---|
@@ -405,7 +433,7 @@ Size is relative effort (S, M, L, XL), not a calendar promise. **1b and 4 are th
 
 | # | Phase | Size | Contents |
 |---|---|---|---|
-| 1a | **Solo core** (owner uses it daily) | L | Format spec v1 + AI-neutral prompts, import pipeline (validate → sanitize → parse → moderate → preview), parser/free checks/scheduling basics (2, 3, 3b-1a list), editor + quick-add, templates + start from past project, phone dashboard / checklist / timeline / calendar, free + AI Plan Check, "Update with my AI" basic round trip (2b), `.ezplan` export/import, printable summary, Trash + version history, private-build login with server-side sessions, AI engine interface (one adapter), draft Terms/Privacy/AUP pages, analytics, in-app Help skeleton; moderation + injection defenses + Turnstile + rate limits + Trust & Safety queue (4c); maintenance basics (11). **First week: two technical spikes** (offline + live editing sync; timeline speed at 2,000 tasks) so the riskiest pieces are proven before 1b depends on them |
+| 1a | **Solo core** (owner uses it daily) | L | Format spec v1 + AI-neutral prompts, availability step + person-aware scheduling (3c), import pipeline (validate → sanitize → parse → moderate → preview), parser/free checks/scheduling basics (2, 3, 3b-1a list), editor + quick-add, templates + start from past project, phone dashboard / checklist / timeline / calendar, free + AI Plan Check, "Update with my AI" basic round trip (2b), `.ezplan` export/import, printable summary, Trash + version history, private-build login with server-side sessions, AI engine interface (one adapter), draft Terms/Privacy/AUP pages, analytics, in-app Help skeleton; moderation + injection defenses + Turnstile + rate limits + Trust & Safety queue (4c); maintenance basics (11). **First week: two technical spikes** (offline + live editing sync; timeline speed at 2,000 tasks) so the riskiest pieces are proven before 1b depends on them |
 | 1b | **Teams + orgs** (owner tests with test companies) | XL | Roles model, organizations, workspaces, invites, assignees, "Done by", live collaboration, offline editing, workload + re-leveling + time off/holidays, Home + portfolio, **desktop workspace** (Overview + widgets, grid + Gantt, RAID log, status updates with history, task drawer), comments/approvals/recurring, admin console core (5c-1b list), OOBE basics (5d-1b list), Operations page |
 | 1c | **Reach + depth** | L | Share links, reminders + digests, AI status reports, `.ics` + live calendar feed, one-page status report + scheduled dashboard emails, presentation mode, budgets/cost, time logging, what-if, multiple baselines, dependency types + constraints, imports from other tools, Board view, Slack/Teams webhooks, admin 1c list (setup wizard, domains, policies, guests, digest), 2b redaction/policy + change-list format, Personal data export/deletion, help center content |
 | 2 | **In-app AI** | M | Generate plans + Re-plan / What's next / Break down inside the site; **Business BYOK** adapters (Anthropic, Azure OpenAI, Bedrock, Vertex, OpenAI-compatible) with encrypted keys, per-provider verification, and the moderation split from 4c |
