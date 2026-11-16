@@ -196,9 +196,35 @@ Real replies showed the gap: schedules assumed every person works on this one pr
 - Plan Check uses the same data: the current "overloaded" warning becomes exact (who, which weeks), plus "no availability set for Priya: assumed full time".
 - What-if: "If Jordan gave this 10 more hours a week, you'd finish 9 days earlier."
 
-**Phasing (pulled forward because dates are core):** manual availability + person-aware scheduling + import step in **1a**; calendar feed link and holidays by country in **1c**; Google/Microsoft connect and company-wide admin switch in **4** (they need the branded Google/Microsoft apps from Branding phase B).
+**4. See it: visual scheduling with team availability (new "Team schedule" view)**
+Inspired by resource schedulers (Float, Resource Guru, TeamGantt availability, Monday workload), built on the 3c data. It **replaces the separate Workload heatmap** (the heatmap becomes this view's zoomed-out mode), so there is one place to see and change who does what, when.
 
-**Verification:** a solo plan with 25 working days of tasks at 10 hours/week finishes ~5x later than at full time; two people's tasks never overlap beyond their hours; time off and holidays skip days; a calendar feed with a 3-hour meeting reduces that day by 3 hours and an all-day OOO removes it; no event titles reach storage (checked in tests); disconnecting deletes the stored busy data.
+*Desktop: people × time grid*
+- **Rows = people** (plus a "Waiting" lane for `#wait` tasks and an "Unassigned" lane), **columns = days** (zoom day / week / month).
+- **Availability is painted under the work:** each cell's background shows hours free that day (full / partial / none), **time off** hatched with a label ("Vacation", "Holiday"), **calendar-busy** hours as a lighter band ("3h meetings"), non-working days greyed.
+- **Task bars sit in the person's row**, sized to the hours they take that day; a per-day **capacity line** shows booked vs available; over capacity turns the cell red with "+4h".
+- **Drag to change:** drag a bar sideways (new dates) or to another person's row (reassign); drop targets glow green where that person has room and red where they don't. Every drag shows the ripple (new finish date, affected tasks) and needs **Apply / Cancel** (same what-if engine as the timeline).
+- **Paint availability directly:** drag across a person's days to mark time off or set hours; right-click a person for "Hours per week for this project".
+- **Smart actions:** "Find a slot" on a task (first window where the owner, or anyone with the skill tag, has room), "Even out" (rule-based re-leveling, previewed), "Who's free next week?" filter.
+- **Summary header:** project finish date with the explanation chain, total booked vs available this week, people over/under capacity.
+- Cross-project (Business, portfolio): the same grid across all projects, so a person's load includes their other projects (bars colored per project).
+
+*Phone: one column, made for thumbs*
+- **Week strip** at the top (7 days, each with a small availability dot per person); tap a day for the **day list**: each person's tasks and free hours.
+- **Person view:** swipe between people; their week as stacked cards with a capacity bar ("26 of 30 h").
+- Reassign / move via a bottom sheet with "Best slots" suggestions (green = fits), not drag.
+- **"My availability"** sheet: hours per week, time off (date picker), calendar connected or not.
+
+*Everywhere*
+- Checklist and Timeline task rows get a small **availability hint** when a date is pushed by availability ("waits for Alex, back Dec 27").
+- Accessibility: availability uses pattern + text, not color alone; keyboard moves (arrow keys to shift, Enter to apply).
+- Performance: virtualized rows/columns; target 50 people × 6 months smooth (same rendering approach as the timeline spike, docs/spikes.md).
+
+*Mockups:* add **Team schedule (desktop grid + phone week/person views + availability sheet + availability step at import)** to a small design gate before building, shown with the signage and kitchen examples.
+
+**Phasing (pulled forward because dates are core):** manual availability + person-aware scheduling + import step + **solo "My schedule"** (my week with availability and tasks) in **1a**; full **Team schedule** grid with drag-to-reassign, availability painting and "Find a slot" in **1b** (with teams); cross-project grid in **1b** portfolio; calendar feed link and holidays by country in **1c**; Google/Microsoft connect and company-wide admin switch in **4** (they need the branded Google/Microsoft apps from Branding phase B).
+
+**Verification:** a solo plan with 25 working days of tasks at 10 hours/week finishes ~5x later than at full time; two people's tasks never overlap beyond their hours; time off and holidays skip days; a calendar feed with a 3-hour meeting reduces that day by 3 hours and an all-day OOO removes it; no event titles reach storage (checked in tests); disconnecting deletes the stored busy data. **Team schedule view:** dragging a task to a person with no room is shown red and the preview's finish date equals the applied result; painting time off reschedules that person's tasks; phone reassign suggestions only list slots that fit; 50 people × 6 months scrolls at 60 fps on desktop and stays usable on the emulated phone; availability readable without color (axe + manual check). Implementation steps when approved: (1) availability data model + person-aware scheduler in `shared/` with tests (reusing `Calendar` in `shared/src/calendar.ts`, `schedulePlan`/`workloadByWeek` in `shared/src/schedule.ts`, `isWaiting` in `shared/src/schema.ts`), (2) Team schedule mockups for approval, (3) screens.
 
 ## 4. AI features (Claude via `@anthropic-ai/sdk`, metered per user)
 | Feature | Model | Approx. cost |
