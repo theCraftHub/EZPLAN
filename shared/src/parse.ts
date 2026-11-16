@@ -87,6 +87,7 @@ export function parsePlan(input: string, opts: ParseOptions = {}): ParseResult {
     readFrontMatter(lines.slice(fm.start + 1, fm.end), plan, issues, new Set(keys.map((k) => k.toLowerCase())));
     readBody(lines.slice(fm.end + 1), plan, issues, true);
     finalize(plan, issues);
+    checkCutOff(input, lines, plan, issues);
     return { plan, issues, mode: "strict" };
   }
   const plan = emptyPlan();
@@ -94,6 +95,29 @@ export function parsePlan(input: string, opts: ParseOptions = {}): ParseResult {
   finalize(plan, issues);
   issues.push({ severity: "warning", message: `This isn't in ${BRAND.name} format, so it was read as a plain checklist. Add a goal so the Plan Check has something to measure against.` });
   return { plan, issues, mode: "tolerant" };
+}
+
+/**
+ * AI replies sometimes stop mid-plan (length limits, a dropped connection, a partial copy).
+ * Signs: a code block that never closes, or a last task that ends abruptly (no estimate and
+ * no links) when nearly every other task has them. Warn so the user asks their AI to finish.
+ */
+function checkCutOff(input: string, lines: Line[], plan: Plan, issues: ParseIssue[]): void {
+  const fences = input.split(/\r?\n/).filter((l) => /^\s*(```|~~~)/.test(l)).length;
+  const tasks = plan.phases.flatMap((p) => p.tasks);
+  const last = tasks.at(-1);
+  let cut = fences % 2 === 1;
+  if (!cut && last && !last.milestone && !last.estimate && last.depends.length === 0) {
+    const lastLine = [...lines].reverse().find((l) => l.text.trim() !== "")?.text ?? "";
+    const others = tasks.slice(0, -1).filter((t) => !t.milestone);
+    const estimated = others.filter((t) => t.estimate).length;
+    const linked = others.filter((t) => t.depends.length).length;
+    cut = /^\s*(?:[-*+•]|\d+[.)])?\s*\[.\]/.test(lastLine) && others.length >= 4 && estimated / others.length >= 0.75 && linked / others.length >= 0.5;
+  }
+  if (cut) {
+    const where = last ? ` after ${last.id} "${clip(last.title)}"` : "";
+    issues.push({ severity: "warning", message: `This reply seems to stop early${where}. Your AI may have been cut off: ask it to "send the full plan again", then paste the whole reply.` });
+  }
 }
 
 function emptyPlan(): Plan {

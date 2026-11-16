@@ -19,6 +19,8 @@ const cases = [
   { file: "copilot-renovation-v2.txt", phases: 6, tasks: 29, milestones: 7, people: ["Jordan", "Priya"], start: "2027-01-04" },
   // Conversation mode, pasted into a long-running chat about a real project (anonymized).
   { file: "claude-existing-chat-signage.txt", phases: 8, tasks: 41, milestones: 6, people: ["Alex"], start: "2026-11-16" },
+  // Conversation mode; the reply stops partway through the last phase. Blank lines between tasks.
+  { file: "copilot-existing-chat-cutoff.txt", phases: 6, tasks: 24, milestones: 5, people: ["Alex"], start: "2026-11-16" },
 ];
 
 describe("replies from other AI assistants", () => {
@@ -90,5 +92,17 @@ describe("replies from other AI assistants", () => {
     // no loose-end tip for a separate follow-up phase; the real risk is one person's load.
     expect(findings.map((f) => f.code).sort()).toEqual(["no-estimate", "overloaded"]);
     expect(findings.find((f) => f.code === "overloaded")!.message).toMatch(/Alex has about 25 working days.*finishes 2026-12-03.*about 2026-12-18/);
+  });
+
+  it("warns when a reply was cut off, and stays quiet on complete replies", () => {
+    const dir = join(import.meta.dirname, "fixtures", "assistants");
+    const cut = parsePlan(readFileSync(join(dir, "copilot-existing-chat-cutoff.txt"), "utf8"));
+    expect(cut.issues).toContainEqual(expect.objectContaining({ severity: "warning", message: expect.stringMatching(/stop early after T19 "Perform walkthrough".*send the full plan again/) }));
+    for (const c of cases.filter((x) => !x.file.includes("cutoff"))) {
+      expect(parsePlan(readFileSync(join(dir, c.file), "utf8")).issues.map((i) => i.message).join()).not.toMatch(/stop early/);
+    }
+    // A code block that opens but never closes.
+    const open = "```\n---\nezplan: 1\ntitle: X\n---\n## P1: A\n- [ ] T1: First (1d)\n- [ ] T2: Second (1d) depends: T1";
+    expect(parsePlan(open).issues.map((i) => i.message).join()).toMatch(/stop early after T2/);
   });
 });
