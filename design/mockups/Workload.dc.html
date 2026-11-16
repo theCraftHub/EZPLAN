@@ -44,10 +44,15 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
         </button>
       </sc-for>
     </div>
-    <div role="tablist" aria-label="View" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: #E9ECF1; border-radius: 12px; padding: 3px; gap: 3px">
-      <sc-for list="{{ modes }}" as="m" hint-placeholder-count="3">
-        <button role="tab" aria-selected="{{ m.selected }}" onClick="{{ m.pick }}" style="{{ m.style }}">{{ m.label }}</button>
-      </sc-for>
+    <div style="display: flex; gap: 8px">
+      <div role="tablist" aria-label="View" style="{{ modesStyle }}">
+        <sc-for list="{{ modes }}" as="m" hint-placeholder-count="3">
+          <button role="tab" aria-selected="{{ m.selected }}" onClick="{{ m.pick }}" style="{{ m.style }}">{{ m.label }}</button>
+        </sc-for>
+      </div>
+      <button onClick="{{ startAdd }}" aria-label="Add person to this plan" style="flex: none; width: 46px; min-height: 46px; border-radius: 12px; border: 1px dashed #64748B; background: #FFFFFF; color: #0F172A; display: flex; align-items: center; justify-content: center; cursor: pointer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="8" r="3.5"></circle><path d="M3.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6"></path></svg>
+      </button>
     </div>
   </header>
 
@@ -128,6 +133,35 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
     </div>
   </sc-if>
 
+  <sc-if value="{{ adding }}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(15,23,42,0.45); display: flex; flex-direction: column; justify-content: flex-end; z-index: 5">
+      <section role="dialog" aria-modal="true" aria-label="Add person" style="background: #FFFFFF; border-radius: 22px 22px 0 0; padding: 10px 20px 24px; display: flex; flex-direction: column; gap: 12px">
+        <span aria-hidden="true" style="align-self: center; width: 40px; height: 4px; border-radius: 2px; background: #CBD5E1"></span>
+        <h2 style="margin: 0; font-size: 18px; font-weight: 700">Add someone to Kitchen Remodel</h2>
+        <label for="add-name" style="font-size: 13px; font-weight: 600">Name or email</label>
+        <input id="add-name" value="Sam" style="min-height: 46px; padding: 0 12px; border-radius: 12px; border: 1px solid #94A3B8; font: 500 15px Inter, sans-serif; color: #0F172A">
+        <div style="display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 6px 12px; border-radius: 14px; border: 2px solid #0F172A; background: #F8FAFC">
+          <span style="width: 34px; height: 34px; border-radius: 17px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #FFFFFF; background: #0E7490">SR</span>
+          <span style="flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0">
+            <span style="font-size: 14px; font-weight: 600">Sam Rivera</span>
+            <span style="font-size: 12px; color: #475569">In your workspace · gets an invite</span>
+          </span>
+        </div>
+        <span style="font-size: 13px; font-weight: 600">Hours a week for this project</span>
+        <div role="radiogroup" aria-label="Hours a week" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+          <sc-for list="{{ hourPicks }}" as="h" hint-placeholder-count="4">
+            <button role="radio" aria-checked="{{ h.checked }}" onClick="{{ h.pick }}" style="{{ h.style }}">{{ h.label }}</button>
+          </sc-for>
+        </div>
+        <span style="font-size: 12px; line-height: 1.5; color: #475569">Your estimate until Sam confirms it. Sam joins as an Editor; you can change that in the plan's People list.</span>
+        <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px">
+          <button onClick="{{ cancelAdd }}" style="min-height: 48px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer">Cancel</button>
+          <button onClick="{{ confirmAdd }}" style="min-height: 48px; border-radius: 12px; border: none; background: #4F46E5; font: 600 15px Inter, sans-serif; color: #FFFFFF; cursor: pointer">Add and invite</button>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
     <div role="status" style="position: absolute; left: 20px; right: 20px; bottom: 92px; background: #0F172A; color: #FFFFFF; border-radius: 14px; padding: 12px 14px; font-size: 14px; display: flex; align-items: center; gap: 10px; z-index: 4">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
@@ -156,7 +190,7 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { week: 0, day: 1, mode: 'day', sheet: null, option: 0, toast: '' };
+    this.state = { week: 0, day: 1, mode: 'day', sheet: null, option: 0, toast: '', adding: false, sam: false, hrs: 3 };
   }
   renderVals() {
     var self = this;
@@ -165,7 +199,8 @@ class Component extends DCLogic {
     // Tuesday site meetings (3h), Priya 20 h/week and off Jan 12 to 13 (Family trip).
     var people = {
       Jordan: { color: '#4F46E5', initials: 'JO' },
-      Priya: { color: '#B45309', initials: 'PR' }
+      Priya: { color: '#B45309', initials: 'PR' },
+      Sam: { color: '#0E7490', initials: 'SA' }
     };
     var tasks = {
       T1: { title: 'Finalize remodel scope', owner: 'Jordan', dates: 'Jan 4 to Jan 7', why: 'Starts Jan 4, the project start.' },
@@ -191,7 +226,10 @@ class Component extends DCLogic {
       ] }
     ];
     var week = weeks[st.week];
-    var full = function (p) { return p === 'Jordan' ? 8 : 4; };
+    var full = function (p) { return p === 'Priya' ? 4 : 8; };
+    // Sam, once added: nothing assigned yet, 8 hours free each day (estimate).
+    if (st.sam) weeks.forEach(function (w) { w.days.forEach(function (d) { d.Sam = { cap: 8, b: [] }; }); });
+    var names = st.sam ? ['Jordan', 'Priya', 'Sam'] : ['Jordan', 'Priya'];
     var sum = function (b) { return b.reduce(function (n, x) { return n + x[1]; }, 0); };
     var fmtH = function (h) { return (Math.round(h * 10) / 10) + 'h'; };
 
@@ -210,12 +248,12 @@ class Component extends DCLogic {
         selected: on ? 'true' : 'false',
         aria: d.dow + ' ' + d.num + ': Jordan ' + (d.Jordan.off ? 'off' : d.Jordan.cap + ' hours') + ', Priya ' + (d.Priya.off ? 'off' : d.Priya.cap + ' hours'),
         pick: function () { self.setState({ day: i, mode: st.mode === 'person' ? 'day' : st.mode }); },
-        dots: [dotFor('Jordan', d.Jordan), dotFor('Priya', d.Priya)],
+        dots: names.map(function (n) { return dotFor(n, d[n]); }),
         style: 'min-height: 70px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; font-family: Inter, sans-serif; ' + (on ? 'background: #0F172A; color: #FFFFFF; border: 1px solid #0F172A;' : 'background: #FFFFFF; color: #0F172A; border: 1px solid #E2E8F0;')
       };
     });
 
-    var modeList = [['day', 'Day'], ['Jordan', 'Jordan'], ['Priya', 'Priya']];
+    var modeList = [['day', 'Day']].concat(names.map(function (n) { return [n, n]; }));
     var modes = modeList.map(function (m) {
       var on = (st.mode === 'day' && m[0] === 'day') || (st.mode === 'person' && st.person === m[0]);
       return {
@@ -255,7 +293,7 @@ class Component extends DCLogic {
     var cards;
     if (st.mode === 'day') {
       var d = week.days[st.day];
-      cards = ['Jordan', 'Priya'].map(function (name) {
+      cards = names.map(function (name) {
         var c = d[name];
         var booked = sum(c.b);
         var free = Math.max(0, c.cap - booked);
@@ -263,13 +301,13 @@ class Component extends DCLogic {
           aria: name + ' on ' + d.dow + ' ' + d.num,
           initials: people[name].initials, avatarStyle: avatar(name),
           heading: name,
-          sub: c.off ? 'Off today' : c.busy ? c.cap + 'h available (' + c.busy + 'h of meetings)' : name === 'Priya' ? '4h available (20 h a week on this project)' : c.cap + 'h available',
+          sub: c.off ? 'Off today' : c.busy ? c.cap + 'h available (' + c.busy + 'h of meetings)' : name === 'Priya' ? '4h available (20 h a week on this project)' : name === 'Sam' ? 'Invited · 8h a day (your estimate)' : c.cap + 'h available',
           chip: c.off ? 'Off' : fmtH(booked) + ' of ' + fmtH(c.cap),
           chipStyle: chip(booked, c.cap),
           barBooked: bar(booked, c.cap, 8, name), barUnavail: unavail(c.cap, 8),
           off: !!c.off, offText: 'Off: ' + c.off + ' (Jan 12 to 13). Priya\'s tasks wait until she\'s back.',
           rows: rowsFor(c.b, name),
-          freeNote: !c.off && free > 0.05 ? fmtH(free) + ' free' + (booked === 0 ? ': nothing is ready for ' + name + ' yet (waiting on the budget).' : '.') : false
+          freeNote: !c.off && free > 0.05 ? fmtH(free) + ' free' + (name === 'Sam' ? ': nothing assigned yet. Tap the budget task to give it to Sam.' : booked === 0 ? ': nothing is ready for ' + name + ' yet (waiting on the budget).' : '.') : false
         };
       });
     } else {
@@ -295,7 +333,7 @@ class Component extends DCLogic {
       cards.unshift({
         aria: name + ' this week', initials: people[name].initials, avatarStyle: avatar(name),
         heading: name + ', week of ' + week.label,
-        sub: name === 'Priya' ? '20 h a week on this project' : 'Full time · meetings on Tuesdays',
+        sub: name === 'Priya' ? '20 h a week on this project' : name === 'Sam' ? 'Invited · full time (your estimate)' : 'Full time · meetings on Tuesdays',
         chip: fmtH(weekBooked) + ' of ' + fmtH(weekCap), chipStyle: chip(weekBooked, weekCap),
         barBooked: bar(weekBooked, weekCap, weekCap, name), barUnavail: 'width: 0', off: false, offText: '', rows: [], freeNote: false
       });
@@ -305,11 +343,11 @@ class Component extends DCLogic {
     if (st.sheet) {
       var t = tasks[st.sheet];
       var opts = st.sheet === 'T2'
-        ? [
+        ? (st.sam ? [{ label: 'Give to Sam', detail: 'Sam is free from Jan 4 (your estimate), so the budget is done Jan 12.', finish: 'Apr 30', fit: 'ok', badge: 'Fits' }] : []).concat([
           { label: 'Keep with Priya', detail: 'Fits her 20 hours a week. Finishes Jan 19.', finish: 'May 5', fit: 'ok', badge: 'Now' },
           { label: 'Give Priya 30 hours a week', detail: 'Budget done Jan 15 instead of Jan 19, so the cabinets are ordered sooner.', finish: 'Apr 30', fit: 'ok', badge: 'Fits' },
           { label: 'Give to Jordan', detail: 'Jordan is on the quotes until Jan 14, so the budget would start then.', finish: 'May 6', fit: 'bad', badge: 'Later' }
-        ]
+        ])
         : [
           { label: 'Keep with ' + t.owner, detail: 'Fits ' + t.owner + '\'s hours. ' + t.dates + '.', finish: 'May 5', fit: 'ok', badge: 'Now' },
           { label: 'Give to ' + (t.owner === 'Jordan' ? 'Priya' : 'Jordan'), detail: t.owner === 'Jordan' ? 'Priya works 20 hours a week and is on the budget until Jan 19.' : 'Jordan is busy until Jan 14.', finish: st.sheet === 'T3' ? 'May 19' : 'Later', fit: 'bad', badge: 'Later' }
@@ -337,9 +375,19 @@ class Component extends DCLogic {
       nextWeek: function () { self.setState({ week: 1, day: 1 }); },
       strip: strip, modes: modes, cards: cards,
       sheetOpen: !!sheet, sheet: sheet || { id: '', owner: '', title: '', dates: '', why: '', options: [] },
-      applyLabel: st.option === 0 ? 'Done' : 'Apply',
+      applyLabel: chosen && /^Keep/.test(chosen.label) ? 'Done' : 'Apply',
+      modesStyle: 'flex: 1; display: grid; grid-template-columns: repeat(' + modeList.length + ', minmax(0, 1fr)); background: #E9ECF1; border-radius: 12px; padding: 3px; gap: 3px',
+      adding: st.adding,
+      startAdd: function () { self.setState({ adding: true }); },
+      cancelAdd: function () { self.setState({ adding: false }); },
+      confirmAdd: function () { self.setState({ adding: false, sam: true, toast: 'Sam added and invited. Sam could take the budget: finish Apr 30.' }); },
+      hourPicks: ['5 h', '20 h', '30 h', 'Full'].map(function (h, i) {
+        var on = st.hrs === i;
+        return { label: h, checked: on ? 'true' : 'false', pick: function () { self.setState({ hrs: i }); },
+          style: 'min-height: 44px; border-radius: 10px; cursor: pointer; font: 600 14px Inter, sans-serif; ' + (on ? 'background: #0F172A; color: #FFFFFF; border: 1px solid #0F172A;' : 'background: #FFFFFF; color: #0F172A; border: 1px solid #E2E8F0;') };
+      }),
       closeSheet: function () { self.setState({ sheet: null }); },
-      apply: function () { self.setState({ sheet: null, toast: st.option === 0 ? '' : chosen.label + '. Kitchen now finishes ' + chosen.finish.replace('Finish ', '') + '.' }); },
+      apply: function () { self.setState({ sheet: null, toast: /^Keep/.test(chosen.label) ? '' : chosen.label + '. Kitchen now finishes ' + chosen.finish.replace('Finish ', '') + '.' }); },
       toast: st.toast || false,
       undo: function () { self.setState({ toast: '' }); }
     };

@@ -50,6 +50,12 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
           <button onClick="{{ apply }}" style="min-height: 42px; padding: 0 16px; border-radius: 10px; border: none; background: #0F172A; font: 600 14px Inter, sans-serif; color: #FFFFFF; cursor: pointer">Apply</button>
         </div>
       </sc-if>
+      <sc-if value="{{ banner.suggest }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; gap: 8px; flex: none">
+          <button onClick="{{ cancel }}" style="min-height: 42px; padding: 0 16px; border-radius: 10px; border: 1px solid #94A3B8; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F172A; cursor: pointer">Not now</button>
+          <button onClick="{{ previewSam }}" style="min-height: 42px; padding: 0 16px; border-radius: 10px; border: none; background: #0F172A; font: 600 14px Inter, sans-serif; color: #FFFFFF; cursor: pointer">Preview giving Sam T2</button>
+        </div>
+      </sc-if>
       <sc-if value="{{ banner.dismiss }}" hint-placeholder-val="{{ false }}">
         <button onClick="{{ cancel }}" style="flex: none; min-height: 42px; padding: 0 16px; border-radius: 10px; border: 1px solid #94A3B8; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F172A; cursor: pointer">OK</button>
       </sc-if>
@@ -97,6 +103,12 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
         </div>
       </sc-for>
 
+      <div style="border-top: 1px solid #EEF2F6; padding: 10px 0 4px; min-width: 940px">
+        <button onClick="{{ startAdd }}" style="min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px dashed #64748B; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F172A; cursor: pointer; display: flex; align-items: center; gap: 8px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="8" r="3.5"></circle><path d="M3.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6"></path></svg>
+          Add person to this plan
+        </button>
+      </div>
       <div style="display: flex; flex-wrap: wrap; gap: 16px; padding-top: 12px; font-size: 12px; color: #334155; min-width: 940px">
         <span style="display: flex; align-items: center; gap: 6px"><span style="width: 22px; height: 12px; border-radius: 4px; background: #4F46E5; outline: 2px solid #0F172A; outline-offset: 1px"></span>Dark outline: sets the finish date</span>
         <span style="display: flex; align-items: center; gap: 6px"><span style="width: 22px; height: 12px; border-radius: 4px; background: repeating-linear-gradient(135deg, #E2E8F0 0 5px, #F8FAFC 5px 8px); border: 1px dashed #64748B"></span>Waiting (nobody's hours)</span>
@@ -107,7 +119,51 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
       </div>
     </section>
 
-    <aside aria-label="Task details" style="background: #FFFFFF; border-radius: 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); padding: 18px; display: flex; flex-direction: column; gap: 14px">
+    <aside aria-label="Details" style="background: #FFFFFF; border-radius: 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); padding: 18px; display: flex; flex-direction: column; gap: 14px">
+      <sc-if value="{{ adding }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 12px; font-weight: 600; color: #475569; letter-spacing: 0.04em">ADD PERSON · KITCHEN REMODEL</span>
+            <h2 style="margin: 0; font-size: 18px; font-weight: 700">Who should join this plan?</h2>
+          </div>
+          <label for="add-search" style="font-size: 13px; font-weight: 600">Name or email</label>
+          <input id="add-search" value="Sam" style="min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid #94A3B8; font: 500 14px Inter, sans-serif; color: #0F172A">
+          <div role="listbox" aria-label="Matches" style="display: flex; flex-direction: column; gap: 6px">
+            <sc-for list="{{ matches }}" as="m" hint-placeholder-count="2">
+              <button role="option" aria-selected="{{ m.selected }}" onClick="{{ m.pick }}" style="{{ m.style }}">
+                <span style="{{ m.avatarStyle }}">{{ m.initials }}</span>
+                <span style="flex: 1; display: flex; flex-direction: column; gap: 1px; text-align: left; min-width: 0">
+                  <span style="font-size: 14px; font-weight: 600">{{ m.name }}</span>
+                  <span style="font-size: 12px; color: #475569">{{ m.sub }}</span>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; font-weight: 600">What can they do?</span>
+            <div role="radiogroup" aria-label="Role" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+              <sc-for list="{{ roles }}" as="r" hint-placeholder-count="3">
+                <button role="radio" aria-checked="{{ r.checked }}" onClick="{{ r.pick }}" style="{{ r.style }}">{{ r.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; font-weight: 600">Hours a week for this project</span>
+            <div role="radiogroup" aria-label="Hours a week" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+              <sc-for list="{{ hourPicks }}" as="h" hint-placeholder-count="4">
+                <button role="radio" aria-checked="{{ h.checked }}" onClick="{{ h.pick }}" style="{{ h.style }}">{{ h.label }}</button>
+              </sc-for>
+            </div>
+            <span style="font-size: 12px; line-height: 1.5; color: #475569">Your estimate until Sam confirms it. Sam can add days off and connect a calendar after accepting.</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px">
+            <button onClick="{{ cancelAdd }}" style="min-height: 44px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F172A; cursor: pointer">Cancel</button>
+            <button onClick="{{ confirmAdd }}" style="min-height: 44px; border-radius: 10px; border: none; background: #4F46E5; font: 600 14px Inter, sans-serif; color: #FFFFFF; cursor: pointer">Add Sam and send invite</button>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ showTask }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 14px">
       <div style="display: flex; flex-direction: column; gap: 4px">
         <span style="font-size: 12px; font-weight: 600; color: #475569; letter-spacing: 0.04em">{{ task.idLine }}</span>
         <h2 style="margin: 0; font-size: 18px; font-weight: 700; line-height: 1.3">{{ task.title }}</h2>
@@ -140,6 +196,8 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
           <span style="font-size: 12px; line-height: 1.5; color: #475569">Or drag the bar to another person or day. Nothing changes until you press Apply.</span>
         </div>
       </sc-if>
+      </div>
+      </sc-if>
     </aside>
   </div>
 </div>
@@ -148,7 +206,7 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { sel: 'T2', view: 'base', preview: null, msg: null, free: false };
+    this.state = { sel: 'T2', view: 'base', preview: null, msg: null, free: false, adding: false, sam: false, role: 0, hrs: 3, match: 0 };
   }
   renderVals() {
     var self = this;
@@ -176,7 +234,10 @@ class Component extends DCLogic {
       T7: { title: 'Order cabinets and countertops', owner: 'Jordan', dates: 'Jan 20', work: '1 day (8h)', why: 'Starts Jan 20 because it waits on M1 "Scope and budget approved" (Jan 19).', critical: true, slack: 'None' },
       T8: { title: 'Manufacturing and delivery lead time', owner: 'Waiting', dates: 'Jan 21 to Mar 3', work: '6 weeks of waiting', why: 'Starts Jan 21 because it waits on T7 "Order cabinets and countertops". Waiting time uses nobody\'s hours, so Jordan works on the design meanwhile.', critical: true, slack: 'None' }
     };
-    var colors = { Jordan: '#4F46E5', Priya: '#B45309' };
+    // After adding Sam (full time) and giving Sam T2, from the scheduling engine.
+    scenarios.sam = { finish: 'Apr 30', bars: [['T1', 'Jordan', 0, 3], ['T3', 'Jordan', 3, 8], ['T7', 'Jordan', 8, 9], ['T4', 'Jordan', 9, 15], ['T2', 'Sam', 3, 6], ['T5', 'Priya', 15, 19], ['T6', 'WAIT', 19, 19, 'Feb 19'], ['T8', 'WAIT', 9, 19, 'Feb 26']], ms: 8,
+      cells: { Jordan: [8, 5, 8, 8, 8, 8, 5, 8, 8, 8, 8, 5, 8, 8, 8, 1, 0, 0, 0, 0], Priya: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3.5, 4, 4, 4, 0.5], Sam: [0, 0, 0, 5, 8, 8, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }, priyaCap: 4 };
+    var colors = { Jordan: '#4F46E5', Priya: '#B45309', Sam: '#0E7490' };
     var sc = scenarios[st.preview || st.view];
     var critical = { T1: 1, T2: 1, T7: 1, T8: 1 };
 
@@ -228,7 +289,7 @@ class Component extends DCLogic {
           var span = sg[1] - sg[0] + 1;
           var shortTitle = { T5: 'Permit app', T7: 'Order', T6: 'Permit review' }[b[0]] || t.title;
           bars.push({
-            label: span <= 2 ? (bb[4] ? b[0] : b[0] + ' ' + shortTitle) : b[0] + ' ' + t.title, more: bb[4] ? (span <= 2 ? '→ ' + bb[4] : 'until ' + bb[4] + ' →') : false,
+            label: span === 1 && bb[4] ? b[0] + ' →' : span <= 2 ? (bb[4] ? b[0] : b[0] + ' ' + shortTitle) : b[0] + ' ' + t.title, more: bb[4] && span > 1 ? (span <= 2 ? '→ ' + bb[4] : 'until ' + bb[4] + ' →') : false,
             selected: st.sel === b[0] ? 'true' : 'false',
             aria: b[0] + ' ' + t.title + ', ' + t.dates,
             pick: function () { self.setState({ sel: b[0] }); },
@@ -241,8 +302,8 @@ class Component extends DCLogic {
       var cells = [];
       if (isPerson) {
         cells = days.map(function (d, i) {
-          var cap = who === 'Jordan' ? (i % 5 === 1 ? 5 : 8) : (i === 6 || i === 7 ? 0 : sc.priyaCap);
-          var booked = sc.cells[who][i];
+          var cap = who === 'Sam' ? 8 : who === 'Jordan' ? (i % 5 === 1 ? 5 : 8) : (i === 6 || i === 7 ? 0 : sc.priyaCap);
+          var booked = (sc.cells[who] || [])[i] || 0;
           var free = Math.max(0, cap - booked);
           var drop = st.preview === 't2j' && who === 'Jordan' ? (i >= 3 && i <= 7 ? 'no' : i >= 8 && i <= 12 ? 'yes' : '') : '';
           var dim = st.free && free < 0.5 && cap > 0;
@@ -266,7 +327,7 @@ class Component extends DCLogic {
       }
       return {
         name: who === 'WAIT' ? 'Waiting' : who,
-        sub: who === 'WAIT' ? 'Deliveries, approvals' : who === 'Jordan' ? 'Full time · meetings Tue' : (sc.priyaCap === 6 ? '30 h/week (trying)' : '20 h/week'),
+        sub: who === 'WAIT' ? 'Deliveries, approvals' : who === 'Sam' ? 'Invited · 40 h/week (estimate)' : who === 'Jordan' ? 'Full time · meetings Tue' : (sc.priyaCap === 6 ? '30 h/week (trying)' : '20 h/week'),
         initials: who === 'WAIT' ? '' : who.slice(0, 2).toUpperCase(),
         avatarStyle: who === 'WAIT' ? 'width: 32px; height: 32px; border-radius: 16px; flex: none; background: repeating-linear-gradient(135deg, #E2E8F0 0 4px, #F8FAFC 4px 7px); border: 1px dashed #64748B' : 'width: 32px; height: 32px; border-radius: 16px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #FFFFFF; background: ' + colors[who] + ';',
         nameStyle: 'display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 0; grid-column: 1; grid-row: 1 / span ' + (lanes + (isPerson ? 1 : 0)),
@@ -274,14 +335,23 @@ class Component extends DCLogic {
         wrapStyle: 'display: grid; grid-template-columns: 150px repeat(20, minmax(38px, 1fr)); grid-template-rows: repeat(' + lanes + ', 38px)' + (isPerson ? ' 44px' : '') + '; min-width: 940px; border-top: 1px solid #EEF2F6; padding: 6px 0'
       };
     };
-    var rows = [makeRow('Jordan'), makeRow('Priya'), makeRow('WAIT')];
+    var rows = st.sam || st.preview === 'sam' || st.view === 'sam' ? [makeRow('Jordan'), makeRow('Priya'), makeRow('Sam'), makeRow('WAIT')] : [makeRow('Jordan'), makeRow('Priya'), makeRow('WAIT')];
 
+    var samMode = st.preview === 'sam' || (st.view === 'sam' && !st.preview);
     var t = info[st.sel] || info.T2;
+    if (st.sel === 'T2' && samMode) t = { title: info.T2.title, owner: 'Sam', dates: 'Jan 7 to Jan 12', work: '3 days (24h)', why: 'Starts Jan 7 because it waits on T1 "Finalize remodel scope". Sam gives it full days (your estimate until Sam confirms), so it\'s done Jan 12.', critical: false, slack: 'About 2 working days (the quotes now decide the date)' };
     var options = [];
-    if (st.sel === 'T2') options = [
+    if (st.sel === 'T2' && st.preview === 'sam') options = [];
+    else if (st.sel === 'T2' && samMode) options = [
+      { label: 'Give back to Priya', detail: 'Priya works 20 h a week and is off Jan 12 to 13', badge: 'May 5', good: false, act: function () { self.setState({ view: 'base', msg: { title: 'Budget is back with Priya', body: 'Kitchen finishes May 5 again. Sam stays on the plan with no tasks.', dismiss: true } }); } }
+    ];
+    else if (st.sel === 'T2') options = (st.sam ? [
+      { label: 'Give to Sam', detail: 'Sam is free from Jan 4 (your estimate)', badge: 'Apr 30', good: true, act: function () { self.setState({ preview: 'sam', msg: null }); } }
+    ] : []).concat([
       { label: 'Give to Jordan', detail: 'Jordan is on the quotes until Jan 14', badge: 'May 6', good: false, act: function () { self.setState({ preview: 't2j', msg: null }); } },
       { label: 'Give Priya 30 h a week', detail: 'Budget done Jan 15 instead of Jan 19', badge: 'Apr 30', good: true, act: function () { self.setState({ preview: 'p30', msg: null }); } }
-    ];
+
+    ]);
     else if (t.owner === 'Jordan') options = [
       { label: 'Give to Priya', detail: 'Priya works 20 h a week on this', badge: st.sel === 'T3' ? 'May 19' : 'Later', good: false, act: function () { self.setState({ msg: { title: 'Preview not in this mockup', body: 'In the app, this shows the same preview with Apply and Cancel.', dismiss: true } }); } }
     ];
@@ -289,14 +359,17 @@ class Component extends DCLogic {
     var banner = null;
     if (st.preview === 't2j') banner = { title: 'Preview: give T2 "Establish detailed project budget" to Jordan', body: 'Finish moves May 5 → May 6 (1 working day later). Jordan is on the quotes until Jan 14, so the budget starts then and the cabinet order slips to Jan 20 to 21. Red days: no room for Jordan. Green: where the budget would go.', actions: true, tone: 'bad' };
     else if (st.preview === 'p30') banner = { title: 'Preview: Priya gives this project 30 hours a week', body: 'Finish moves May 5 → Apr 30 (3 working days earlier). The budget is done Jan 15, cabinets are ordered Jan 18, and the 6-week delivery starts sooner.', actions: true, tone: 'good' };
+    else if (st.preview === 'sam') banner = { title: 'Preview: give T2 "Establish detailed project budget" to Sam', body: 'Finish moves May 5 → Apr 30 (3 working days earlier). Sam finishes the budget Jan 12, so now the quotes (T3, Jordan, until Jan 14) decide when the cabinets are ordered. Priya starts the permit application Jan 25.', actions: true, tone: 'good' };
     else if (st.msg) banner = Object.assign({ tone: 'info' }, st.msg);
     var tones = { good: 'background: #F0FDFA; border: 1px solid #5EEAD4; color: #134E4A;', bad: 'background: #FFF7ED; border: 1px solid #FDBA74; color: #7C2D12;', info: 'background: #EEF2FF; border: 1px solid #C7D2FE; color: #1E1B4B;' };
 
     return {
       finish: finishNow,
-      finishChip: st.preview ? 'Preview' : st.view === 'p30' ? 'Priya at 30 h/week' : 'Based on everyone\'s availability',
+      finishChip: st.preview ? 'Preview' : st.view === 'p30' ? 'Priya at 30 h/week' : st.view === 'sam' ? 'Sam has the budget' : 'Based on everyone\'s availability',
       finishChipStyle: 'font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; ' + (st.preview ? 'background: #FEF3C7; color: #78350F;' : 'background: #EEF2FF; color: #3730A3;'),
-      chain: st.preview === 't2j'
+      chain: st.preview === 'sam' || (st.view === 'sam' && !st.preview)
+        ? 'T1 scope (Jordan) → T3 quotes (Jordan, until Jan 14) → T7 cabinet order → T8 6-week delivery → install and inspections.'
+        : st.preview === 't2j'
         ? 'T1 scope → T3 quotes (Jordan, until Jan 14) → T2 budget (Jordan) → T7 cabinet order → T8 6-week delivery → install and inspections.'
         : (st.view === 'p30' && !st.preview) || st.preview === 'p30'
         ? 'T1 scope (Jordan) → T2 budget (Priya, 30 h/week, off Jan 12 to 13) → T7 cabinet order → T8 6-week delivery → install and inspections.'
@@ -304,8 +377,32 @@ class Component extends DCLogic {
       weekHeads: weekHeads, dayHeads: dayHeads, rows: rows,
       banner: banner || false,
       bannerStyle: 'border-radius: 14px; padding: 14px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; ' + (banner ? tones[banner.tone] : ''),
-      apply: function () { var v = st.preview === 'p30' ? 'p30' : st.view; self.setState({ view: st.preview === 't2j' ? st.view : v, preview: null, msg: st.preview === 't2j' ? { title: 'Kept as is', body: 'In the app, Apply moves the budget to Jordan and the kitchen finishes May 6. This mockup returns to the current plan.', dismiss: true } : { title: 'Applied: Priya at 30 h a week', body: 'Kitchen now finishes Apr 30. Priya was notified that her hours changed.', dismiss: true } }); },
+      apply: function () {
+        if (st.preview === 'sam') { self.setState({ view: 'sam', preview: null, sel: 'T2', msg: { title: 'Applied: Sam has the budget', body: 'Kitchen now finishes Apr 30. Sam\'s invite lists T2; Priya was told the budget moved to Sam.', dismiss: true } }); return; }
+        var v = st.preview === 'p30' ? 'p30' : st.view; self.setState({ view: st.preview === 't2j' ? st.view : v, preview: null, msg: st.preview === 't2j' ? { title: 'Kept as is', body: 'In the app, Apply moves the budget to Jordan and the kitchen finishes May 6. This mockup returns to the current plan.', dismiss: true } : { title: 'Applied: Priya at 30 h a week', body: 'Kitchen now finishes Apr 30. Priya was notified that her hours changed.', dismiss: true } }); },
       cancel: function () { self.setState({ preview: null, msg: null }); },
+      adding: st.adding,
+      showTask: !st.adding,
+      startAdd: function () { self.setState({ adding: true, preview: null, msg: null }); },
+      cancelAdd: function () { self.setState({ adding: false }); },
+      confirmAdd: function () { self.setState({ adding: false, sam: true, msg: { title: 'Sam was added and invited', body: 'Sam has room from Jan 4. Giving Sam T2 "Establish detailed project budget" moves the finish to Apr 30 (3 working days earlier). Giving Sam the quotes (T3) wouldn\'t change the finish, because they don\'t decide it today.', suggest: true } }); },
+      matches: [['Sam Rivera', 'sam.rivera@example.com · in your workspace', 'SR'], ['Invite "Sam" by email', 'Someone new: they get an email invite', '+']].map(function (m, i) {
+        var on = st.match === i;
+        return { name: m[0], sub: m[1], initials: m[2], selected: on ? 'true' : 'false', pick: function () { self.setState({ match: i }); },
+          avatarStyle: 'width: 32px; height: 32px; border-radius: 16px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; ' + (i === 0 ? 'color: #FFFFFF; background: #0E7490;' : 'color: #334155; background: #F1F5F9; border: 1px dashed #94A3B8;'),
+          style: 'display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 10px; border-radius: 12px; cursor: pointer; font-family: Inter, sans-serif; color: #0F172A; ' + (on ? 'background: #F8FAFC; border: 2px solid #0F172A;' : 'background: #FFFFFF; border: 1px solid #E2E8F0;') };
+      }),
+      roles: ['Editor', 'Commenter', 'Viewer'].map(function (r, i) {
+        var on = st.role === i;
+        return { label: r, checked: on ? 'true' : 'false', pick: function () { self.setState({ role: i }); },
+          style: 'min-height: 40px; border-radius: 10px; cursor: pointer; font: 600 13px Inter, sans-serif; ' + (on ? 'background: #0F172A; color: #FFFFFF; border: 1px solid #0F172A;' : 'background: #FFFFFF; color: #0F172A; border: 1px solid #E2E8F0;') };
+      }),
+      hourPicks: ['5 h', '20 h', '30 h', 'Full'].map(function (h, i) {
+        var on = st.hrs === i;
+        return { label: h, checked: on ? 'true' : 'false', pick: function () { self.setState({ hrs: i }); },
+          style: 'min-height: 40px; border-radius: 10px; cursor: pointer; font: 600 13px Inter, sans-serif; ' + (on ? 'background: #0F172A; color: #FFFFFF; border: 1px solid #0F172A;' : 'background: #FFFFFF; color: #0F172A; border: 1px solid #E2E8F0;') };
+      }),
+      previewSam: function () { self.setState({ preview: 'sam', msg: null, sel: 'T2' }); },
       freeOn: st.free ? 'true' : 'false',
       freeStyle: 'min-height: 42px; padding: 0 14px; border-radius: 10px; font: 600 14px Inter, sans-serif; cursor: pointer; ' + (st.free ? 'background: #CCFBF1; border: 1px solid #14B8A6; color: #134E4A;' : 'background: #FFFFFF; border: 1px solid #CBD5E1; color: #0F172A;'),
       toggleFree: function () { self.setState({ free: !st.free }); },
@@ -318,7 +415,7 @@ class Component extends DCLogic {
         critical: t.critical,
         why: t.why,
         work: t.work,
-        ownerTime: t.owner === 'Waiting' ? 'None (waiting time)' : t.owner === 'Priya' ? (sc.priyaCap === 6 ? '6 h a day (30 h/week)' : '4 h a day (20 h/week)') : '8 h a day, 5 on Tuesdays',
+        ownerTime: t.owner === 'Waiting' ? 'None (waiting time)' : t.owner === 'Sam' ? '8 h a day (estimate)' : t.owner === 'Priya' ? (sc.priyaCap === 6 ? '6 h a day (30 h/week)' : '4 h a day (20 h/week)') : '8 h a day, 5 on Tuesdays',
         slack: t.slack,
         actions: options.length > 0,
         options: options.map(function (o) {

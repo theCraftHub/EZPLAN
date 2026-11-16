@@ -209,6 +209,12 @@ Inspired by resource schedulers (Float, Resource Guru, TeamGantt availability, M
 - **Summary header:** project finish date with the explanation chain, total booked vs available this week, people over/under capacity.
 - Cross-project (Business, portfolio): the same grid across all projects, so a person's load includes their other projects (bars colored per project).
 
+- **Add people from the scheduler** ("Add person to this plan" under the rows on desktop, the add-person button beside the view tabs on phone): search name or email (workspace members first, then "Invite by email"), pick a role (Editor / Commenter / Viewer), and enter their hours a week for this project. Then:
+  - They appear at once as a new row marked **"Invited · 40 h/week (estimate)"**. Their availability counts as the inviter's estimate until they accept and confirm or edit it (days off, calendar). Tasks can be given to them before they accept; the invite lists those tasks.
+  - **The engine suggests what to hand over:** it runs what-ifs giving the new person each open task that decides the finish date and shows the best one ("Giving Sam the budget moves the finish to Apr 30, 3 days earlier. Giving Sam the quotes wouldn't change the finish."), with Preview, then Apply or Cancel. The new person also appears as an option in every task's "Best options".
+  - **Rules (same as section 5):** only people who can manage the plan can add others (Personal: plan Owner or Editor; Business: workspace Manager or above, per role). Business: workspace members are added directly; a new same-domain person uses a seat (the dialog shows "uses 1 seat, 3 left", or asks an admin when seats are full or policy requires approval); outsiders become Guests and follow the guest policy (expiry, approval). People named in an imported plan are offered here as suggestions ("Named in this plan: Leo"), never added automatically.
+  - Removing someone from the plan asks what to do with their open tasks (give to another person, with the same finish-date preview, or leave unassigned).
+
 *Phone: one column, made for thumbs*
 - **Week strip** at the top (7 days, each with a small availability dot per person); tap a day for the **day list**: each person's tasks and free hours.
 - **Person view:** swipe between people; their week as stacked cards with a capacity bar ("26 of 30 h").
