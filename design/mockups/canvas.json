@@ -1,28 +1,176 @@
 {
-  "v": 3,
-  "createdOnFiles": {"v": 1, "at": "2026-11-12T16:00:00Z"},
-  "title": "EZPLAN mockups",
-  "launch": {"view": "canvas"},
-  "pages": [],
-  "boards": {
-    "Main.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "Home (all projects)", "is_interactive": true},
-    "Project.dc.html": {"x": 470, "y": 0, "w": 390, "h": 844, "title": "Project dashboard", "is_interactive": true},
-    "Checklist.dc.html": {"x": 940, "y": 0, "w": 390, "h": 844, "title": "Checklist", "is_interactive": true},
-    "Timeline.dc.html": {"x": 1410, "y": 0, "w": 390, "h": 844, "title": "Timeline", "is_interactive": true},
-    "Workload.dc.html": {"x": 1880, "y": 0, "w": 390, "h": 844, "title": "Team workload", "is_interactive": true},
-    "Portfolio.dc.html": {"x": 2350, "y": 0, "w": 390, "h": 844, "title": "Portfolio", "is_interactive": true},
-    "NewPlan.dc.html": {"x": 2820, "y": 0, "w": 390, "h": 844, "title": "New plan + Plan Check", "is_interactive": true},
-    "UpdateAI.dc.html": {"x": 3290, "y": 0, "w": 390, "h": 844, "title": "Update with my AI", "is_interactive": true},
-    "Calendar.dc.html": {"x": 3760, "y": 0, "w": 390, "h": 844, "title": "Calendar", "is_interactive": true},
-    "FirstRun.dc.html": {"x": 4230, "y": 0, "w": 390, "h": 844, "title": "Personal first run", "is_interactive": true},
-    "Desktop.dc.html": {"x": 0, "y": 1400, "w": 1440, "h": 1000, "title": "Desktop: project workspace", "expand": "fill", "is_interactive": true},
-    "Admin.dc.html": {"x": 1520, "y": 1400, "w": 1440, "h": 1000, "title": "Desktop: IT admin console (Gate B rework pending)", "expand": "fill", "is_interactive": true}
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-12T16:00:00Z"
+ },
+ "title": "EZPLAN mockups",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Home (all projects)",
+   "is_interactive": true
   },
-  "order": ["Main.dc.html", "Project.dc.html", "Checklist.dc.html", "Timeline.dc.html", "Workload.dc.html", "Portfolio.dc.html", "NewPlan.dc.html", "UpdateAI.dc.html", "Calendar.dc.html", "FirstRun.dc.html", "Desktop.dc.html", "Admin.dc.html"],
-  "notes": {
-    "phoneTitle": {"x": 0, "y": -300, "text": "EZPLAN on a phone: tap through with Play", "kind": "title1", "maxW": 4620},
-    "deskTitle": {"x": 0, "y": 1110, "text": "EZPLAN on desktop + company IT admin", "kind": "title1", "maxW": 2960},
-    "lookNote": {"x": 4700, "y": 0, "w": 320, "text": "Look: calm and clear. Status always shows icon + word + color (colorblind-safe). Plain language for any industry. Sample project: a charity gala.", "fill": "blue"}
+  "Project.dc.html": {
+   "x": 470,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Project dashboard",
+   "is_interactive": true
   },
-  "designSystems": []
+  "Checklist.dc.html": {
+   "x": 940,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Checklist",
+   "is_interactive": true
+  },
+  "Timeline.dc.html": {
+   "x": 1410,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Timeline",
+   "is_interactive": true
+  },
+  "Workload.dc.html": {
+   "x": 1880,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Team schedule (who's free, who does what)",
+   "is_interactive": true
+  },
+  "Portfolio.dc.html": {
+   "x": 2350,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Portfolio",
+   "is_interactive": true
+  },
+  "NewPlan.dc.html": {
+   "x": 2820,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "New plan + Plan Check",
+   "is_interactive": true
+  },
+  "UpdateAI.dc.html": {
+   "x": 3290,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Update with my AI",
+   "is_interactive": true
+  },
+  "Calendar.dc.html": {
+   "x": 3760,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Calendar",
+   "is_interactive": true
+  },
+  "FirstRun.dc.html": {
+   "x": 4230,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Personal first run",
+   "is_interactive": true
+  },
+  "Desktop.dc.html": {
+   "x": 0,
+   "y": 1400,
+   "w": 1440,
+   "h": 1000,
+   "title": "Desktop: project workspace",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Admin.dc.html": {
+   "x": 1520,
+   "y": 1400,
+   "w": 1440,
+   "h": 1000,
+   "title": "Desktop: IT admin console (Gate B rework pending)",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Availability.dc.html": {
+   "x": 4700,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Availability: at import + My availability",
+   "is_interactive": true
+  },
+  "TeamDesktop.dc.html": {
+   "x": 3040,
+   "y": 1400,
+   "w": 1440,
+   "h": 1000,
+   "title": "Desktop: Team schedule",
+   "expand": "fill",
+   "is_interactive": true
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Project.dc.html",
+  "Checklist.dc.html",
+  "Timeline.dc.html",
+  "Workload.dc.html",
+  "Portfolio.dc.html",
+  "NewPlan.dc.html",
+  "UpdateAI.dc.html",
+  "Calendar.dc.html",
+  "FirstRun.dc.html",
+  "Availability.dc.html",
+  "Desktop.dc.html",
+  "Admin.dc.html",
+  "TeamDesktop.dc.html"
+ ],
+ "notes": {
+  "phoneTitle": {
+   "x": 0,
+   "y": -300,
+   "text": "EZPLAN on a phone: tap through with Play",
+   "kind": "title1",
+   "maxW": 5090
+  },
+  "deskTitle": {
+   "x": 0,
+   "y": 1110,
+   "text": "EZPLAN on desktop + company IT admin",
+   "kind": "title1",
+   "maxW": 4480
+  },
+  "lookNote": {
+   "x": 5170,
+   "y": 0,
+   "w": 320,
+   "text": "Look: calm and clear. Status always shows icon + word + color (colorblind-safe). Plain language for any industry. Sample project: a charity gala.",
+   "fill": "blue"
+  },
+  "teamNote": {
+   "x": 4560,
+   "y": 1400,
+   "w": 320,
+   "text": "Team schedule: availability sits under the work. Kitchen example: Jordan full time with Tuesday meetings, Priya 20 h a week and off Jan 12 to 13. Every date, finish and what-if here comes from the real scheduling engine. Click T2, then try a change.",
+   "fill": "teal"
+  }
+ },
+ "designSystems": []
 }

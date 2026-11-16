@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Availability</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-direction: column; overflow: hidden">
+
+  <div role="tablist" aria-label="Screen" style="margin: 16px 20px 0; display: grid; grid-template-columns: 1fr 1fr; background: #E9ECF1; border-radius: 12px; padding: 3px; gap: 3px">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2">
+      <button role="tab" aria-selected="{{ t.selected }}" onClick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</button>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{ isImport }}" hint-placeholder-val="{{ true }}">
+    <main style="flex: 1; overflow-y: auto; padding: 16px 20px 20px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 600; color: #4338CA; letter-spacing: 0.04em">STEP 2 OF 3 · KITCHEN REMODEL</span>
+        <h1 style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25">How much time can each person give this project?</h1>
+        <span style="font-size: 14px; line-height: 1.5; color: #475569">Dates are only right if they know who's free. You can change this any time.</span>
+      </div>
+
+      <sc-for list="{{ people }}" as="p" hint-placeholder-count="2">
+        <section aria-label="{{ p.name }}" style="background: #FFFFFF; border-radius: 18px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span style="{{ p.avatarStyle }}">{{ p.initials }}</span>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 1px">
+              <span style="font-size: 15px; font-weight: 600">{{ p.name }}</span>
+              <span style="font-size: 12px; color: #475569">{{ p.tasks }}</span>
+            </div>
+            <span style="font-size: 14px; font-weight: 700; color: #0F172A">{{ p.hoursLabel }}</span>
+          </div>
+          <div role="radiogroup" aria-label="{{ p.groupLabel }}" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+            <sc-for list="{{ p.picks }}" as="k" hint-placeholder-count="4">
+              <button role="radio" aria-checked="{{ k.checked }}" onClick="{{ k.pick }}" style="{{ k.style }}">
+                <span style="font-size: 13px; font-weight: 600">{{ k.label }}</span>
+                <span style="font-size: 11px">{{ k.sub }}</span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; font-weight: 600">Any days off coming up?</span>
+            <sc-for list="{{ p.offs }}" as="o" hint-placeholder-count="1">
+              <div style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border-radius: 12px; background: repeating-linear-gradient(135deg, #F8FAFC 0 6px, #EEF2F6 6px 8px); border: 1px solid #E2E8F0">
+                <span style="flex: 1; font-size: 14px">{{ o.label }}</span>
+                <span style="font-size: 13px; color: #475569">{{ o.dates }}</span>
+              </div>
+            </sc-for>
+            <button style="align-self: flex-start; min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px dashed #94A3B8; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #334155; cursor: pointer">+ Add days off</button>
+          </div>
+        </section>
+      </sc-for>
+
+      <div aria-live="polite" style="background: #EEF2FF; border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 12px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
+        <span style="flex: 1; font-size: 14px; line-height: 1.45; color: #1E1B4B">With these hours, the kitchen finishes about <strong>{{ finish }}</strong>.</span>
+      </div>
+    </main>
+    <footer style="padding: 12px 20px 24px; background: #FFFFFF; border-top: 1px solid #E2E8F0; display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px">
+      <button style="min-height: 50px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer">Skip for now</button>
+      <a href="Workload.dc.html" style="min-height: 50px; border-radius: 12px; background: #4F46E5; display: flex; align-items: center; justify-content: center; font: 600 15px Inter, sans-serif; color: #FFFFFF">See the schedule</a>
+    </footer>
+  </sc-if>
+
+  <sc-if value="{{ isMine }}" hint-placeholder-val="{{ false }}">
+    <main style="flex: 1; overflow-y: auto; padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <span style="width: 44px; height: 44px; border-radius: 22px; background: #B45309; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700">PR</span>
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <h1 style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em">My availability</h1>
+          <span style="font-size: 13px; color: #475569">Priya · used to schedule your tasks</span>
+        </div>
+      </div>
+
+      <section aria-label="Hours" style="background: #FFFFFF; border-radius: 18px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 15px; font-weight: 600">Hours a week</span>
+            <span style="font-size: 12px; color: #475569">For Kitchen Remodel</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px">
+            <button onClick="{{ less }}" aria-label="Fewer hours" style="width: 44px; height: 44px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 20px Inter, sans-serif; color: #0F172A; cursor: pointer">−</button>
+            <span aria-live="polite" style="min-width: 56px; text-align: center; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums">{{ hours }}h</span>
+            <button onClick="{{ more }}" aria-label="More hours" style="width: 44px; height: 44px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 20px Inter, sans-serif; color: #0F172A; cursor: pointer">+</button>
+          </div>
+        </div>
+        <span style="font-size: 13px; color: #334155">{{ hoursEffect }}</span>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 13px; font-weight: 600">Days I work</span>
+          <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px">
+            <sc-for list="{{ weekdays }}" as="w" hint-placeholder-count="7">
+              <button aria-pressed="{{ w.on }}" onClick="{{ w.toggle }}" aria-label="{{ w.aria }}" style="{{ w.style }}">{{ w.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <section aria-label="Time off" style="background: #FFFFFF; border-radius: 18px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 15px; font-weight: 600">Time off</span>
+        <div style="display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 12px; border-radius: 12px; background: repeating-linear-gradient(135deg, #F8FAFC 0 6px, #EEF2F6 6px 8px); border: 1px solid #E2E8F0">
+          <span style="flex: 1; display: flex; flex-direction: column; gap: 1px">
+            <span style="font-size: 14px; font-weight: 500">Family trip</span>
+            <span style="font-size: 12px; color: #475569">Tue Jan 12 to Wed Jan 13 · moves the budget to Jan 19</span>
+          </span>
+          <button aria-label="Remove Family trip" style="width: 40px; height: 40px; border-radius: 10px; border: none; background: transparent; color: #475569; cursor: pointer">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+          </button>
+        </div>
+        <button style="align-self: flex-start; min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px dashed #94A3B8; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #334155; cursor: pointer">+ Add time off</button>
+      </section>
+
+      <section aria-label="Calendar" style="background: #FFFFFF; border-radius: 18px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <span style="font-size: 15px; font-weight: 600">Calendar</span>
+          <span style="{{ calChipStyle }}">{{ calChip }}</span>
+        </div>
+        <span style="font-size: 13px; line-height: 1.5; color: #334155">Meetings take hours off your day automatically, and "Out of office" becomes time off. We only read when you're busy, never what your meetings are about.</span>
+        <sc-for list="{{ calOptions }}" as="c" hint-placeholder-count="3">
+          <button onClick="{{ c.pick }}" style="{{ c.style }}">
+            <span style="flex: 1; text-align: left">{{ c.label }}</span>
+            <span style="font-size: 12px; font-weight: 500; color: #475569">{{ c.note }}</span>
+          </button>
+        </sc-for>
+      </section>
+    </main>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'import', pick: { Jordan: 3, Priya: 1 }, hours: 20, days: [false, true, true, true, true, true, false], cal: '' };
+  }
+  renderVals() {
+    var self = this;
+    var st = this.state;
+    var picks = [['A few', 5, '5 h'], ['Part time', 20, '20 h'], ['Most', 30, '30 h'], ['Full time', 40, '40 h']];
+    // Finish dates from the scheduling engine for each combination (Priya off Jan 12 to 13).
+    // Finish dates from the scheduling engine (levelPlan) for every combination (Priya off Jan 12 to 13).
+    var finishes = {"5-5": "May 22, 2028", "5-20": "Apr 18, 2028", "5-30": "Apr 14, 2028", "5-40": "Apr 12, 2028", "20-5": "Aug 6", "20-20": "Jun 14", "20-30": "Jun 11", "20-40": "Jun 10", "30-5": "Jul 9", "30-20": "May 18", "30-30": "May 13", "30-40": "May 13", "40-5": "Jun 24", "40-20": "May 5", "40-30": "Apr 30", "40-40": "Apr 28"};
+    var finishFor = function (j, p) { return finishes[j + '-' + p]; };
+    var info = {
+      Jordan: { color: '#4F46E5', initials: 'JO', tasks: '15 tasks · scope, quotes, install', offs: [] },
+      Priya: { color: '#B45309', initials: 'PR', tasks: '7 tasks · budget, permits, payments', offs: [{ label: 'Family trip', dates: 'Jan 12 to 13' }] }
+    };
+    var people = ['Jordan', 'Priya'].map(function (name) {
+      var cur = st.pick[name];
+      return {
+        name: name, initials: info[name].initials, tasks: info[name].tasks, offs: info[name].offs,
+        groupLabel: 'Hours a week for ' + name,
+        hoursLabel: picks[cur][1] + ' h/week',
+        avatarStyle: 'width: 34px; height: 34px; border-radius: 17px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #FFFFFF; background: ' + info[name].color + ';',
+        picks: picks.map(function (k, i) {
+          var on = cur === i;
+          return {
+            label: k[0], sub: k[2], checked: on ? 'true' : 'false',
+            pick: function () { var n = Object.assign({}, st.pick); n[name] = i; self.setState({ pick: n }); },
+            style: 'min-height: 52px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; font-family: Inter, sans-serif; ' + (on ? 'background: #0F172A; color: #FFFFFF; border: 1px solid #0F172A;' : 'background: #FFFFFF; color: #0F172A; border: 1px solid #E2E8F0;')
+          };
+        })
+      };
+    });
+    var tabs = [['import', 'At import'], ['mine', 'My availability']].map(function (t) {
+      var on = st.tab === t[0];
+      return { label: t[1], selected: on ? 'true' : 'false', pick: function () { self.setState({ tab: t[0] }); },
+        style: 'min-height: 40px; border-radius: 10px; border: none; cursor: pointer; font: 600 14px Inter, sans-serif; ' + (on ? 'background: #FFFFFF; color: #0F172A; box-shadow: 0 1px 2px rgba(15,23,42,0.12);' : 'background: transparent; color: #475569;') };
+    });
+    var dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    var fullNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    var effects = {"10": "At 10 hours a week the kitchen finishes about May 19.", "15": "At 15 hours a week the kitchen finishes about May 11.", "20": "At 20 hours a week the kitchen finishes about May 5.", "25": "At 25 hours a week the kitchen finishes about May 4.", "30": "At 30 hours a week the kitchen finishes about Apr 30."};
+    var calOpts = [['google', 'Connect Google Calendar', 'Busy times only'], ['microsoft', 'Connect Microsoft 365', 'Busy times only'], ['link', 'Use a calendar link', 'Any calendar app']];
+    return {
+      tabs: tabs,
+      isImport: st.tab === 'import',
+      isMine: st.tab === 'mine',
+      people: people,
+      finish: finishFor(picks[st.pick.Jordan][1], picks[st.pick.Priya][1]),
+      hours: st.hours,
+      less: function () { self.setState({ hours: Math.max(10, st.hours - 5) }); },
+      more: function () { self.setState({ hours: Math.min(30, st.hours + 5) }); },
+      hoursEffect: effects[st.hours],
+      weekdays: st.days.map(function (on, i) {
+        return { label: dayNames[i], on: on ? 'true' : 'false', aria: fullNames[i] + (on ? ', working' : ', off'),
+          toggle: function () { var d = st.days.slice(); d[i] = !d[i]; self.setState({ days: d }); },
+          style: 'min-height: 44px; border-radius: 10px; cursor: pointer; font: 600 14px Inter, sans-serif; ' + (on ? 'background: #0F172A; color: #FFFFFF; border: 1px solid #0F172A;' : 'background: #FFFFFF; color: #475569; border: 1px dashed #94A3B8;') };
+      }),
+      calChip: st.cal ? 'Connected' : 'Not connected',
+      calChipStyle: 'font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; ' + (st.cal ? 'background: #CCFBF1; color: #115E59;' : 'background: #F1F5F9; color: #334155;'),
+      calOptions: calOpts.map(function (c) {
+        var on = st.cal === c[0];
+        return { label: on ? c[1].replace('Connect', 'Connected:').replace('Use a calendar link', 'Calendar link added') : c[1], note: on ? 'Checked today' : c[2],
+          pick: function () { self.setState({ cal: on ? '' : c[0] }); },
+          style: 'display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border-radius: 12px; cursor: pointer; font: 600 14px Inter, sans-serif; color: #0F172A; ' + (on ? 'background: #F0FDFA; border: 1px solid #5EEAD4;' : 'background: #FFFFFF; border: 1px solid #E2E8F0;') };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>
