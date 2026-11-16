@@ -3,7 +3,8 @@
  * plain language for non-technical users and points at the tasks involved.
  */
 import { Calendar } from "./calendar";
-import { schedulePlan, type Schedule, type ScheduleOptions } from "./schedule";
+import { levelPlan, type LeveledSchedule, type LevelOptions } from "./level";
+import { schedulePlan, type Schedule } from "./schedule";
 import { allTasks, estimateToDays, isWaiting, type Plan } from "./schema";
 
 export type FindingSeverity = "problem" | "warning" | "tip";
@@ -24,7 +25,13 @@ const WEIGHT: Record<FindingSeverity, number> = { problem: 15, warning: 6, tip: 
 const LONG_TASK_DAYS = 10;
 const SAME_DAY_CROWD = 5;
 
-export function checkPlan(plan: Plan, opts: ScheduleOptions & { schedule?: Schedule } = {}): PlanCheckResult {
+export interface CheckOptions extends LevelOptions {
+  schedule?: Schedule;
+  /** Use person-aware scheduling (the app always does; implied when `people` is given). */
+  level?: boolean;
+}
+
+export function checkPlan(plan: Plan, opts: CheckOptions = {}): PlanCheckResult {
   const f: Finding[] = [];
   const add = (code: string, severity: FindingSeverity, message: string, taskIds: string[] = []) => f.push({ code, severity, message, taskIds });
   const tasks = allTasks(plan);
@@ -42,7 +49,8 @@ export function checkPlan(plan: Plan, opts: ScheduleOptions & { schedule?: Sched
     }
   }
 
-  const schedule = opts.schedule ?? schedulePlan(plan, opts);
+  const schedule: Schedule = opts.schedule ?? (opts.level || opts.people ? levelPlan(plan, opts) : schedulePlan(plan, opts));
+  const leveled = "leveled" in schedule ? (schedule as LeveledSchedule) : null;
   for (const loop of schedule.cycles) add("dependency-loop", "problem", `These tasks wait on each other in a loop, so none can start: ${loop.join(" → ")} → ${loop[0]}.`, loop);
 
   // Completeness
@@ -77,7 +85,11 @@ export function checkPlan(plan: Plan, opts: ScheduleOptions & { schedule?: Sched
   for (const m of open.filter((t) => t.milestone && t.depends.length === 0 && tasks.length > 1)) add("milestone-no-predecessors", "tip", `Milestone ${m.id} "${m.title}" doesn't wait on any task, so it can't show progress.`, [m.id]);
 
   // Risks
-  // The schedule runs independent tasks side by side. If one person owns more work than fits
+  if (leveled) {
+    for (const name of leveled.assumedFullTime) add("assumed-availability", "tip", `No availability is set for ${name}, so full time on this project was assumed. Add how many hours a week ${name} can give it.`, open.filter((t) => t.owner === name).map((t) => t.id));
+    if (leveled.unplaceable.length) add("no-hours", "problem", `${leveled.unplaceable.length} task${s(leveled.unplaceable.length)} can't be scheduled because the owner has no available hours.`, leveled.unplaceable);
+  }
+  // (Unleveled schedules only) The schedule runs independent tasks side by side. If one person owns more work than fits
   // before the scheduled finish, the real finish is later. (Waiting tasks aren't anyone's work.)
   const workDays = new Map<string, number>();
   for (const t of open) {
@@ -86,7 +98,7 @@ export function checkPlan(plan: Plan, opts: ScheduleOptions & { schedule?: Sched
     workDays.set(t.owner, (workDays.get(t.owner) ?? 0) + left);
   }
   const cal = new Calendar(opts.calendar);
-  for (const [owner, days] of workDays) {
+  for (const [owner, days] of leveled ? [] : workDays) {
     const oneAtATime = cal.dateAt(schedule.projectStart, Math.max(0, Math.ceil(days) - 1));
     if (oneAtATime > schedule.finish) {
       add("overloaded", "warning", `${owner} has about ${Math.round(days)} working days of tasks, but the schedule runs them side by side and finishes ${schedule.finish}. Doing one at a time, ${owner}'s work alone runs to about ${oneAtATime}.`, open.filter((t) => t.owner === owner && !t.milestone && !isWaiting(t)).map((t) => t.id));
@@ -110,8 +122,9 @@ export function checkPlan(plan: Plan, opts: ScheduleOptions & { schedule?: Sched
     }
   }
   for (const t of open) {
-    const st = schedule.tasks.get(t.id);
-    if (st && !t.milestone && !isWaiting(t) && st.durationDays > LONG_TASK_DAYS && t.subtasks.length === 0) add("long-task", "tip", `${t.id} "${t.title}" is ${Math.round(st.durationDays)} working days long. Consider breaking it down.`, [t.id]);
+    // The amount of work, not the calendar span (part-time availability stretches the span).
+    const work = t.estimate ? estimateToDays(t.estimate) : 0;
+    if (!t.milestone && !isWaiting(t) && work > LONG_TASK_DAYS && t.subtasks.length === 0) add("long-task", "tip", `${t.id} "${t.title}" is ${Math.round(work)} working days of work. Consider breaking it down.`, [t.id]);
   }
   const byEnd = new Map<string, string[]>();
   for (const t of open) {
