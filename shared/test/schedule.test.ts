@@ -25,7 +25,8 @@ describe("schedule (hand-checked on the gala plan)", () => {
     expect(s.projectStart).toBe("2026-12-01");
     expect([at("T1").start, at("T1").end]).toEqual(["2026-12-01", "2026-12-02"]);
     expect([at("T2").start, at("T2").end]).toEqual(["2026-12-03", "2026-12-09"]);
-    expect(at("M1").end).toBe("2026-12-10");
+    expect(at("M1").end).toBe("2026-12-09"); // on the day T2 finishes, not the next workday
+    expect(at("M1").start).toBe("2026-12-09");
     expect([at("T3").start, at("T3").end]).toEqual(["2026-12-03", "2026-12-16"]);
     expect(s.finish).toBe("2026-12-16");
   });

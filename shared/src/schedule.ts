@@ -117,14 +117,14 @@ export function schedulePlan(plan: Plan, opts: ScheduleOptions = {}): Schedule {
     const e = ef.get(t.id) ?? s;
     const slack = Math.max(0, (ls.get(t.id) ?? s) - s);
     const d = dur.get(t.id)!;
-    const endDate = t.milestone || d === 0 ? cal.dateAt(projectStart, s) : cal.dateAt(projectStart, Math.max(s, Math.ceil(e - EPS) - 1));
+    const endDate = t.milestone || d === 0 ? milestoneDate(cal, projectStart, s) : cal.dateAt(projectStart, Math.max(s, Math.ceil(e - EPS) - 1));
     const finished = t.status === "done" || t.status === "skipped";
     out.set(t.id, {
       id: t.id,
       startOffset: s,
       endOffset: e,
       durationDays: d,
-      start: cal.dateAt(projectStart, s),
+      start: t.milestone ? endDate : cal.dateAt(projectStart, s),
       end: endDate,
       slack,
       critical: slack < EPS && !inCycle.has(t.id),
@@ -142,6 +142,16 @@ export function schedulePlan(plan: Plan, opts: ScheduleOptions = {}): Schedule {
     criticalPath,
     cycles,
   };
+}
+
+/**
+ * A milestone sits at the moment its work is done. When that moment is the end of a day
+ * (a whole offset), show that day, not the next working day: "Venue confirmed" is on the
+ * day the booking finishes.
+ */
+export function milestoneDate(cal: Calendar, projectStart: string, offset: number): string {
+  const whole = Math.abs(offset - Math.round(offset)) < EPS;
+  return cal.dateAt(projectStart, whole && offset > 0 ? Math.round(offset) - 1 : offset);
 }
 
 /** Kahn's algorithm; tasks in loops are appended in file order and the loops reported. */

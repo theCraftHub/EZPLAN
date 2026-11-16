@@ -62,8 +62,10 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
           </div>
           <span style="{{ c.chipStyle }}">{{ c.chip }}</span>
         </div>
-        <div aria-hidden="true" style="height: 10px; border-radius: 5px; background: #EEF2F6; overflow: hidden; display: flex">
+        <div aria-hidden="true" style="height: 10px; border-radius: 5px; background: #F0FDFA; border: 1px solid #CCFBF1; overflow: hidden; display: flex">
           <span style="{{ c.barBooked }}"></span>
+          <span style="flex: 1"></span>
+          <span style="{{ c.barUnavail }}"></span>
         </div>
         <sc-if value="{{ c.off }}" hint-placeholder-val="{{ false }}">
           <div style="border-radius: 12px; padding: 10px 12px; font-size: 13px; color: #334155; background: repeating-linear-gradient(135deg, #F1F5F9 0 6px, #E2E8F0 6px 8px); display: flex; align-items: center; gap: 8px">
@@ -88,9 +90,10 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
       </section>
     </sc-for>
     <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: #334155; padding: 2px 4px">
-      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 5px; background: #0F766E"></span>Free all day</span>
-      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 5px; background: linear-gradient(90deg, #0F766E 50%, #CBD5E1 50%)"></span>Part of the day</span>
+      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 5px; background: #475569"></span>Dots: free all day</span>
+      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 5px; background: linear-gradient(90deg, #475569 50%, #CBD5E1 50%)"></span>Part of the day</span>
       <span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 5px; border: 1.5px solid #64748B; box-sizing: border-box"></span>Off</span>
+      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 18px; height: 8px; border-radius: 3px; background: repeating-linear-gradient(135deg, #E2E8F0 0 3px, #94A3B8 3px 5px)"></span>Bar: not available (meetings, other work)</span>
     </div>
   </main>
 
@@ -239,9 +242,14 @@ class Component extends DCLogic {
       var tight = cap > 0 && booked >= cap - 0.01;
       return 'font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; ' + (cap === 0 ? 'background: #F1F5F9; color: #334155;' : tight ? 'background: #EEF2FF; color: #3730A3;' : 'background: #CCFBF1; color: #115E59;');
     };
+    // Bars cover a full 8-hour day: booked (person's color), free (light teal), not available (hatched).
     var bar = function (booked, cap, max, name) {
       var w = max > 0 ? Math.min(100, booked / max * 100) : 0;
       return 'width: ' + w + '%; background: ' + people[name].color + ';';
+    };
+    var unavail = function (cap, max) {
+      var w = max > 0 ? Math.max(0, (max - cap) / max * 100) : 0;
+      return 'width: ' + w + '%; background: repeating-linear-gradient(135deg, #E2E8F0 0 3px, #94A3B8 3px 5px);';
     };
 
     var cards;
@@ -258,7 +266,7 @@ class Component extends DCLogic {
           sub: c.off ? 'Off today' : c.busy ? c.cap + 'h available (' + c.busy + 'h of meetings)' : name === 'Priya' ? '4h available (20 h a week on this project)' : c.cap + 'h available',
           chip: c.off ? 'Off' : fmtH(booked) + ' of ' + fmtH(c.cap),
           chipStyle: chip(booked, c.cap),
-          barBooked: bar(booked, c.cap, full(name), name),
+          barBooked: bar(booked, c.cap, 8, name), barUnavail: unavail(c.cap, 8),
           off: !!c.off, offText: 'Off: ' + c.off + ' (Jan 12 to 13). Priya\'s tasks wait until she\'s back.',
           rows: rowsFor(c.b, name),
           freeNote: !c.off && free > 0.05 ? fmtH(free) + ' free' + (booked === 0 ? ': nothing is ready for ' + name + ' yet (waiting on the budget).' : '.') : false
@@ -278,7 +286,7 @@ class Component extends DCLogic {
           sub: c.off ? 'Off' : c.cap + 'h available' + (c.busy ? ', ' + c.busy + 'h of meetings' : ''),
           chip: c.off ? 'Off' : fmtH(booked) + ' of ' + fmtH(c.cap),
           chipStyle: chip(booked, c.cap),
-          barBooked: bar(booked, c.cap, full(name), name),
+          barBooked: bar(booked, c.cap, 8, name), barUnavail: unavail(c.cap, 8),
           off: !!c.off, offText: 'Off: ' + c.off,
           rows: rowsFor(c.b, name),
           freeNote: false
@@ -289,7 +297,7 @@ class Component extends DCLogic {
         heading: name + ', week of ' + week.label,
         sub: name === 'Priya' ? '20 h a week on this project' : 'Full time · meetings on Tuesdays',
         chip: fmtH(weekBooked) + ' of ' + fmtH(weekCap), chipStyle: chip(weekBooked, weekCap),
-        barBooked: bar(weekBooked, weekCap, weekCap, name), off: false, offText: '', rows: [], freeNote: false
+        barBooked: bar(weekBooked, weekCap, weekCap, name), barUnavail: 'width: 0', off: false, offText: '', rows: [], freeNote: false
       });
     }
 

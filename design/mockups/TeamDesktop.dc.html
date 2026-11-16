@@ -63,7 +63,7 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
         <sc-for list="{{ weekHeads }}" as="w" hint-placeholder-count="4">
           <span style="{{ w.style }}">{{ w.label }}</span>
         </sc-for>
-        <span style="font-size: 12px; color: #475569; padding: 6px 0">Milestones</span>
+        <span style="font-size: 12px; color: #475569; padding: 6px 0; align-self: end; padding-bottom: 10px">◆ = milestone</span>
         <sc-for list="{{ dayHeads }}" as="d" hint-placeholder-count="20">
           <span style="{{ d.style }}"><span style="font-size: 10px; letter-spacing: 0.04em">{{ d.dow }}</span><span style="font-size: 13px; font-weight: 600; color: #0F172A">{{ d.num }}</span><sc-if value="{{ d.ms }}" hint-placeholder-val="{{ false }}"><span title="{{ d.ms }}" style="width: 10px; height: 10px; transform: rotate(45deg); background: #0F172A; margin-top: 3px"></span></sc-if></span>
         </sc-for>
@@ -90,8 +90,8 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
           <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="20">
             <span title="{{ c.title }}" style="{{ c.style }}">
               <sc-if value="{{ c.mtg }}" hint-placeholder-val="{{ false }}"><span style="{{ c.mtgStyle }}"></span></sc-if>
-              <span style="font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums">{{ c.main }}</span>
-              <span style="font-size: 10px; font-variant-numeric: tabular-nums">{{ c.sub }}</span>
+              <span style="font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -0.02em">{{ c.main }}</span>
+              <span style="font-size: 9px; font-variant-numeric: tabular-nums; white-space: nowrap">{{ c.sub }}</span>
             </span>
           </sc-for>
         </div>
@@ -225,8 +225,10 @@ class Component extends DCLogic {
         segs.forEach(function (sg, k) {
           var bb = [b[0], b[1], sg[0], sg[1], k === segs.length - 1 ? b[4] : null];
           var t = info[b[0]];
+          var span = sg[1] - sg[0] + 1;
+          var shortTitle = { T5: 'Permit app', T7: 'Order', T6: 'Permit review' }[b[0]] || t.title;
           bars.push({
-            label: b[0] + ' ' + t.title, more: bb[4] ? 'until ' + bb[4] + ' →' : false,
+            label: span <= 2 ? (bb[4] ? b[0] : b[0] + ' ' + shortTitle) : b[0] + ' ' + t.title, more: bb[4] ? (span <= 2 ? '→ ' + bb[4] : 'until ' + bb[4] + ' →') : false,
             selected: st.sel === b[0] ? 'true' : 'false',
             aria: b[0] + ' ' + t.title + ', ' + t.dates,
             pick: function () { self.setState({ sel: b[0] }); },
@@ -254,7 +256,7 @@ class Component extends DCLogic {
           var r1 = function (x) { return Math.round(x * 10) / 10; };
           return {
             main: cap === 0 ? 'Off' : r1(booked) + '/' + r1(cap),
-            sub: cap === 0 ? '' : drop === 'no' ? 'full' : free >= 0.5 ? r1(free) + ' free' : 'full',
+            sub: cap === 0 ? '' : drop === 'no' ? 'no room' : drop === 'yes' ? 'T2 here' : free >= 0.5 ? r1(free) + 'h free' : 'full',
             title: who + ', ' + d + ': ' + (cap === 0 ? 'off' : r1(booked) + ' of ' + r1(cap) + ' hours booked' + (who === 'Jordan' && i % 5 === 1 ? ', 3 hours of meetings' : '')),
             mtg: who === 'Jordan' && i % 5 === 1,
             mtgStyle: 'position: absolute; left: 0; right: 0; top: 0; height: 4px; background: #94A3B8',
@@ -294,7 +296,9 @@ class Component extends DCLogic {
       finish: finishNow,
       finishChip: st.preview ? 'Preview' : st.view === 'p30' ? 'Priya at 30 h/week' : 'Based on everyone\'s availability',
       finishChipStyle: 'font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; ' + (st.preview ? 'background: #FEF3C7; color: #78350F;' : 'background: #EEF2FF; color: #3730A3;'),
-      chain: (st.view === 'p30' && !st.preview) || st.preview === 'p30'
+      chain: st.preview === 't2j'
+        ? 'T1 scope → T3 quotes (Jordan, until Jan 14) → T2 budget (Jordan) → T7 cabinet order → T8 6-week delivery → install and inspections.'
+        : (st.view === 'p30' && !st.preview) || st.preview === 'p30'
         ? 'T1 scope (Jordan) → T2 budget (Priya, 30 h/week, off Jan 12 to 13) → T7 cabinet order → T8 6-week delivery → install and inspections.'
         : 'T1 scope (Jordan) → T2 budget (Priya, 20 h/week, off Jan 12 to 13) → T7 cabinet order → T8 6-week delivery → install and inspections. Priya\'s trip adds 2 working days.',
       weekHeads: weekHeads, dayHeads: dayHeads, rows: rows,

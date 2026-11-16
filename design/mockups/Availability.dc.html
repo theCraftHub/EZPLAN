@@ -61,12 +61,11 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
           </div>
         </section>
       </sc-for>
-
-      <div aria-live="polite" style="background: #EEF2FF; border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 12px">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
-        <span style="flex: 1; font-size: 14px; line-height: 1.45; color: #1E1B4B">With these hours, the kitchen finishes about <strong>{{ finish }}</strong>.</span>
-      </div>
     </main>
+    <div aria-live="polite" style="background: #EEF2FF; border-top: 1px solid #C7D2FE; padding: 10px 20px; display: flex; align-items: center; gap: 12px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>
+      <span style="flex: 1; font-size: 14px; line-height: 1.45; color: #1E1B4B">With these hours, the kitchen finishes about <strong>{{ finish }}</strong>.</span>
+    </div>
     <footer style="padding: 12px 20px 24px; background: #FFFFFF; border-top: 1px solid #E2E8F0; display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px">
       <button style="min-height: 50px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer">Skip for now</button>
       <a href="Workload.dc.html" style="min-height: 50px; border-radius: 12px; background: #4F46E5; display: flex; align-items: center; justify-content: center; font: 600 15px Inter, sans-serif; color: #FFFFFF">See the schedule</a>
@@ -152,8 +151,8 @@ class Component extends DCLogic {
     var finishes = {"5-5": "May 22, 2028", "5-20": "Apr 18, 2028", "5-30": "Apr 14, 2028", "5-40": "Apr 12, 2028", "20-5": "Aug 6", "20-20": "Jun 14", "20-30": "Jun 11", "20-40": "Jun 10", "30-5": "Jul 9", "30-20": "May 18", "30-30": "May 13", "30-40": "May 13", "40-5": "Jun 24", "40-20": "May 5", "40-30": "Apr 30", "40-40": "Apr 28"};
     var finishFor = function (j, p) { return finishes[j + '-' + p]; };
     var info = {
-      Jordan: { color: '#4F46E5', initials: 'JO', tasks: '15 tasks · scope, quotes, install', offs: [] },
-      Priya: { color: '#B45309', initials: 'PR', tasks: '7 tasks · budget, permits, payments', offs: [{ label: 'Family trip', dates: 'Jan 12 to 13' }] }
+      Jordan: { color: '#4F46E5', initials: 'JO', tasks: '13 tasks · scope, quotes, install', offs: [] },
+      Priya: { color: '#B45309', initials: 'PR', tasks: '6 tasks · budget, permits, payments', offs: [{ label: 'Family trip', dates: 'Jan 12 to 13' }] }
     };
     var people = ['Jordan', 'Priya'].map(function (name) {
       var cur = st.pick[name];

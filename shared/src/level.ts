@@ -8,7 +8,7 @@
  * why it starts when it does, so the app can explain each date. Deterministic, no AI.
  */
 import { Calendar, fromDay, toDay, todayIso } from "./calendar";
-import { schedulePlan, type Schedule, type ScheduledTask, type ScheduleOptions } from "./schedule";
+import { milestoneDate, schedulePlan, type Schedule, type ScheduledTask, type ScheduleOptions } from "./schedule";
 import { allTasks, estimateToDays, HOURS_PER_DAY, isWaiting, type Plan, type Task } from "./schema";
 
 export interface TimeOff {
@@ -256,13 +256,13 @@ export function levelPlan(plan: Plan, opts: LevelOptions = {}): LeveledSchedule 
   for (const t of tasks) {
     const s = startAt.get(t.id)!;
     const e = endAt.get(t.id)!;
-    const endDate = e - s < EPS ? cal.dateAt(start, s) : cal.dateAt(start, Math.max(s, Math.ceil(e - EPS) - 1));
+    const endDate = t.milestone ? milestoneDate(cal, start, s) : e - s < EPS ? cal.dateAt(start, s) : cal.dateAt(start, Math.max(s, Math.ceil(e - EPS) - 1));
     out.set(t.id, {
       id: t.id,
       startOffset: s,
       endOffset: e,
       durationDays: e - s,
-      start: cal.dateAt(start, s),
+      start: t.milestone ? endDate : cal.dateAt(start, s),
       end: endDate,
       slack: critical.has(t.id) ? 0 : Math.max(0, total - e),
       critical: critical.has(t.id),

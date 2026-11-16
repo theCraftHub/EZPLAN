@@ -100,4 +100,13 @@ describe("person-aware scheduling", () => {
     expect(codes({ people: { alex: { hoursPerWeek: 10 } } })).toEqual(["no-estimate"]);
     expect(codes({ people: { alex: { hoursPerWeek: 0 } } })).toContain("no-hours");
   });
+
+  it("a final milestone lands on the finish date (both schedulers)", () => {
+    const kitchen = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "assistants", "copilot-renovation-v2.txt"), "utf8")).plan;
+    const plain = schedulePlan(kitchen);
+    expect(plain.tasks.get("M7")!.end).toBe(plain.finish);
+    const lev = levelPlan(kitchen, { people: { Priya: { hoursPerWeek: 20 } } });
+    expect(lev.tasks.get("M7")!.end).toBe(lev.finish);
+    expect(lev.tasks.get("M1")!.end).toBe(lev.tasks.get("T2")!.end);
+  });
 });
