@@ -1,0 +1,88 @@
+---
+ezplan: 1
+title: Kitchen Remodel - Granite Countertops, New Sink & Cabinet Design
+goal: Upgrade the kitchen with new granite countertops, a new sink, and an approved cabinet design while staying within budget shared by Alex, Jordan, and Priya.
+done_when: Contractor selected, granite countertops and sink installed, cabinet design finalized, all inspections and punch-list items completed, and costs reconciled between Alex, Jordan, and Priya.
+start: 2026-11-16
+---
+
+## P1: Define Scope and Select Contractor
+> Finalize exactly what work will be performed and choose the best quote.
+
+- [/] T1: Review contractor quotes and compare scope, pricing, and exclusions (4h) @Alex !high
+  notes: Two contractor quotes already received and under evaluation.
+
+- [ ] T2: Select granite material and edge profile (1d) @Alex depends: T1
+  notes: Preferred direction is granite; consider Colonial White, Viscount White, Steel Grey, or Black Pearl.
+
+- [ ] T3: Select sink model and faucet package (4h) @Alex depends: T1
+  notes: Recommend 33-inch single-bowl undermount sink compatible with granite installation.
+
+- [ ] T4: Choose contractor and approve final scope (1d) @Alex due: 2026-11-23 depends: T2, T3
+
+- [ ] M1: Contractor selected depends: T4
+
+## P2: Budget and Cost Sharing
+> Confirm budget, responsibilities, and payment plan.
+
+- [ ] T5: Build final remodel budget from selected quote (4h) @Alex depends: M1
+
+- [ ] T6: Calculate and document cost split between Alex, Jordan, and Priya (2h) @Alex depends: T5
+  notes: Assumption: Cost will be split equally three ways unless otherwise agreed.
+
+- [ ] T7: Confirm contribution amounts and payment timing (2d) @Alex depends: T6
+
+- [ ] M2: Budget approved by all contributors depends: T7
+
+## P3: Design Decisions
+> Finalize cabinet style and visual direction before material ordering.
+
+- [ ] T8: Evaluate cabinet design options (2d) @Alex depends: M1
+  notes: Options discussed include white shaker, two-tone white/oak, and greige transitional cabinetry.
+
+- [ ] T9: Select cabinet color, finish, and hardware (1d) @Alex depends: T8
+
+- [ ] T10: Verify countertop, cabinet, sink, and faucet compatibility (4h) @Alex depends: T2, T3, T9
+
+- [ ] M3: Design package finalized depends: T10
+
+## P4: Ordering and Scheduling
+> Procure materials and secure installation dates.
+
+- [ ] T11: Measure kitchen and confirm fabrication dimensions (1d) depends: M3
+
+- [ ] T12: Order granite slabs, sink, and fixture materials (2d) @Alex depends: T11
+
+- [ ] T13: Schedule fabrication and installation work (4h) depends: T12
+
+- [ ] T14: Wait for material delivery and countertop fabrication (3w) #wait depends: T12
+
+- [ ] M4: Materials available for installation depends: T14
+
+## P5: Installation
+> Complete demolition and installation activities.
+
+- [ ] T15: Remove existing countertops and sink (1d) depends: M4
+
+- [ ] T16: Install granite countertops (2d) depends: T15
+
+- [ ] T17: Install sink, faucet, and plumbing connections (1d) depends: T16
+
+- [ ] T18: Complete cabinet adjustments and finish work if required (2d) depends: T17
+
+- [ ] M5: Installation complete depends: T18
+
+## P6: Inspection and Closeout
+> Verify quality, resolve issues, and close the project.
+- [ ] T19: Perform walkthrough and create punch list (4h) @Alex depends: M5
+
+- [ ] T20: Correct punch-list items (3d) depends: T19
+
+- [ ] T21: Final payment reconciliation between Alex, Jordan, and Priya (2h) @Alex depends: T20
+
+- [ ] T22: Document warranties, care instructions, and contractor contacts (2h) @Alex depends: T20
+
+- [ ] M6: Kitchen remodel complete depends: T21, T22
+
+Assumption: No permit is required because the work is limited to countertop, sink, plumbing reconnection, and cosmetic cabinet-related improvements without structural, electrical, or layout changes.
+Assumption: Target completion is approximately 6-8 weeks from contractor selection, depending on granite fabrication lead times.

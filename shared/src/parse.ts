@@ -216,6 +216,11 @@ function readFrontMatter(lines: Line[], plan: Plan, issues: ParseIssue[], format
         else plan.baselineSet = d;
         break;
       }
+      case "note":
+      case "notes":
+      case "assumption":
+        if (value) (plan.notes ??= []).push(key === "assumption" && !/^assumption:/i.test(value) ? `Assumption: ${value}` : value);
+        break;
       case "team": plan.team = parseTeam(rawValue).map((m) => ({ ...m, name: cleanText(m.name, l.n, issues) })); break;
       default:
         if (!KNOWN_FRONT_MATTER.has(key)) plan.extra[key] = value;
@@ -332,6 +337,15 @@ function readBody(lines: Line[], plan: Plan, issues: ParseIssue[], strict: boole
       p.tasks.push(task);
       taskCount++;
       trailingIgnored = 0;
+      continue;
+    }
+
+    // Plan-wide notes outside any task, e.g. "Assumption: no permit needed" after the last task.
+    const pn = b ? null : /^(assumptions?|notes?)\s*:\s*(.+)$/i.exec(stripEmphasis(raw.trim()));
+    if (pn) {
+      const text = cleanText(pn[2]!, l.n, issues);
+      (plan.notes ??= []).push(/^assumption/i.test(pn[1]!) ? `Assumption: ${text}` : text);
+      task = null;
       continue;
     }
 

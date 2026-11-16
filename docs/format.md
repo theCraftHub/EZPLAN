@@ -44,6 +44,7 @@ Between two `---` lines. `ezplan: 1` is required; everything else is optional.
 | `currency` | For budgets, e.g. `USD` |
 | `baseline_set` | Date the original plan was saved |
 | `based_on` | Version tag in an AI update reply |
+| `note` | A plan-wide note or assumption; repeat the line for more (`note: Assumption: no permit needed`). "Assumption:" or "Note:" lines written below the tasks are read the same way. |
 
 Unknown keys are kept, so files from newer versions survive a round trip.
 

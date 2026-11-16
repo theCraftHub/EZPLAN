@@ -21,6 +21,8 @@ const cases = [
   { file: "claude-existing-chat-signage.txt", phases: 8, tasks: 41, milestones: 6, people: ["Alex"], start: "2026-11-16" },
   // Conversation mode; the reply stops partway through the last phase. Blank lines between tasks.
   { file: "copilot-existing-chat-cutoff.txt", phases: 6, tasks: 24, milestones: 5, people: ["Alex"], start: "2026-11-16" },
+  // The same reply, complete. Ends with plan-wide "Assumption:" lines below the last task.
+  { file: "copilot-existing-chat.txt", phases: 6, tasks: 28, milestones: 6, people: ["Alex"], start: "2026-11-16" },
 ];
 
 describe("replies from other AI assistants", () => {
@@ -104,5 +106,17 @@ describe("replies from other AI assistants", () => {
     // A code block that opens but never closes.
     const open = "```\n---\nezplan: 1\ntitle: X\n---\n## P1: A\n- [ ] T1: First (1d)\n- [ ] T2: Second (1d) depends: T1";
     expect(parsePlan(open).issues.map((i) => i.message).join()).toMatch(/stop early after T2/);
+  });
+
+  it("keeps plan-wide assumptions written below the tasks, and exports them in the header", () => {
+    const r = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "assistants", "copilot-existing-chat.txt"), "utf8"));
+    expect(r.issues).toEqual([]);
+    expect(r.plan.notes).toEqual([
+      expect.stringMatching(/^Assumption: No permit is required/),
+      expect.stringMatching(/^Assumption: Target completion is approximately 6-8 weeks/),
+    ]);
+    const header = exportPlan(r.plan).split("\n---")[0]!;
+    expect(header).toMatch(/\nnote: Assumption: No permit is required/);
+    expect(parsePlan("---\nezplan: 1\ntitle: X\nassumption: Venue is free\nnote: Ask Sam\n---\n## P1: A\n- [ ] T1: Go (1d)").plan.notes).toEqual(["Assumption: Venue is free", "Ask Sam"]);
   });
 });

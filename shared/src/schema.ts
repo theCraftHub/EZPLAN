@@ -98,6 +98,8 @@ export const Plan = z.object({
   baselineSet: IsoDate.optional(),
   basedOn: z.string().optional(),
   team: z.array(TeamMember),
+  /** Plan-wide notes and assumptions ("note:" lines in the header). */
+  notes: z.array(z.string()).optional(),
   phases: z.array(Phase),
   /** Unknown front-matter keys, preserved in order of appearance. */
   extra: z.record(z.string(), z.string()),

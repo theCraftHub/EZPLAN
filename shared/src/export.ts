@@ -55,6 +55,7 @@ export function exportPlan(plan: Plan, opts: ExportOptions = {}): string {
   if (plan.team.length) out.push(`team: ${plan.team.map((m) => (m.email ? `${m.name} <${m.email}>` : m.name)).join(", ")}`);
   if (plan.baselineSet) out.push(`baseline_set: ${plan.baselineSet}`);
   if (plan.basedOn) out.push(`based_on: ${fmValue(plan.basedOn)}`);
+  for (const n of plan.notes ?? []) out.push(`note: ${fmValue(n)}`);
   for (const [k, v] of Object.entries(plan.extra)) if (k !== "raid_section") out.push(`${k}: ${fmValue(v)}`);
   out.push("---");
 

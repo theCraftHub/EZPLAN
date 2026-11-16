@@ -82,11 +82,11 @@ export function generatePrompt(input: string | GeneratePromptOptions = {}): stri
           `- ${focus ? `Plan only this project: ${focus}.` : "If this conversation covers more than one project, plan the main one we have been working on."}`,
           "- Use everything we discussed: the goal, decisions made, deadlines, budget, people and their roles, constraints, risks and open questions.",
           "- Work this conversation says is already finished gets [x]; work that is underway gets [/].",
-          "- Where something important was never discussed (a date, a budget, who does what), make a sensible assumption and say so in a notes: line starting with \"Assumption:\". Do not ask me questions first; I will correct the plan afterwards.",
+          "- Where something important was never discussed (a date, a budget, who does what), make a sensible assumption and say so in a notes: line starting with \"Assumption:\" under the task it affects (for the whole plan, add a header line  note: Assumption: <text>). Do not ask me questions first; I will correct the plan afterwards.",
           "- If we haven't discussed any project yet, reply only: \"Tell me about your project first, then paste this again.\"",
         ]
       : [
-          `You are an experienced project planner. Turn my project notes into a clear, realistic plan of action in the ${BRAND.name} plan format described below. It works for any kind of project (events, construction, marketing, software, research, personal projects). Where something important is missing from my notes, make a sensible assumption and say so in a notes: line starting with \"Assumption:\".`,
+          `You are an experienced project planner. Turn my project notes into a clear, realistic plan of action in the ${BRAND.name} plan format described below. It works for any kind of project (events, construction, marketing, software, research, personal projects). Where something important is missing from my notes, make a sensible assumption and say so in a notes: line starting with \"Assumption:\" under the task it affects (for the whole plan, add a header line  note: Assumption: <text>).`,
         ];
   const tail =
     source === "conversation"
