@@ -148,15 +148,31 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
           </span>
         </div>
         <span style="font-size: 13px; font-weight: 600">Hours a week for this project</span>
-        <div role="radiogroup" aria-label="Hours a week" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
-          <sc-for list="{{ hourPicks }}" as="h" hint-placeholder-count="4">
-            <button role="radio" aria-checked="{{ h.checked }}" onClick="{{ h.pick }}" style="{{ h.style }}">{{ h.label }}</button>
-          </sc-for>
-        </div>
+<div role="radiogroup" aria-label="Hours a week" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px">
+              <sc-for list="{{ hp.picks }}" as="h" hint-placeholder-count="5">
+                <button role="radio" aria-checked="{{ h.checked }}" aria-label="{{ h.aria }}" onClick="{{ h.pick }}" style="{{ h.style }}">
+                  <span style="font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums">{{ h.big }}</span>
+                  <span style="font-size: 10px; font-weight: 500; white-space: nowrap">{{ h.small }}</span>
+                </button>
+              </sc-for>
+            </div>
+        <sc-if value="{{ hp.customOn }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 6px; padding-top: 2px">
+                <label for="sam-hours-phone" style="font-size: 13px; font-weight: 600">Custom hours a week</label>
+                <div style="display: flex; align-items: center; gap: 6px">
+                  <button onClick="{{ hp.less }}" aria-label="One hour less" style="width: 44px; height: 44px; flex: none; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 20px Inter, sans-serif; color: #0F172A; cursor: pointer">−</button>
+                  <input id="sam-hours-phone" type="number" inputmode="numeric" min="1" max="60" step="1" value="{{ hp.customVal }}" onChange="{{ hp.setCustom }}" aria-describedby="sam-hours-phone-hint" style="width: 0; flex: 1; min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid #94A3B8; font: 600 16px Inter, sans-serif; color: #0F172A; text-align: center; font-variant-numeric: tabular-nums">
+                  <button onClick="{{ hp.more }}" aria-label="One hour more" style="width: 44px; height: 44px; flex: none; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 20px Inter, sans-serif; color: #0F172A; cursor: pointer">+</button>
+                  <span style="flex: none; font-size: 13px; color: #334155">h/week</span>
+                </div>
+                <span id="sam-hours-phone-hint" style="{{ hp.hintStyle }}">{{ hp.hint }}</span>
+              </div>
+            </sc-if>
+        <span style="font-size: 13px; line-height: 1.5; color: #0F172A; background: #F1F5F9; border-radius: 10px; padding: 8px 10px">{{ samLine }}</span>
         <span style="font-size: 12px; line-height: 1.5; color: #475569">Your estimate until Sam confirms it. Sam joins as an Editor; you can change that in the plan's People list.</span>
         <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px">
           <button onClick="{{ cancelAdd }}" style="min-height: 48px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer">Cancel</button>
-          <button onClick="{{ confirmAdd }}" style="min-height: 48px; border-radius: 12px; border: none; background: #4F46E5; font: 600 15px Inter, sans-serif; color: #FFFFFF; cursor: pointer">Add and invite</button>
+          <button onClick="{{ confirmAdd }}" disabled="{{ addDisabled }}" style="{{ addBtnStyle }}">Add and invite</button>
         </div>
       </section>
     </div>
@@ -190,11 +206,50 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { week: 0, day: 1, mode: 'day', sheet: null, option: 0, toast: '', adding: false, sam: false, hrs: 3 };
+    this.state = { week: 0, day: 1, mode: 'day', sheet: null, option: 0, toast: '', adding: false, sam: false, hsel: 40, hval: '12', samH: 40 };
   }
   renderVals() {
     var self = this;
     var st = this.state;
+    var SAMF = ["Oct 8", "Jul 16", "Jun 18", "Jun 4", "May 27", "May 21", "May 18", "May 14", "May 12", "May 12", "May 10", "May 7", "May 6", "May 5", "May 5", "May 5", "May 5", "May 5", "May 3", "May 3", "May 3", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30", "Apr 30"];
+    var SAMT2 = ["Jun 24", "Apr 1", "Mar 4", "Feb 18", "Feb 10", "Feb 4", "Feb 1", "Jan 28", "Jan 26", "Jan 25", "Jan 22", "Jan 21", "Jan 20", "Jan 19", "Jan 19", "Jan 18", "Jan 18", "Jan 18", "Jan 15", "Jan 15", "Jan 15", "Jan 14", "Jan 14", "Jan 14", "Jan 14", "Jan 13", "Jan 13", "Jan 13", "Jan 13", "Jan 13", "Jan 13", "Jan 13", "Jan 13", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12", "Jan 12"];
+
+    // Hours-a-week picker: presets show the weekly total; Custom takes any whole number 1 to 60.
+    var r1 = function (x) { return Math.round(x * 10) / 10; };
+    var picker = function (sel, customVal, onPick, compact) {
+      var presets = [[5, '5', 'h/week'], [20, '20', 'h/week'], [30, '30', 'h/week'], [40, '40', 'Full time']];
+      var valid = /^\d+$/.test(String(customVal)) && +customVal >= 1 && +customVal <= 60;
+      var hours = sel === 'custom' ? (valid ? +customVal : null) : sel;
+      var btn = function (on) {
+        return 'min-height: ' + (compact ? 48 : 52) + 'px; padding: 4px 2px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; cursor: pointer; font-family: Inter, sans-serif; ' + (on ? 'background: #0F172A; color: #FFFFFF; border: 1px solid #0F172A;' : 'background: #FFFFFF; color: #0F172A; border: 1px solid #E2E8F0;');
+      };
+      var picks = presets.map(function (p) {
+        var on = sel === p[0];
+        return { big: p[1], small: p[2], checked: on ? 'true' : 'false', aria: p[0] === 40 ? 'Full time, 40 hours a week' : p[0] + ' hours a week', pick: function () { onPick(p[0]); }, style: btn(on) };
+      });
+      var cOn = sel === 'custom';
+      picks.push({ big: cOn && valid ? String(+customVal) : '…', small: 'Custom', checked: cOn ? 'true' : 'false', aria: 'Custom hours a week', pick: function () { onPick('custom'); }, style: btn(cOn) });
+      return {
+        picks: picks, customOn: cOn, hours: hours, valid: hours !== null,
+        hint: hours === null ? 'Enter 1 to 60 hours a week.' : 'About ' + r1(hours / 5) + ' h a day over 5 days.',
+        hintStyle: 'font-size: 12px; line-height: 1.5; ' + (hours === null ? 'color: #B91C1C; font-weight: 600;' : 'color: #475569;'),
+        label: hours === null ? 'Hours not set' : hours === 40 && sel === 40 ? 'Full time · 40 h/week' : hours + ' h/week'
+      };
+    };
+    var toT = function (s) { return Date.parse(s.indexOf(',') > 0 ? s : s + ', 2027'); };
+    var workdaysBetween = function (a, b) {
+      var x = toT(a), y = toT(b), n = 0, step = x < y ? 1 : -1;
+      for (var t = x; step > 0 ? t < y : t > y; t += step * 86400000) { var d = new Date(t + step * 86400000).getDay(); if (d !== 0 && d !== 6) n++; }
+      return step * n; // positive when a is before b
+    };
+    var hp = (function () {
+        var pk = picker(st.hsel, st.hval, function (v) { self.setState({ hsel: v }); });
+        pk.customVal = st.hval;
+        pk.setCustom = function (e) { self.setState({ hval: e.target.value }); };
+        pk.less = function () { var n = parseInt(st.hval, 10) || 1; self.setState({ hval: String(Math.max(1, n - 1)) }); };
+        pk.more = function () { var n = parseInt(st.hval, 10) || 0; self.setState({ hval: String(Math.min(60, n + 1)) }); };
+        return pk;
+      })();
     // Output of the scheduling engine (levelPlan) for the kitchen plan: Jordan full time with
     // Tuesday site meetings (3h), Priya 20 h/week and off Jan 12 to 13 (Family trip).
     var people = {
@@ -228,7 +283,7 @@ class Component extends DCLogic {
     var week = weeks[st.week];
     var full = function (p) { return p === 'Priya' ? 4 : 8; };
     // Sam, once added: nothing assigned yet, 8 hours free each day (estimate).
-    if (st.sam) weeks.forEach(function (w) { w.days.forEach(function (d) { d.Sam = { cap: 8, b: [] }; }); });
+    if (st.sam) weeks.forEach(function (w) { w.days.forEach(function (d) { d.Sam = { cap: r1(Math.min(8, st.samH / 5)), b: [] }; }); });
     var names = st.sam ? ['Jordan', 'Priya', 'Sam'] : ['Jordan', 'Priya'];
     var sum = function (b) { return b.reduce(function (n, x) { return n + x[1]; }, 0); };
     var fmtH = function (h) { return (Math.round(h * 10) / 10) + 'h'; };
@@ -301,7 +356,7 @@ class Component extends DCLogic {
           aria: name + ' on ' + d.dow + ' ' + d.num,
           initials: people[name].initials, avatarStyle: avatar(name),
           heading: name,
-          sub: c.off ? 'Off today' : c.busy ? c.cap + 'h available (' + c.busy + 'h of meetings)' : name === 'Priya' ? '4h available (20 h a week on this project)' : name === 'Sam' ? 'Invited · 8h a day (your estimate)' : c.cap + 'h available',
+          sub: c.off ? 'Off today' : c.busy ? c.cap + 'h available (' + c.busy + 'h of meetings)' : name === 'Priya' ? '4h available (20 h a week on this project)' : name === 'Sam' ? 'Invited · ' + st.samH + ' h/week (your estimate)' : c.cap + 'h available',
           chip: c.off ? 'Off' : fmtH(booked) + ' of ' + fmtH(c.cap),
           chipStyle: chip(booked, c.cap),
           barBooked: bar(booked, c.cap, 8, name), barUnavail: unavail(c.cap, 8),
@@ -333,7 +388,7 @@ class Component extends DCLogic {
       cards.unshift({
         aria: name + ' this week', initials: people[name].initials, avatarStyle: avatar(name),
         heading: name + ', week of ' + week.label,
-        sub: name === 'Priya' ? '20 h a week on this project' : name === 'Sam' ? 'Invited · full time (your estimate)' : 'Full time · meetings on Tuesdays',
+        sub: name === 'Priya' ? '20 h a week on this project' : name === 'Sam' ? 'Invited · ' + st.samH + ' h/week (your estimate)' : 'Full time · meetings on Tuesdays',
         chip: fmtH(weekBooked) + ' of ' + fmtH(weekCap), chipStyle: chip(weekBooked, weekCap),
         barBooked: bar(weekBooked, weekCap, weekCap, name), barUnavail: 'width: 0', off: false, offText: '', rows: [], freeNote: false
       });
@@ -343,7 +398,7 @@ class Component extends DCLogic {
     if (st.sheet) {
       var t = tasks[st.sheet];
       var opts = st.sheet === 'T2'
-        ? (st.sam ? [{ label: 'Give to Sam', detail: 'Sam is free from Jan 4 (your estimate), so the budget is done Jan 12.', finish: 'Apr 30', fit: 'ok', badge: 'Fits' }] : []).concat([
+        ? (st.sam ? [{ label: 'Give to Sam', detail: 'At ' + st.samH + ' h/week (your estimate) Sam finishes the budget ' + SAMT2[st.samH - 1] + '.', finish: SAMF[st.samH - 1], fit: workdaysBetween(SAMF[st.samH - 1], 'May 5') > 0 ? 'ok' : 'bad', badge: 'Fits' }] : []).concat([
           { label: 'Keep with Priya', detail: 'Fits her 20 hours a week. Finishes Jan 19.', finish: 'May 5', fit: 'ok', badge: 'Now' },
           { label: 'Give Priya 30 hours a week', detail: 'Budget done Jan 15 instead of Jan 19, so the cabinets are ordered sooner.', finish: 'Apr 30', fit: 'ok', badge: 'Fits' },
           { label: 'Give to Jordan', detail: 'Jordan is on the quotes until Jan 14, so the budget would start then.', finish: 'May 6', fit: 'bad', badge: 'Later' }
@@ -380,12 +435,15 @@ class Component extends DCLogic {
       adding: st.adding,
       startAdd: function () { self.setState({ adding: true }); },
       cancelAdd: function () { self.setState({ adding: false }); },
-      confirmAdd: function () { self.setState({ adding: false, sam: true, toast: 'Sam added and invited. Sam could take the budget: finish Apr 30.' }); },
-      hourPicks: ['5 h', '20 h', '30 h', 'Full'].map(function (h, i) {
-        var on = st.hrs === i;
-        return { label: h, checked: on ? 'true' : 'false', pick: function () { self.setState({ hrs: i }); },
-          style: 'min-height: 44px; border-radius: 10px; cursor: pointer; font: 600 14px Inter, sans-serif; ' + (on ? 'background: #0F172A; color: #FFFFFF; border: 1px solid #0F172A;' : 'background: #FFFFFF; color: #0F172A; border: 1px solid #E2E8F0;') };
-      }),
+      confirmAdd: function () {
+        if (!hp.valid) return;
+        var h = hp.hours, fin = SAMF[h - 1], gain = workdaysBetween(fin, 'May 5');
+        self.setState({ adding: false, sam: true, samH: h, toast: gain > 0 ? 'Sam added (' + h + ' h/week). Sam could take the budget: finish ' + fin + '.' : 'Sam added (' + h + ' h/week). Best to keep the budget with Priya.' });
+      },
+      hp: hp,
+      samLine: hp.valid ? 'If Sam takes the budget at ' + hp.hours + ' h/week, the kitchen finishes ' + SAMF[hp.hours - 1] + ' (now May 5).' : 'Enter Sam\'s hours to see the effect on the finish date.',
+      addDisabled: !hp.valid,
+      addBtnStyle: 'min-height: 48px; border-radius: 12px; border: none; font: 600 15px Inter, sans-serif; color: #FFFFFF; ' + (hp.valid ? 'background: #4F46E5; cursor: pointer;' : 'background: #94A3B8; cursor: not-allowed;'),
       closeSheet: function () { self.setState({ sheet: null }); },
       apply: function () { self.setState({ sheet: null, toast: /^Keep/.test(chosen.label) ? '' : chosen.label + '. Kitchen now finishes ' + chosen.finish.replace('Finish ', '') + '.' }); },
       toast: st.toast || false,
