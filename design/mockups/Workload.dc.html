@@ -360,7 +360,7 @@ class Component extends DCLogic {
           chip: c.off ? 'Off' : fmtH(booked) + ' of ' + fmtH(c.cap),
           chipStyle: chip(booked, c.cap),
           barBooked: bar(booked, c.cap, 8, name), barUnavail: unavail(c.cap, 8),
-          off: !!c.off, offText: 'Off: ' + c.off + ' (Jan 12 to 13). Priya\'s tasks wait until she\'s back.',
+          off: !!c.off, offText: 'Off: ' + c.off + ' (Jan 12 to 13). Priya\'s tasks wait until Priya is back.',
           rows: rowsFor(c.b, name),
           freeNote: !c.off && free > 0.05 ? fmtH(free) + ' free' + (name === 'Sam' ? ': nothing assigned yet. Tap the budget task to give it to Sam.' : booked === 0 ? ': nothing is ready for ' + name + ' yet (waiting on the budget).' : '.') : false
         };
@@ -399,7 +399,7 @@ class Component extends DCLogic {
       var t = tasks[st.sheet];
       var opts = st.sheet === 'T2'
         ? (st.sam ? [{ label: 'Give to Sam', detail: 'At ' + st.samH + ' h/week (your estimate) Sam finishes the budget ' + SAMT2[st.samH - 1] + '.', finish: SAMF[st.samH - 1], fit: workdaysBetween(SAMF[st.samH - 1], 'May 5') > 0 ? 'ok' : 'bad', badge: 'Fits' }] : []).concat([
-          { label: 'Keep with Priya', detail: 'Fits her 20 hours a week. Finishes Jan 19.', finish: 'May 5', fit: 'ok', badge: 'Now' },
+          { label: 'Keep with Priya', detail: 'Fits the 20 hours a week Priya gives this. Finishes Jan 19.', finish: 'May 5', fit: 'ok', badge: 'Now' },
           { label: 'Give Priya 30 hours a week', detail: 'Budget done Jan 15 instead of Jan 19, so the cabinets are ordered sooner.', finish: 'Apr 30', fit: 'ok', badge: 'Fits' },
           { label: 'Give to Jordan', detail: 'Jordan is on the quotes until Jan 14, so the budget would start then.', finish: 'May 6', fit: 'bad', badge: 'Later' }
         ])

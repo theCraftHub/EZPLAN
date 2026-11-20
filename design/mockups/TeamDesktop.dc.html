@@ -344,7 +344,7 @@ class Component extends DCLogic {
       placed.forEach(function (p) {
         var b = p.b;
         var segs = [[b[2], b[3]]];
-        // Priya's work pauses while she's off (Jan 12 to 13).
+        // Priya's work pauses during the time off (Jan 12 to 13).
         if (who === 'Priya' && b[0] === 'T2' && b[2] <= 6 && b[3] >= 7) segs = [[b[2], 5], [8, b[3]]];
         segs.forEach(function (sg, k) {
           var bb = [b[0], b[1], sg[0], sg[1], k === segs.length - 1 ? b[4] : null];
@@ -442,7 +442,7 @@ class Component extends DCLogic {
       bannerStyle: 'border-radius: 14px; padding: 14px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; ' + (banner ? tones[banner.tone] : ''),
       apply: function () {
         if (st.preview === 'sam') { self.setState({ view: 'sam', preview: null, sel: 'T2', msg: { title: 'Applied: Sam has the budget', body: 'Kitchen now finishes ' + samFin + '. Sam\'s invite lists T2; Priya was told the budget moved to Sam.', dismiss: true } }); return; }
-        var v = st.preview === 'p30' ? 'p30' : st.view; self.setState({ view: st.preview === 't2j' ? st.view : v, preview: null, msg: st.preview === 't2j' ? { title: 'Kept as is', body: 'In the app, Apply moves the budget to Jordan and the kitchen finishes May 6. This mockup returns to the current plan.', dismiss: true } : { title: 'Applied: Priya at 30 h a week', body: 'Kitchen now finishes Apr 30. Priya was notified that her hours changed.', dismiss: true } }); },
+        var v = st.preview === 'p30' ? 'p30' : st.view; self.setState({ view: st.preview === 't2j' ? st.view : v, preview: null, msg: st.preview === 't2j' ? { title: 'Kept as is', body: 'In the app, Apply moves the budget to Jordan and the kitchen finishes May 6. This mockup returns to the current plan.', dismiss: true } : { title: 'Applied: Priya at 30 h a week', body: 'Kitchen now finishes Apr 30. Priya was notified about the new hours.', dismiss: true } }); },
       cancel: function () { self.setState({ preview: null, msg: null }); },
       adding: st.adding,
       showTask: !st.adding,
@@ -475,7 +475,7 @@ class Component extends DCLogic {
       freeOn: st.free ? 'true' : 'false',
       freeStyle: 'min-height: 42px; padding: 0 14px; border-radius: 10px; font: 600 14px Inter, sans-serif; cursor: pointer; ' + (st.free ? 'background: #CCFBF1; border: 1px solid #14B8A6; color: #134E4A;' : 'background: #FFFFFF; border: 1px solid #CBD5E1; color: #0F172A;'),
       toggleFree: function () { self.setState({ free: !st.free }); },
-      evenOut: function () { self.setState({ preview: null, msg: { title: 'Nothing to even out', body: 'Everyone is within their hours. Jordan has free days Jan 15 to 19 because nothing is ready for him until the budget is approved.', dismiss: true } }); },
+      evenOut: function () { self.setState({ preview: null, msg: { title: 'Nothing to even out', body: 'Everyone is within their hours. Jordan has free days Jan 15 to 19 because nothing is ready for Jordan until the budget is approved.', dismiss: true } }); },
       findSlot: function () { self.setState({ preview: null, msg: { title: 'Find a slot for a new 1-day task', body: 'Earliest fits: Jordan on Jan 15 (8h free), or Priya on Jan 4 (4h free a day, done Jan 5).', dismiss: true } }); },
       task: {
         idLine: st.sel + ' · ' + t.owner.toUpperCase(),
