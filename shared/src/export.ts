@@ -40,6 +40,8 @@ function oneLine(v: string): string {
 }
 
 export interface ExportOptions {
+  /** The workspace's working-day length. Written to the file (hours_per_day) when it isn't 8, so "2d" keeps its meaning elsewhere. */
+  hoursPerDay?: number;
   /** Adds a closing comment that comments, time logs and activity are app-only. */
   footer?: boolean;
 }
@@ -55,6 +57,8 @@ export function exportPlan(plan: Plan, opts: ExportOptions = {}): string {
   if (plan.team.length) out.push(`team: ${plan.team.map((m) => (m.email ? `${m.name} <${m.email}>` : m.name)).join(", ")}`);
   if (plan.baselineSet) out.push(`baseline_set: ${plan.baselineSet}`);
   if (plan.basedOn) out.push(`based_on: ${fmValue(plan.basedOn)}`);
+  const dayHours = plan.hoursPerDay ?? opts.hoursPerDay;
+  if (dayHours !== undefined && dayHours !== 8) out.push(`hours_per_day: ${dayHours}`);
   for (const n of plan.notes ?? []) out.push(`note: ${fmValue(n)}`);
   for (const [k, v] of Object.entries(plan.extra)) if (k !== "raid_section") out.push(`${k}: ${fmValue(v)}`);
   out.push("---");

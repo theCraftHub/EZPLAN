@@ -58,6 +58,7 @@ const KNOWN_FRONT_MATTER = new Set([
   "baseline_set",
   "currency",
   "based_on",
+  "hours_per_day",
 ]);
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -214,6 +215,14 @@ function readFrontMatter(lines: Line[], plan: Plan, issues: ParseIssue[], format
         if (!d) issues.push({ line: l.n, severity: "warning", message: `"${value}" isn't a date like 2026-12-01, so it was skipped.` });
         else if (key === "start") plan.start = d;
         else plan.baselineSet = d;
+        break;
+      }
+      case "hours_per_day": {
+        // A working day's length for this plan's estimates, e.g. "7.5" or "7.5h".
+        const m = /^(\d+(?:\.\d+)?)\s*(?:h|hrs?|hours?)?$/i.exec(value);
+        const h = m ? Number(m[1]) : NaN;
+        if (h >= 1 && h <= 24) plan.hoursPerDay = h;
+        else issues.push({ line: l.n, severity: "warning", message: `"${value}" isn't a working-day length like 7.5 (1 to 24 hours), so the workspace's was used.` });
         break;
       }
       case "note":

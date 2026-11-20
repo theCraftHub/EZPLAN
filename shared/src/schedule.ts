@@ -4,7 +4,7 @@
  * suggested health, and workload per person per week.
  */
 import { Calendar, todayIso, toDay, type WorkCalendar } from "./calendar";
-import { allTasks, estimateToDays, HOURS_PER_DAY, isWaiting, type Plan, type Task } from "./schema";
+import { allTasks, estimateToDays, isWaiting, planDayLength, type Plan, type Task, type WorkWeek } from "./schema";
 
 export type Health = "On track" | "At risk" | "Off track" | "On hold" | "Complete";
 
@@ -41,12 +41,21 @@ export interface ScheduleOptions {
   start?: string;
   /** For overdue/forecast; defaults to the real today. */
   today?: string;
+  /** The workspace's standard work week (default 40 h, Mon to Fri). */
+  workWeek?: Partial<WorkWeek>;
+}
+
+/** Calendar settings with the work week's days filled in when no calendar workdays are given. */
+export function calendarOf(opts: ScheduleOptions) {
+  return { ...opts.calendar, workdays: opts.calendar?.workdays ?? opts.workWeek?.workdays };
 }
 
 const EPS = 1e-9;
 
 export function schedulePlan(plan: Plan, opts: ScheduleOptions = {}): Schedule {
-  const cal = new Calendar(opts.calendar);
+  const cal = new Calendar(calendarOf(opts));
+  const dayHours = planDayLength(plan, opts.workWeek);
+  const weekDays = calendarOf(opts).workdays?.length ?? 5;
   const today = opts.today ?? todayIso();
   const projectStart = cal.nextWorkday(opts.start ?? plan.start ?? today);
   const tasks = allTasks(plan);
@@ -55,7 +64,7 @@ export function schedulePlan(plan: Plan, opts: ScheduleOptions = {}): Schedule {
   const assumed = new Set<string>();
   for (const t of tasks) {
     if (t.milestone) dur.set(t.id, 0);
-    else if (t.estimate) dur.set(t.id, estimateToDays(t.estimate));
+    else if (t.estimate) dur.set(t.id, estimateToDays(t.estimate, dayHours, weekDays));
     else {
       dur.set(t.id, 1);
       assumed.add(t.id);
@@ -213,7 +222,7 @@ export interface Progress {
 }
 
 export function progressOf(plan: Plan, schedule: Schedule, opts: ScheduleOptions = {}): Progress {
-  const cal = new Calendar(opts.calendar);
+  const cal = new Calendar(calendarOf(opts));
   const today = opts.today ?? todayIso();
   const tasks = allTasks(plan).filter((t) => t.status !== "skipped");
   const work = (t: Task) => (t.milestone ? 0 : Math.max(schedule.tasks.get(t.id)?.durationDays ?? 0, 0));
@@ -256,14 +265,15 @@ export function progressOf(plan: Plan, schedule: Schedule, opts: ScheduleOptions
 
 /** Planned hours per owner per week (key: Monday's date), spread over each task's working days. */
 export function workloadByWeek(plan: Plan, schedule: Schedule, opts: ScheduleOptions = {}): Map<string, Map<string, number>> {
-  const cal = new Calendar(opts.calendar);
+  const cal = new Calendar(calendarOf(opts));
+  const dayHours = planDayLength(plan, opts.workWeek);
   const out = new Map<string, Map<string, number>>();
   for (const t of allTasks(plan)) {
     if (!t.owner || t.milestone || isWaiting(t) || t.status === "done" || t.status === "skipped") continue;
     const s = schedule.tasks.get(t.id);
     if (!s || s.durationDays <= 0) continue;
     const days = Math.max(1, Math.ceil(s.durationDays - EPS));
-    const perDay = (s.durationDays * HOURS_PER_DAY) / days;
+    const perDay = (s.durationDays * dayHours) / days;
     const person = out.get(t.owner) ?? out.set(t.owner, new Map()).get(t.owner)!;
     for (let i = 0; i < days; i++) {
       const date = cal.dateAt(schedule.projectStart, Math.floor(s.startOffset) + i);

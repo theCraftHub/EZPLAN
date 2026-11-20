@@ -97,6 +97,8 @@ export const Plan = z.object({
   currency: z.string().optional(),
   baselineSet: IsoDate.optional(),
   basedOn: z.string().optional(),
+  /** Length of a working day in hours for this plan's estimates ("hours_per_day:" header). Unset = the workspace's. */
+  hoursPerDay: z.number().positive().max(24).optional(),
   team: z.array(TeamMember),
   /** Plan-wide notes and assumptions ("note:" lines in the header). */
   notes: z.array(z.string()).optional(),
@@ -106,14 +108,37 @@ export const Plan = z.object({
 });
 export type Plan = z.infer<typeof Plan>;
 
-/** Working-day conversions used everywhere (estimates are stored as written). */
+/** Defaults when no work week is given (estimates are stored as written). */
 export const HOURS_PER_DAY = 8;
 export const DAYS_PER_WEEK = 5;
 
-export function estimateToDays(e: Estimate | undefined): number {
+/**
+ * A workspace's standard work week (a workspace setting). "Full time" means this, people with
+ * no availability set are assumed to work it, and "1d"/"1w" estimates mean one of its days/weeks.
+ */
+export interface WorkWeek {
+  /** Hours in a full-time week, e.g. 40, 37.5, 35. */
+  hoursPerWeek: number;
+  /** Working days, 0 = Sunday ... 6 = Saturday. */
+  workdays: number[];
+}
+export const DEFAULT_WORK_WEEK: WorkWeek = { hoursPerWeek: 40, workdays: [1, 2, 3, 4, 5] };
+
+/** Hours in one working day of a work week: 40 h over 5 days = 8; 37.5 over 5 = 7.5. */
+export function hoursPerDay(week: Partial<WorkWeek> = {}): number {
+  const days = week.workdays?.length || DAYS_PER_WEEK;
+  return (week.hoursPerWeek ?? HOURS_PER_DAY * days) / days;
+}
+
+/** The day length that applies to a plan: its own header setting, else the workspace's. */
+export function planDayLength(plan: Pick<Plan, "hoursPerDay">, week?: Partial<WorkWeek>): number {
+  return plan.hoursPerDay ?? hoursPerDay(week);
+}
+
+export function estimateToDays(e: Estimate | undefined, dayHours = HOURS_PER_DAY, daysPerWeek = DAYS_PER_WEEK): number {
   if (!e) return 0;
-  if (e.unit === "h") return e.amount / HOURS_PER_DAY;
-  if (e.unit === "w") return e.amount * DAYS_PER_WEEK;
+  if (e.unit === "h") return e.amount / dayHours;
+  if (e.unit === "w") return e.amount * daysPerWeek;
   return e.amount;
 }
 

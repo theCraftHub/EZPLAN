@@ -4,8 +4,8 @@
  */
 import { Calendar } from "./calendar";
 import { levelPlan, type LeveledSchedule, type LevelOptions } from "./level";
-import { schedulePlan, type Schedule } from "./schedule";
-import { allTasks, estimateToDays, isWaiting, type Plan } from "./schema";
+import { calendarOf, schedulePlan, type Schedule } from "./schedule";
+import { allTasks, estimateToDays, isWaiting, planDayLength, type Plan } from "./schema";
 
 export type FindingSeverity = "problem" | "warning" | "tip";
 
@@ -32,6 +32,8 @@ export interface CheckOptions extends LevelOptions {
 }
 
 export function checkPlan(plan: Plan, opts: CheckOptions = {}): PlanCheckResult {
+  const dayHours = planDayLength(plan, opts.workWeek);
+  const weekDays = calendarOf(opts).workdays?.length ?? 5;
   const f: Finding[] = [];
   const add = (code: string, severity: FindingSeverity, message: string, taskIds: string[] = []) => f.push({ code, severity, message, taskIds });
   const tasks = allTasks(plan);
@@ -86,7 +88,7 @@ export function checkPlan(plan: Plan, opts: CheckOptions = {}): PlanCheckResult 
 
   // Risks
   if (leveled) {
-    for (const name of leveled.assumedFullTime) add("assumed-availability", "tip", `No availability is set for ${name}, so full time on this project was assumed. Add how many hours a week ${name} can give it.`, open.filter((t) => t.owner === name).map((t) => t.id));
+    for (const name of leveled.assumedFullTime) add("assumed-availability", "tip", `No availability is set for ${name}, so full time on this project (${leveled.fullTimeHours} h a week) was assumed. Add how many hours a week ${name} can give it.`, open.filter((t) => t.owner === name).map((t) => t.id));
     if (leveled.unplaceable.length) add("no-hours", "problem", `${leveled.unplaceable.length} task${s(leveled.unplaceable.length)} can't be scheduled because the owner has no available hours.`, leveled.unplaceable);
   }
   // (Unleveled schedules only) The schedule runs independent tasks side by side. If one person owns more work than fits
@@ -94,10 +96,10 @@ export function checkPlan(plan: Plan, opts: CheckOptions = {}): PlanCheckResult 
   const workDays = new Map<string, number>();
   for (const t of open) {
     if (!t.owner || t.milestone || isWaiting(t)) continue;
-    const left = (t.estimate ? estimateToDays(t.estimate) : 1) * (t.status === "progress" ? 0.5 : 1);
+    const left = (t.estimate ? estimateToDays(t.estimate, dayHours, weekDays) : 1) * (t.status === "progress" ? 0.5 : 1);
     workDays.set(t.owner, (workDays.get(t.owner) ?? 0) + left);
   }
-  const cal = new Calendar(opts.calendar);
+  const cal = new Calendar(calendarOf(opts));
   for (const [owner, days] of leveled ? [] : workDays) {
     const oneAtATime = cal.dateAt(schedule.projectStart, Math.max(0, Math.ceil(days) - 1));
     if (oneAtATime > schedule.finish) {
@@ -123,7 +125,7 @@ export function checkPlan(plan: Plan, opts: CheckOptions = {}): PlanCheckResult 
   }
   for (const t of open) {
     // The amount of work, not the calendar span (part-time availability stretches the span).
-    const work = t.estimate ? estimateToDays(t.estimate) : 0;
+    const work = t.estimate ? estimateToDays(t.estimate, dayHours, weekDays) : 0;
     if (!t.milestone && !isWaiting(t) && work > LONG_TASK_DAYS && t.subtasks.length === 0) add("long-task", "tip", `${t.id} "${t.title}" is ${Math.round(work)} working days of work. Consider breaking it down.`, [t.id]);
   }
   const byEnd = new Map<string, string[]>();

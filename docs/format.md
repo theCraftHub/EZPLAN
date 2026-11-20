@@ -44,6 +44,7 @@ Between two `---` lines. `ezplan: 1` is required; everything else is optional.
 | `currency` | For budgets, e.g. `USD` |
 | `baseline_set` | Date the original plan was saved |
 | `based_on` | Version tag in an AI update reply |
+| `hours_per_day` | Length of a working day for this plan's estimates, e.g. `7.5`. Written only when it isn't 8 (the workspace's standard week isn't 40 h over 5 days), so "2d" means the same thing in any workspace. Unset = the workspace's setting. |
 | `note` | A plan-wide note or assumption; repeat the line for more (`note: Assumption: no permit needed`). "Assumption:" or "Note:" lines written below the tasks are read the same way. |
 
 Unknown keys are kept, so files from newer versions survive a round trip.

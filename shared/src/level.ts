@@ -8,8 +8,8 @@
  * why it starts when it does, so the app can explain each date. Deterministic, no AI.
  */
 import { Calendar, fromDay, toDay, todayIso } from "./calendar";
-import { milestoneDate, schedulePlan, type Schedule, type ScheduledTask, type ScheduleOptions } from "./schedule";
-import { allTasks, estimateToDays, HOURS_PER_DAY, isWaiting, type Plan, type Task } from "./schema";
+import { calendarOf, milestoneDate, schedulePlan, type Schedule, type ScheduledTask, type ScheduleOptions } from "./schedule";
+import { allTasks, estimateToDays, HOURS_PER_DAY, isWaiting, planDayLength, type Plan, type Task } from "./schema";
 
 export interface TimeOff {
   start: string;
@@ -53,6 +53,8 @@ export interface LeveledSchedule extends Schedule {
   bookings: Map<string, Map<string, Booking[]>>;
   /** Owners with no availability given (assumed full time). */
   assumedFullTime: string[];
+  /** The full-time week those owners were given, in hours (the workspace setting). */
+  fullTimeHours: number;
   /** Tasks that couldn't be placed (their owner has no available hours at all). */
   unplaceable: string[];
 }
@@ -60,22 +62,28 @@ export interface LeveledSchedule extends Schedule {
 const EPS = 1e-9;
 const MAX_DAYS = 2600; // ~10 working years: a safety stop, never reached by real plans
 
-/** Hours a person can give this project on a date (0 on days off). */
-export function availableHours(a: PersonAvailability | undefined, date: string, cal: Calendar): number {
+/**
+ * Hours a person can give this project on a date (0 on days off). `dayHours` is the workspace's
+ * standard day (full time); someone with no availability set works exactly that.
+ */
+export function availableHours(a: PersonAvailability | undefined, date: string, cal: Calendar, dayHours = HOURS_PER_DAY): number {
   if (!cal.isWorkday(date)) return 0;
-  if (!a) return HOURS_PER_DAY;
+  if (!a) return dayHours;
   const days = a.workdays ?? [1, 2, 3, 4, 5];
   const wd = new Date(`${date}T00:00:00Z`).getUTCDay();
   if (!days.includes(wd)) return 0;
   if (a.timeOff?.some((o) => date >= o.start && date <= o.end)) return 0;
-  const perDay = Math.min(HOURS_PER_DAY, (a.hoursPerWeek ?? HOURS_PER_DAY * days.length) / Math.max(1, days.length));
+  const perDay = (a.hoursPerWeek ?? dayHours * days.length) / Math.max(1, days.length);
+  // Meetings come out of the working day: the standard day, or a longer one if they work longer.
   const busy = a.busy?.[date] ?? 0;
-  return Math.max(0, Math.min(perDay, HOURS_PER_DAY - busy));
+  return Math.max(0, Math.min(perDay, Math.max(dayHours, perDay) - busy));
 }
 
 export function levelPlan(plan: Plan, opts: LevelOptions = {}): LeveledSchedule {
   const base = schedulePlan(plan, opts); // for slack (priority) and cycles
-  const cal = new Calendar(opts.calendar);
+  const cal = new Calendar(calendarOf(opts));
+  const dayHours = planDayLength(plan, opts.workWeek);
+  const weekDays = calendarOf(opts).workdays?.length ?? 5;
   const start = base.projectStart;
   const tasks = allTasks(plan);
   const byId = new Map(tasks.map((t) => [t.id, t]));
@@ -88,8 +96,8 @@ export function levelPlan(plan: Plan, opts: LevelOptions = {}): LeveledSchedule 
   // Work left in hours. Finished work takes no time; in-progress work counts half (as checks do).
   const hoursLeft = new Map<string, number>();
   const isFinished = (t: Task) => t.status === "done" || t.status === "skipped";
-  const durDays = (t: Task) => (t.milestone || isFinished(t) ? 0 : (t.estimate ? estimateToDays(t.estimate) : 1) * (t.status === "progress" ? 0.5 : 1));
-  for (const t of tasks) hoursLeft.set(t.id, durDays(t) * HOURS_PER_DAY);
+  const durDays = (t: Task) => (t.milestone || isFinished(t) ? 0 : (t.estimate ? estimateToDays(t.estimate, dayHours, weekDays) : 1) * (t.status === "progress" ? 0.5 : 1));
+  for (const t of tasks) hoursLeft.set(t.id, durDays(t) * dayHours);
   const personal = (t: Task) => !!t.owner && !t.milestone && !isWaiting(t) && !isFinished(t);
 
   const inCycle = new Set(base.cycles.flat());
@@ -168,7 +176,7 @@ export function levelPlan(plan: Plan, opts: LevelOptions = {}): LeveledSchedule 
     const date = cal.dateAt(start, day);
     for (const key of displayName.keys()) {
       const avail = people.get(key);
-      const cap = availableHours(avail, date, cal);
+      const cap = availableHours(avail, date, cal, dayHours);
       if (cap <= EPS) {
         const off = avail?.timeOff?.find((o) => date >= o.start && date <= o.end);
         if (off) offSince.set(key, { from: off.start, to: off.end, label: off.label });
@@ -187,8 +195,8 @@ export function levelPlan(plan: Plan, opts: LevelOptions = {}): LeveledSchedule 
           id = best;
           const r = readyAt.get(id)!;
           readyAt.delete(id);
-          // A task can't start before it's ready (hours are spread over an 8-hour day grid).
-          used = Math.max(used, (r.at - day) * HOURS_PER_DAY * (cap / HOURS_PER_DAY));
+          // A task can't start before it's ready (a fraction of the way through this person's day).
+          used = Math.max(used, (r.at - day) * cap);
           if (used >= cap - EPS) {
             readyAt.set(id, r); // ready too late in the day: try tomorrow
             break;
@@ -282,6 +290,7 @@ export function levelPlan(plan: Plan, opts: LevelOptions = {}): LeveledSchedule 
     reasons,
     bookings,
     assumedFullTime,
+    fullTimeHours: dayHours * weekDays,
     unplaceable: unplaceable.filter((id) => byId.get(id)!.owner),
   };
 }
