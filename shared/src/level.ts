@@ -69,7 +69,7 @@ const MAX_DAYS = 2600; // ~10 working years: a safety stop, never reached by rea
 export function availableHours(a: PersonAvailability | undefined, date: string, cal: Calendar, dayHours = HOURS_PER_DAY): number {
   if (!cal.isWorkday(date)) return 0;
   if (!a) return dayHours;
-  const days = a.workdays ?? [1, 2, 3, 4, 5];
+  const days = a.workdays ?? cal.workdays; // their own days, else the workspace's
   const wd = new Date(`${date}T00:00:00Z`).getUTCDay();
   if (!days.includes(wd)) return 0;
   if (a.timeOff?.some((o) => date >= o.start && date <= o.end)) return 0;

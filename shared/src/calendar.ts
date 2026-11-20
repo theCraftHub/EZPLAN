@@ -36,6 +36,11 @@ export class Calendar {
     this.off = new Set(cal.holidays ?? []);
   }
 
+  /** The working days of the week, 0 = Sunday ... 6 = Saturday. */
+  get workdays(): number[] {
+    return [...this.work].sort((a, b) => a - b);
+  }
+
   isWorkday(iso: string): boolean {
     return this.work.has(weekday(iso)) && !this.off.has(iso);
   }

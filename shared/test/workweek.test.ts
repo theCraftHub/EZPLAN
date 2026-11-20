@@ -47,6 +47,13 @@ describe("workspace standard work week (full time)", () => {
     expect(availableHours({ hoursPerWeek: 20, busy: { "2026-11-16": 3 } }, "2026-11-16", cal, 8)).toBe(4);
   });
 
+  it("people follow the workspace's working days unless they set their own", () => {
+    const cal = new Calendar({ workdays: [0, 1, 2, 3, 4] }); // Sunday to Thursday
+    expect(availableHours({ hoursPerWeek: 20 }, "2026-11-15", cal)).toBe(4); // a Sunday
+    expect(availableHours({ hoursPerWeek: 20 }, "2026-11-20", cal)).toBe(0); // a Friday
+    expect(availableHours({ hoursPerWeek: 20, workdays: [1, 2] }, "2026-11-16", cal)).toBe(10);
+  });
+
   it("workload hours follow the day length", () => {
     const p = plan("- [ ] T1: A (1d) @Alex");
     const w = workloadByWeek(p, schedulePlan(p, { workWeek: { hoursPerWeek: 37.5 } }), { workWeek: { hoursPerWeek: 37.5 } });
