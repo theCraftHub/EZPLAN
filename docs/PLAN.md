@@ -468,7 +468,7 @@ Goal: a company goes from "Start EZPLAN for my business" to employees working in
 
 ## 7. Accounts, data, hosting
 - **Stack:** TypeScript everywhere. App: React + Vite + Tailwind + Radix UI, installable PWA (`vite-plugin-pwa`), IndexedDB for offline. Server: one Cloudflare Worker (Hono router) + D1 (database) + Durable Objects (live editing) + R2 (backups, exports) + Cron Triggers. Shared logic (format, parser, scheduler, checks, permissions) lives in one package used by both app and Worker, so the phone, the server and the tests always agree.
-- **Repo layout:** `shared/` (format, parser, import pipeline, scheduler, checks, permissions, prompts) · `app/` (website) · `worker/` (API, live rooms, AI engine, moderation, cron) · `docs/` (research, finance, operations, runbooks, legal drafts) · `design/mockups/` · `scripts/`.
+- **Repo layout:** `shared/` (format, parser, import pipeline, scheduler, checks, permissions, prompts) · `app/` (website) · `server/` (API + live-room logic on ports, section 7b) · `worker/` (Cloudflare adapters) · `selfhost/` (Node adapters + Docker) · `docs/` (research, finance, operations, runbooks, legal drafts) · `design/mockups/` · `scripts/`.
 - One Worker serves the site + `/api/*` + `/ws/plan/:id`. **Custom domain** (~$10/yr) now, needed for reminder email. **Workers Paid ($5/month)** when free limits are reached, and at the latest before phase 5 (it also extends database point-in-time recovery from 7 to 30 days).
 - **Sessions are stored server-side** (a `sessions` table; the cookie only holds a session id), so "sign out everywhere", deactivation and offboarding take effect immediately.
 - Login: Cloudflare **Access for SaaS (OIDC)**, `/login` → email code → `/callback` → session cookie. During the private build the Access email list is just the owner (plus owner-controlled test accounts). `getUser()` is the single auth seam, swapped for built-in accounts in phase 4.
@@ -476,6 +476,34 @@ Goal: a company goes from "Start EZPLAN for my business" to employees working in
 - **Basics the plan was missing (added):** Terms, Privacy Policy and AUP pages + cookie notice (1a); account data export and deletion for Personal users (1c); **product analytics** with a privacy-friendly tool (Cloudflare Web Analytics for pages, first-party event table for funnels like OOBE drop-off; no ad trackers) (1a); **sales tax/VAT** via Stripe Tax at checkout (4); **currency per project** for budgets and **date/number formats by locale**; UI strings i18n-ready from day one (English only at launch).
 - **Help and support (was missing):** in-app Help ("?" menu: searchable guides, the tours, keyboard shortcuts, what's new), a public help center built from `docs/help/` (also the source for the IT setup guides), a contact form that creates a support ticket by email, and a separate security contact address. Support replies are part of the monthly maintenance time (section 11).
 - Private-build running cost: Cloudflare $0 to $5/month, domain ~$10/yr, Resend $0, AI a fraction of a cent to a few cents per check/report, capped per user.
+
+## 7b. One core, two hosts: our cloud and self-hosted (decided Nov 20)
+**Why:** a self-hosted edition is the only way a company's data never reaches us (then we sell software, not a data service: no HIPAA business associate or GDPR processor role for those customers). Deciding now costs about 10 to 15% more work in 1a/1b; porting later would mean rewriting the server and live editing. **Decided:** build portable from 1a; offer the self-hosted edition to **Business after the cloud launch** (annual license).
+
+**Architecture**
+- **All product logic stays in `shared/`** (format, parser, scheduling, checks, live-editing ops in `shared/src/ops.ts`, permissions, import pipeline, prompts). Already true for what exists.
+- **New `server/` package: the HTTP API and live-room logic, written once against small adapter interfaces ("ports")** in `server/src/ports.ts`:
+  | Port | Cloud adapter (`worker/`) | Self-hosted adapter (`selfhost/`) |
+  |---|---|---|
+  | `Db` (SQL) | D1 | SQLite file (`better-sqlite3`) on a volume; Postgres later only if a large customer needs it |
+  | `Rooms` (live editing: one room per plan, apply op, broadcast, presence, snapshot) | Durable Object hosting the shared room code | In-process room map in the Node server with WebSockets (`ws`), one server per company |
+  | `Blobs` (exports, backups) | R2 | S3-compatible (MinIO, AWS S3) or a local folder |
+  | `Mail` | Resend | SMTP (their mail server) |
+  | `Ai` | built-in Anthropic engine or company key | company key only (BYOK, 4b), or AI off |
+  | `Jobs` (reminders, syncs, backups, health checks) | Cron Triggers | timer in the Node process |
+  | `Auth` (`getUser()` seam) | Cloudflare Access during private build, then our sign-in | their Microsoft / Google / any OIDC / SAML directly (no WorkOS) |
+  | `Config` / `Secrets` | Worker env + secrets | env file / Docker secrets |
+- **HTTP:** Hono, which runs unchanged on Workers and Node.
+- **Database:** SQLite dialect on both hosts so one schema and one migration set serve both (D1 is SQLite). Migrations are plain numbered SQL files run by `server` at start-up on self-hosted, and by `wrangler d1 migrations` in the cloud.
+- **Self-hosted package:** one Docker image (`selfhost/Dockerfile`) + a `compose.yaml` (app, optional MinIO), a setup page on first start (admin account, sign-in provider, mail, AI key or AI off), automatic database migrations on upgrade, nightly backup to their storage, health endpoint for their monitoring. Updates ship as new image versions.
+- **Self-hosted product rules:** no data or telemetry sent to us (an optional anonymous version check only); license key checked offline (signed, seats + expiry); free moderation checks run inside their install and the company is contractually responsible for use; AI only with their key; support covers the software, not their servers; support access to their install needs a separate agreement.
+
+**Build timing**
+- **1a:** create `server/` with the ports and both adapter sets for `Db`, `Rooms`, `Blobs`, `Jobs`, `Auth`, `Config` (Mail and AI adapters as they're needed); every API and room test runs against both hosts in CI (Node adapter in-process; Cloud adapter via `@cloudflare/vitest-pool-workers`/Miniflare).
+- **1b:** WebSocket live editing on both hosts; Docker image builds in CI and passes a smoke test (start, create plan, live edit with two clients, restart, data still there).
+- **After cloud launch (phase 6+):** self-hosted edition for Business: license keys, setup page, upgrade/backup docs, install guide in the help center, pricing in the finance model (annual per-seat license; higher support cost), support terms and a software license agreement (lawyer review, section 14).
+
+**Verification:** the same API/room test suite passes on both hosts in CI; two clients editing one plan converge on both; Docker smoke test passes; a self-hosted install sends no network traffic to our domains with telemetry off (checked with a network capture in CI); upgrade from the previous image version migrates data without loss.
 
 ## 8. Business model and finances (revisitable)
 - **Market research** `docs/research/competitors.md`: pricing table (Todoist ~$4, Trello $5, ClickUp $7, Linear ~$8 to $10, Monday ~$9 with a 3-seat minimum, Smartsheet ~$7 to $9, Notion ~$10, Wrike ~$10, Asana $10.99 with 5 AI requests then $0.50 each, TeamGantt per project), design patterns, what to borrow and what to avoid, sources + dates. Vendor pricing pages were unreachable from the build environment, so figures come from 2026 comparison articles and are marked "verify before pricing decisions".
