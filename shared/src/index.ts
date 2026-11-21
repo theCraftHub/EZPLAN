@@ -7,6 +7,7 @@ export * from "./schedule";
 export * from "./level";
 export * from "./checks";
 export * from "./ops";
+export * from "./opSchema";
 export * from "./importPipeline";
 export * from "./prompts";
 export * from "./wizard";

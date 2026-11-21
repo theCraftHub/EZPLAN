@@ -1,0 +1,20 @@
+# Cloud deployment config. Not deployed yet: needs the Cloudflare account (plan section 10).
+name = "plans"
+main = "src/index.ts"
+compatibility_date = "2026-07-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "plans"
+database_id = "set-after-creating-the-database"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "plans-files"
+
+[durable_objects]
+bindings = [{ name = "PLAN_ROOM", class_name = "PlanRoom" }]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["PlanRoom"]

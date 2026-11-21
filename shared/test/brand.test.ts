@@ -15,7 +15,7 @@ function sourceFiles(dir: string): string[] {
 
 describe("brand isolation (renaming = editing brand.ts)", () => {
   it("no source file outside brand.ts contains the brand name", () => {
-    const files = ["shared/src", "app/src", "app/spikes", "worker/src"].flatMap((d) => sourceFiles(join(root, d)));
+    const files = ["shared/src", "server/src", "selfhost/src", "app/src", "app/spikes", "worker/src"].flatMap((d) => sourceFiles(join(root, d)));
     expect(files.length).toBeGreaterThan(3);
     const offenders = files
       .filter((f) => !f.endsWith("brand.ts"))

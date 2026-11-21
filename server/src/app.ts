@@ -1,0 +1,197 @@
+/**
+ * The HTTP API, written once against the ports. Hono runs unchanged on Cloudflare Workers and Node.
+ */
+import { Hono } from "hono";
+import {
+  BRAND,
+  checkPlan,
+  DEFAULT_WORK_WEEK,
+  exportPlan,
+  hoursPerDay,
+  importPlan,
+  levelPlan,
+  parseOp,
+  type Actor,
+  type OpEnvelope,
+  type WorkWeek,
+} from "@ezplan/shared";
+import { migrate } from "./migrations";
+import { loadRoom, newRoomJson } from "./room";
+import type { Ports, User } from "./ports";
+
+type Role = "manager" | "editor" | "viewer";
+type Vars = { Variables: { user: User } };
+
+const MAX_BODY_CHARS = 1_000_000;
+
+export function createApp(ports: Ports) {
+  const { db, rooms, clock } = ports;
+  // Migrations run once per process (self-hosted) or per isolate (cloud) before the first request.
+  let ready: Promise<unknown> | null = null;
+  const ensureReady = () => (ready ??= migrate(db, clock.now()).catch((e) => ((ready = null), Promise.reject(e))));
+
+  const app = new Hono<Vars>();
+
+  app.get("/api/health", async (c) => {
+    await ensureReady();
+    return c.json({ ok: true });
+  });
+
+  // Everything else needs a signed-in person.
+  app.use("/api/*", async (c, next) => {
+    await ensureReady();
+    const user = await ports.auth.getUser(c.req.raw);
+    if (!user) return c.json({ error: "Sign in to continue." }, 401);
+    await ensureUser(user);
+    c.set("user", user);
+    await next();
+  });
+
+  /** First visit: save the person and give them a private workspace (every account has one). */
+  async function ensureUser(user: User) {
+    const known = await db.first(`SELECT id FROM users WHERE id = ?`, [user.id]);
+    if (known) return;
+    const now = clock.now();
+    const workspaceId = crypto.randomUUID();
+    await db.batch([
+      { sql: `INSERT INTO users (id, name, email, created_at) VALUES (?, ?, ?, ?)`, params: [user.id, user.name, user.email, now] },
+      { sql: `INSERT INTO workspaces (id, name, work_week, created_at) VALUES (?, ?, ?, ?)`, params: [workspaceId, `${user.name}'s workspace`, JSON.stringify(ports.config.defaultWorkWeek), now] },
+      { sql: `INSERT INTO members (workspace_id, user_id, role) VALUES (?, ?, 'manager')`, params: [workspaceId, user.id] },
+    ]);
+  }
+
+  /** The plan and the person's role in its workspace, or null when they can't see it. */
+  async function access(planId: string, userId: string) {
+    return db.first<{ workspace_id: string; role: Role; work_week: string; title: string; version: number }>(
+      `SELECT p.workspace_id, m.role, w.work_week, p.title, p.version FROM plans p
+       JOIN members m ON m.workspace_id = p.workspace_id AND m.user_id = ?
+       JOIN workspaces w ON w.id = p.workspace_id
+       WHERE p.id = ?`,
+      [userId, planId],
+    );
+  }
+  // Someone else's plan answers exactly like a missing one, so IDs can't be probed.
+  const notFound = { error: "This plan doesn't exist or you don't have access to it." };
+
+  app.get("/api/me", async (c) => {
+    const user = c.get("user");
+    const workspaces = await db.all(`SELECT w.id, w.name, m.role, w.work_week FROM workspaces w JOIN members m ON m.workspace_id = w.id WHERE m.user_id = ? ORDER BY w.created_at`, [user.id]);
+    return c.json({ user, workspaces: workspaces.map((w) => ({ ...w, work_week: JSON.parse(String(w.work_week)) })) });
+  });
+
+  app.post("/api/plans", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.json<{ text?: unknown; fileName?: unknown; workspaceId?: unknown }>().catch(() => null);
+    if (!body || typeof body.text !== "string") return c.json({ error: "Send the plan as text." }, 400);
+    if (body.text.length > MAX_BODY_CHARS) return c.json({ error: "This text is too long (over 1,000,000 characters)." }, 413);
+    const workspace = await db.first<{ workspace_id: string; role: Role }>(
+      typeof body.workspaceId === "string"
+        ? `SELECT workspace_id, role FROM members WHERE user_id = ? AND workspace_id = ?`
+        : `SELECT m.workspace_id, m.role FROM members m JOIN workspaces w ON w.id = m.workspace_id WHERE m.user_id = ? ORDER BY w.created_at LIMIT 1`,
+      typeof body.workspaceId === "string" ? [user.id, body.workspaceId] : [user.id],
+    );
+    if (!workspace) return c.json({ error: "That workspace doesn't exist or you aren't in it." }, 404);
+    if (workspace.role === "viewer") return c.json({ error: "Viewers can't add plans to this workspace." }, 403);
+    const members = await db.all<{ name: string }>(`SELECT u.name FROM members m JOIN users u ON u.id = m.user_id WHERE m.workspace_id = ?`, [workspace.workspace_id]);
+    const preview = await importPlan(
+      { source: typeof body.fileName === "string" ? "upload" : "paste", text: body.text, ...(typeof body.fileName === "string" ? { fileName: body.fileName } : {}) },
+      { importerName: user.name, editablePlanIds: new Set(), memberNames: members.map((m) => m.name), today: clock.today() },
+    );
+    if (!preview.ok || !preview.plan) return c.json({ error: preview.notices[0] ?? "This plan couldn't be read.", notices: preview.notices, moderation: preview.moderation }, 422);
+    const id = crypto.randomUUID();
+    const now = clock.now();
+    const plan = { ...preview.plan, id };
+    const state = preview.moderation.verdict === "review" ? "review" : "active";
+    await db.batch([
+      { sql: `INSERT INTO plans (id, workspace_id, title, state, room, version, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)`, params: [id, workspace.workspace_id, plan.title, state, newRoomJson(plan), user.id, now, now] },
+      { sql: `INSERT INTO plan_versions (plan_id, version, reason, snapshot, created_by, created_at) VALUES (?, 0, 'import', ?, ?, ?)`, params: [id, JSON.stringify(plan), user.id, now] },
+    ]);
+    return c.json({ id, state, notices: preview.notices, parseIssues: preview.parseIssues, check: preview.check }, 201);
+  });
+
+  app.get("/api/plans", async (c) => {
+    const user = c.get("user");
+    const plans = await db.all(
+      `SELECT p.id, p.title, p.state, p.version, p.workspace_id, p.updated_at FROM plans p JOIN members m ON m.workspace_id = p.workspace_id AND m.user_id = ? ORDER BY p.updated_at DESC`,
+      [user.id],
+    );
+    return c.json({ plans });
+  });
+
+  app.get("/api/plans/:id", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    const room = await loadRoom(db, id);
+    if (!room) return c.json(notFound, 404);
+    const workWeek = parseWorkWeek(a.work_week);
+    const today = clock.today();
+    const schedule = levelPlan(room.plan, { workWeek, today });
+    const check = checkPlan(room.plan, { schedule, workWeek, today, level: true });
+    return c.json({
+      id,
+      version: room.seq,
+      role: a.role,
+      plan: room.plan,
+      restoredForReview: room.restoredForReview,
+      schedule: {
+        projectStart: schedule.projectStart,
+        finish: schedule.finish,
+        criticalPath: schedule.criticalPath,
+        tasks: Object.fromEntries([...schedule.tasks].map(([tid, t]) => [tid, { start: t.start, end: t.end, critical: t.critical }])),
+      },
+      check,
+    });
+  });
+
+  app.post("/api/plans/:id/ops", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    if (a.role === "viewer") return c.json({ error: "Viewers can't change this plan." }, 403);
+    const body = await c.req.json<{ opId?: unknown; clientId?: unknown; op?: unknown }>().catch(() => null);
+    const op = body ? parseOp(body.op) : null;
+    const idOk = (v: unknown): v is string => typeof v === "string" && v.length > 0 && v.length <= 64;
+    if (!body || !op || !idOk(body.opId) || !idOk(body.clientId)) return c.json({ error: "This edit isn't valid. Send { opId, clientId, op } with a supported change." }, 400);
+    const envelope: OpEnvelope = { opId: body.opId, clientId: body.clientId, op };
+    // "Done by" always comes from the signed-in person, never from the request.
+    const actor: Actor = { userId: user.id, name: user.name };
+    const result = await rooms.apply(id, envelope, actor);
+    if (result.status === "missing") return c.json(notFound, 404);
+    return c.json(result);
+  });
+
+  app.get("/api/plans/:id/export", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    const room = await loadRoom(db, id);
+    if (!room) return c.json(notFound, 404);
+    const text = exportPlan(room.plan, { hoursPerDay: hoursPerDay(parseWorkWeek(a.work_week)) });
+    const name = (room.plan.title.replace(/[^\w .-]+/g, "").trim() || "plan").slice(0, 80);
+    return c.body(text, 200, {
+      "content-type": "text/markdown; charset=utf-8",
+      "content-disposition": `attachment; filename="${name}${BRAND.fileExtensions[0]}"`,
+    });
+  });
+
+  app.notFound((c) => c.json({ error: "Not found." }, 404));
+  app.onError((err, c) => {
+    console.error(err);
+    return c.json({ error: "Something went wrong on our side. Try again." }, 500);
+  });
+
+  return app;
+}
+
+function parseWorkWeek(json: string): WorkWeek {
+  try {
+    const w = JSON.parse(json) as Partial<WorkWeek>;
+    return { hoursPerWeek: Number(w.hoursPerWeek) || DEFAULT_WORK_WEEK.hoursPerWeek, workdays: Array.isArray(w.workdays) && w.workdays.length ? w.workdays.map(Number) : DEFAULT_WORK_WEEK.workdays };
+  } catch {
+    return DEFAULT_WORK_WEEK;
+  }
+}

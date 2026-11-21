@@ -1,0 +1,12 @@
+{
+  "name": "@ezplan/server",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@ezplan/shared": "0.0.0",
+    "hono": "4.13.17"
+  }
+}

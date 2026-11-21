@@ -90,7 +90,7 @@ export async function importPlan(input: ImportInput, ctx: ImportContext): Promis
     if (input.bytes.length > IMPORT_LIMITS.maxBytes) return fail("This file is too large (over 1 MB).");
     if (looksBinary(input.bytes)) return fail("This file isn't text, so it can't be a plan.");
     try {
-      text = new TextDecoder("utf-8", { fatal: true }).decode(input.bytes);
+      text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: false }).decode(input.bytes);
     } catch {
       return fail("This file isn't readable text (it must be saved as UTF-8).");
     }
