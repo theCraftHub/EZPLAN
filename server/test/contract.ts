@@ -76,6 +76,7 @@ export function apiContract(hostName: string, factory: HostFactory) {
 
       const got = (await (await host.fetch(`/api/plans/${planId}`, {}, ALEX)).json()) as { schedule: { finish: string }; plan: { title: string }; check: { score: number } };
       expect(got.plan.title).toBe("Kitchen Remodel by Spring 2027");
+      expect((got as unknown as { today: string }).today).toBe(TODAY);
       expect(got.schedule.finish).toBe(direct.finish);
       expect(got.check.score).toBeGreaterThan(0);
     });

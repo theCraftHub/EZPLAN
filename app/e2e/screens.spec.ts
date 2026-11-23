@@ -33,4 +33,18 @@ test("screens", async ({ page }, info) => {
   await page.goto("/new");
   await page.getByRole("button", { name: /I'm starting fresh/ }).click();
   await page.screenshot({ path: out("new-wizard", info.project.name), fullPage: true });
+
+  const id = await addPlan(page, KITCHEN);
+  await page.goto(`/p/${id}`);
+  await page.getByRole("status").filter({ hasText: "Live" }).waitFor();
+  await page.screenshot({ path: out("plan-overview", info.project.name), fullPage: true });
+  await page.goto(`/p/${id}/checklist`);
+  await page.getByRole("status").filter({ hasText: "Live" }).waitFor();
+  await page.getByRole("region", { name: "Phase: Build" }).getByLabel("Add a task to this phase").fill("Paint walls 2d @Priya after T5");
+  await page.screenshot({ path: out("plan-checklist", info.project.name), fullPage: true });
+  await page.getByRole("listitem").filter({ hasText: "Order cabinets" }).getByRole("button").nth(1).click();
+  await page.screenshot({ path: out("plan-sheet", info.project.name) });
+  await page.keyboard.press("Escape");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.screenshot({ path: out("plan-checklist-dark", info.project.name), fullPage: true });
 });

@@ -13,3 +13,4 @@ export * from "./importPipeline";
 export * from "./prompts";
 export * from "./wizard";
 export * from "./availability";
+export * from "./quickAdd";

@@ -306,6 +306,8 @@ export function createApp(ports: Ports) {
       plan: room.plan,
       people,
       workWeek,
+      // The app recomputes dates as edits arrive; it uses the server's day, not the device's clock.
+      today,
       restoredForReview: room.restoredForReview,
       schedule: {
         projectStart: schedule.projectStart,

@@ -177,6 +177,27 @@ export class ClientReplica {
     this.pending = this.pending.filter((p) => p.opId !== a.env.opId);
   }
 
+  /** The last server version this client has applied. */
+  get version(): number {
+    return this.lastSeq;
+  }
+
+  /** How many local edits are still waiting for the server. */
+  get pendingCount(): number {
+    return this.pending.length;
+  }
+
+  /** After a long disconnect the server sends the whole plan: start from it, keep unsent edits. */
+  reset(plan: Plan, seq: number, restoredForReview: string[] = []): void {
+    this.confirmed = { plan: structuredClone(plan), trash: {}, restoredForReview: [...restoredForReview] };
+    this.lastSeq = seq;
+  }
+
+  /** The server refused this edit (e.g. not allowed): stop showing and re-sending it. */
+  drop(opId: string): void {
+    this.pending = this.pending.filter((p) => p.opId !== opId);
+  }
+
   /** What the user sees: confirmed state with pending edits applied on top. */
   view(today: string): Plan {
     const v = structuredClone(this.confirmed);

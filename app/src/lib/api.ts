@@ -35,6 +35,7 @@ export interface PlanDetail {
   plan: Plan;
   people: People;
   workWeek: WorkWeek;
+  today: string;
   check: PlanCheckResult;
 }
 

@@ -113,3 +113,23 @@ describe("live editing sync", () => {
     }
   });
 });
+
+describe("client replica: reconnect helpers", () => {
+  it("resets to a whole plan but keeps unsent edits, and drops a refused edit", () => {
+    const base = parsePlan("---\nezplan: 1\ntitle: R\n---\n## P1: A\n- [ ] T1: One (1d)\n- [ ] T2: Two (1d)").plan;
+    const c = new ClientReplica("c1", { userId: "u1", name: "Ana" }, base, 3);
+    const keep = c.edit({ kind: "setStatus", taskId: "T1", status: "progress" });
+    const refuse = c.edit({ kind: "setField", taskId: "T2", field: "title", value: "Renamed" });
+    expect(c.version).toBe(3);
+    expect(c.pendingCount).toBe(2);
+    const server = structuredClone(base);
+    server.title = "R (from server)";
+    c.reset(server, 9);
+    expect(c.version).toBe(9);
+    expect(c.view("2027-01-04").title).toBe("R (from server)");
+    expect(c.view("2027-01-04").phases[0]!.tasks[0]!.status).toBe("progress");
+    c.drop(refuse.opId);
+    expect(c.outbox().map((e) => e.opId)).toEqual([keep.opId]);
+    expect(c.view("2027-01-04").phases[0]!.tasks[1]!.title).toBe("Two");
+  });
+});
