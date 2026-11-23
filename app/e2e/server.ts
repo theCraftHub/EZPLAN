@@ -31,6 +31,8 @@ const { app, rooms } = createSelfHost({
   clock: { today: () => today, now: () => Date.now() },
   http: async (req) => (new URL(req.url).origin === fake.issuer ? fake.handle(req) : new Response("Tests don't reach the internet.", { status: 599 })),
   staticDir: join(import.meta.dirname, "..", "dist"),
+  // A scripted AI engine (no network); real AI needs ANTHROPIC_API_KEY on a real server.
+  testAi: true,
 });
 startServer({ app, rooms, port, onListen: (p) => console.log(`site on ${p}`) });
 

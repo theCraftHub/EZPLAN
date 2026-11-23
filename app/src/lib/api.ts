@@ -1,5 +1,5 @@
 /** Calls to our own server. Every change is JSON, which the server requires (blocks cross-site forms). */
-import type { Op, PersonAvailability, Plan, PlanCheckResult, WorkWeek } from "@ezplan/shared";
+import type { AiReview, Op, PersonAvailability, Plan, PlanCheckResult, ReportText, StatusFacts, SuggestionKind, WorkWeek } from "@ezplan/shared";
 
 export class ApiError extends Error {
   constructor(readonly status: number, message: string, readonly body: unknown) {
@@ -33,6 +33,7 @@ export interface PlanDetail {
   id: string;
   version: number;
   role: "manager" | "editor" | "viewer";
+  state: string;
   plan: Plan;
   people: People;
   workWeek: WorkWeek;
@@ -52,6 +53,21 @@ export interface ImportPreview {
 }
 
 export type People = Record<string, PersonAvailability>;
+
+export interface AiUsage {
+  checks: { used: number; limit: number };
+  reports: { used: number; limit: number };
+  poolLeft: { checks: number; reports: number };
+  resets: string;
+}
+
+export interface AiState {
+  enabled: boolean;
+  held: boolean;
+  review: { result: AiReview; planVersion: number; hidden: number; createdAt: number; by: string; changedSince: boolean } | null;
+  suppressions: { id: string; kind: SuggestionKind; text: string; taskIds: string[]; by: string; createdAt: number }[];
+  usage: AiUsage;
+}
 
 export interface Sharing {
   canShare: boolean;
@@ -79,5 +95,11 @@ export const api = {
   removeMember: (planId: string, userId: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/members/${encodeURIComponent(userId)}`, { method: "DELETE" }),
   inviteInfo: (token: string) => call<{ planTitle: string | null; inviter: string; role: "editor" | "viewer"; email: string; problem: string | null; accepted: boolean; planId: string | null }>(`/api/invites/${encodeURIComponent(token)}`),
   acceptInvite: (token: string) => call<{ planId: string }>(`/api/invites/${encodeURIComponent(token)}/accept`, { method: "POST", body: "{}" }),
+  ai: (planId: string) => call<AiState>(`/api/plans/${encodeURIComponent(planId)}/ai`),
+  aiCheck: (planId: string) => call<{ review: AiReview; hidden: number; usage: AiUsage }>(`/api/plans/${encodeURIComponent(planId)}/ai/check`, { method: "POST", body: "{}" }),
+  suppress: (planId: string, kind: SuggestionKind, text: string, taskIds: string[]) => call<{ id: string }>(`/api/plans/${encodeURIComponent(planId)}/ai/suppressions`, { method: "POST", body: JSON.stringify({ kind, text, taskIds }) }),
+  unsuppress: (planId: string, id: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/ai/suppressions/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  report: (planId: string, ai: boolean, since?: string) => call<{ facts: StatusFacts; text: ReportText; source: "ai" | "template"; note?: string }>(`/api/plans/${encodeURIComponent(planId)}/report`, { method: "POST", body: JSON.stringify({ ai, ...(since ? { since } : {}) }) }),
+  myAi: () => call<{ enabled: boolean; workspaces: ({ workspaceId: string; name: string } & AiUsage)[] }>("/api/me/ai"),
   logout: () => call<{ ok: true }>("/auth/logout", { method: "POST", body: "{}" }),
 };

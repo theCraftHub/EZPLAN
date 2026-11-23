@@ -1,5 +1,5 @@
 import { useDeferredValue, useMemo } from "react";
-import { ArrowLeft, Download, History as HistoryIcon, Printer, Sparkles, Users, Wifi, WifiOff } from "lucide-react";
+import { ArrowLeft, Download, FileText, History as HistoryIcon, Printer, ShieldAlert, Sparkles, Users, Wifi, WifiOff } from "lucide-react";
 import type { Me } from "../../lib/api";
 import { usePlanRoom } from "../../lib/live";
 import { Link } from "../../lib/router";
@@ -13,6 +13,7 @@ import { UpdateWithAI } from "./UpdateWithAI";
 import { History } from "./History";
 import { PrintSummary } from "./PrintSummary";
 import { Share } from "./Share";
+import { Report } from "./Report";
 
 const TABS = [
   { view: "", label: "Overview" },
@@ -61,6 +62,7 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
           {canEdit && <Link to={`/p/${id}/update`} className={`${action} border-primary/40 text-primary-ink`}><Sparkles aria-hidden size={16} /> Update with my AI</Link>}
           <a href={`/api/plans/${id}/export`} download className={action}><Download aria-hidden size={16} /> Download plan file</a>
           <Link to={`/p/${id}/print`} className={action}><Printer aria-hidden size={16} /> Print summary</Link>
+          <Link to={`/p/${id}/report`} className={action}><FileText aria-hidden size={16} /> Status report</Link>
           <Link to={`/p/${id}/history`} className={action}><HistoryIcon aria-hidden size={16} /> History and Trash</Link>
           <Link to={`/p/${id}/share`} className={action}><Users aria-hidden size={16} /> Share</Link>
         </div>
@@ -72,9 +74,11 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
           })}
         </nav>
       </header>
+      {room.detail.state === "review" && <Notice tone="warn"><span className="flex items-start gap-2"><ShieldAlert aria-hidden size={18} className="mt-0.5 shrink-0" />This plan is waiting for a safety review. AI features, sharing and exports are paused until then; everything else works.</span></Notice>}
       {room.notice && <Notice tone="warn"><span className="flex items-center justify-between gap-3">{room.notice}<button onClick={room.clearNotice} className="min-h-9 rounded-lg px-2 font-semibold">OK</button></span></Notice>}
       {updated > 0 && view === "" && <Notice tone="good">{updated} change{updated === 1 ? "" : "s"} from your AI assistant applied. The earlier plan is in History.</Notice>}
       {view === "update" && canEdit && <UpdateWithAI planId={id} plan={room.plan} version={room.detail.version} />}
+      {view === "report" && <Report planId={id} today={room.detail.today} canEdit={canEdit} />}
       {view === "share" && <Share planId={id} plan={room.plan} me={me} />}
       {view === "history" && <History planId={id} plan={room.plan} version={room.detail.version} canEdit={canEdit} edit={room.edit} />}
       {view === "" && <Overview plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} planId={id} />}

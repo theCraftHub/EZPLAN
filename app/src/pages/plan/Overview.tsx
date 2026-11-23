@@ -1,16 +1,17 @@
-import { CalendarClock, Flag, ListChecks, TriangleAlert } from "lucide-react";
+import { CalendarClock, Flag, TriangleAlert } from "lucide-react";
 import type { Op, Plan } from "@ezplan/shared";
-import { longDate, plural, shortDate } from "../../lib/format";
+import { plural, shortDate } from "../../lib/format";
 import { Link } from "../../lib/router";
 import { Card, ProgressRing } from "../../ui/kit";
 import { StatusButton } from "../../ui/Status";
 import type { usePlanMath } from "./math";
+import { PlanCheck } from "./PlanCheck";
 
 type Math = NonNullable<ReturnType<typeof usePlanMath>>;
 
 /** The plan's home: where are we, what's next, are we on track. */
 export function Overview({ plan, math, today, canEdit, edit, planId }: { plan: Plan; math: Math; today: string; canEdit: boolean; edit: (op: Op) => void; planId: string }) {
-  const { progress, schedule, check } = math;
+  const { progress, schedule } = math;
   const late = progress.forecastFinish && progress.forecastFinish > schedule.finish;
   const kpi = "flex flex-col gap-1";
   return (
@@ -63,16 +64,7 @@ export function Overview({ plan, math, today, canEdit, edit, planId }: { plan: P
         </ul>
       </Card>
 
-      <Card aria-label="Plan Check" className="flex flex-col gap-3">
-        <div className="flex items-baseline justify-between"><h2 className="m-0 text-lg font-bold">Plan Check</h2><span className="text-sm font-bold text-good">{check.score} / 100</span></div>
-        {check.findings.length === 0 && <p className="m-0 flex items-center gap-2 text-[15px] text-ink-2"><ListChecks aria-hidden size={18} /> No problems found.</p>}
-        <ul className="m-0 flex list-none flex-col gap-2 p-0">
-          {check.findings.slice(0, 4).map((f, i) => (
-            <li key={i} className={`rounded-xl px-3 py-2 text-sm leading-relaxed ${f.severity === "problem" ? "bg-bad-soft text-bad" : f.severity === "warning" ? "bg-warn-soft text-warn" : "bg-surface-2 text-ink-2"}`}>{f.message}</li>
-          ))}
-        </ul>
-        <span className="text-xs text-muted">Checked {longDate(today)}. Suggestions only.</span>
-      </Card>
+      <PlanCheck planId={planId} plan={plan} math={math} canEdit={canEdit} edit={edit} />
     </div>
   );
 }
