@@ -1,0 +1,179 @@
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}button:focus-visible,a:focus-visible{outline:3px solid #4F46E5;outline-offset:2px}</style>
+</helmet>
+<div style="width: 1440px; min-height: 1000px; box-sizing: border-box; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex">
+  <aside style="width: 232px; flex: none; background: #0F172A; color: #E2E8F0; padding: 20px 12px; display: flex; flex-direction: column; gap: 4px">
+    <span style="font-weight: 700; font-size: 17px; color: #FFFFFF; padding: 0 12px 18px">EZPLAN</span>
+    <span style="min-height: 44px; display: flex; align-items: center; padding: 0 12px; border-radius: 12px; color: #CBD5E1">Notifications</span>
+    <span style="min-height: 44px; display: flex; align-items: center; padding: 0 12px; border-radius: 12px; background: rgba(255,255,255,0.1); color: #FFFFFF">Home</span>
+    <span style="min-height: 44px; display: flex; align-items: center; padding: 0 12px; border-radius: 12px; color: #CBD5E1">New plan</span>
+    <span style="min-height: 44px; display: flex; align-items: center; padding: 0 12px; border-radius: 12px; color: #CBD5E1">Settings</span>
+  </aside>
+  <main style="flex: 1; min-width: 0; padding: 28px 32px; display: flex; flex-direction: column; gap: 18px">
+    <header style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 13px; color: #475569">All plans ›</span>
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+        <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em">{{ title }}</h1>
+        <span style="{{ masterHealthStyle }}">{{ masterHealth }}</span>
+        <span style="font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 999px; background: #EEF2FF; color: #3730A3">Master plan</span>
+      </div>
+      <span style="font-size: 14px; color: #334155">{{ sub }}</span>
+      <nav aria-label="Master plan views" style="display: flex; gap: 4px; border-bottom: 1px solid #E2E8F0; margin-top: 6px">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4"><button aria-current="{{ t.on }}" onClick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</button></sc-for>
+      </nav>
+    </header>
+
+    <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+        <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+          <section style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 13px; color: #475569">{{ k.k }}</span><span style="font-size: 26px; font-weight: 700">{{ k.v }}</span><span style="font-size: 13px; color: #334155">{{ k.s }}</span>
+          </section>
+        </sc-for>
+      </div>
+      <section aria-label="What decides move-in" style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; gap: 20px; align-items: flex-start">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 6px">
+          <h2 style="margin: 0; font-size: 17px">What decides move-in</h2>
+          <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #1E293B">{{ insight }}</p>
+        </div>
+        <div role="radiogroup" aria-label="Try a change" style="width: 420px; display: flex; flex-direction: column; gap: 6px">
+          <sc-for list="{{ scenarios }}" as="s" hint-placeholder-count="3"><button role="radio" aria-checked="{{ s.on }}" onClick="{{ s.pick }}" style="{{ s.style }}"><span style="font-size: 14px; font-weight: 600">{{ s.label }}</span><span style="font-size: 12px; color: #475569">{{ s.hint }}</span></button></sc-for>
+        </div>
+      </section>
+      <section aria-label="Whole-building milestones" style="background: #FFFFFF; border-radius: 16px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; gap: 28px; align-items: center">
+        <span style="font-size: 14px; font-weight: 700">Whole building</span>
+        <sc-for list="{{ milestones }}" as="m" hint-placeholder-count="5"><span style="display: flex; align-items: center; gap: 8px"><span style="{{ m.mark }}"></span><span style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">{{ m.label }}</span><span style="font-size: 12px; color: #475569">{{ m.date }} · {{ m.state }}</span></span></span></sc-for>
+      </section>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+        <sc-for list="{{ subs }}" as="s" hint-placeholder-count="8">
+          <article style="background: #FFFFFF; border-radius: 16px; padding: 14px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 8px">
+            <div style="display: flex; justify-content: space-between; gap: 8px; align-items: flex-start"><button onClick="{{ s.open }}" style="border: none; background: none; padding: 0; text-align: left; cursor: pointer; font: 700 16px Inter, sans-serif; color: #0F172A; min-height: 24px">{{ s.title }}</button><span style="{{ s.healthStyle }}">{{ s.health }}</span></div>
+            <span style="font-size: 13px; color: #475569">{{ s.when }} · {{ s.done }} of {{ s.count }} done</span>
+            <span aria-hidden="true" style="height: 6px; border-radius: 999px; background: #E2E8F0; overflow: hidden"><span style="{{ s.bar }}; display: block"></span></span>
+            <div style="display: flex; flex-wrap: wrap; gap: 4px"><span style="{{ s.lead.style }}"><span style="{{ s.lead.dot }}"></span>{{ s.lead.name }} leads</span><sc-for list="{{ s.needs }}" as="n" hint-placeholder-count="1"><span style="{{ n.style }}"><span style="{{ n.dot }}"></span>{{ n.name }}</span></sc-for></div>
+            <sc-if value="{{ s.waitsLabel }}" hint-placeholder-val="{{ true }}"><span style="font-size: 12px; color: #9A3412">{{ s.waitsLabel }}</span></sc-if>
+            <span style="font-size: 12px; color: #475569">{{ s.people }}</span>
+          </article>
+        </sc-for>
+      </div>
+      <section aria-label="Waiting across plans" style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 8px">
+        <h2 style="margin: 0; font-size: 17px">Waiting across plans</h2>
+        <sc-for list="{{ blockers }}" as="b" hint-placeholder-count="2">
+          <div style="display: flex; gap: 12px; align-items: center; border-top: 1px solid #E2E8F0; padding-top: 8px">
+            <span style="{{ b.dept.style }}"><span style="{{ b.dept.dot }}"></span>{{ b.dept.name }}</span>
+            <span style="font-weight: 600">{{ b.what }}</span><span style="font-size: 13px; color: #475569">{{ b.where }} · {{ b.who }} · due {{ b.due }}</span>
+            <span style="margin-left: auto; font-size: 13px; color: #334155">{{ b.waitingLabel }}</span>
+          </div>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ isTimeline }}" hint-placeholder-val="{{ false }}">
+      <section aria-label="Combined timeline" style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap">
+          <h2 style="margin: 0; font-size: 17px">All plans on one timeline</h2>
+          <span style="font-size: 13px; color: #334155">Dark bars decide move-in. Open a plan to see its tasks, colored by department.</span>
+          <span style="margin-left: auto; display: flex; gap: 6px"><sc-for list="{{ deptLegend }}" as="d" hint-placeholder-count="5"><span style="{{ d.style }}"><span style="{{ d.dot }}"></span>{{ d.name }}</span></sc-for></span>
+        </div>
+        <div role="radiogroup" aria-label="Try a change" style="display: flex; gap: 8px">
+          <sc-for list="{{ scenarios }}" as="s" hint-placeholder-count="3"><button role="radio" aria-checked="{{ s.on }}" onClick="{{ s.pick }}" style="{{ s.style }}"><span style="font-size: 13px; font-weight: 600">{{ s.label }}</span><span style="font-size: 12px; color: #475569">{{ s.hint }}</span></button></sc-for>
+        </div>
+        <div style="display: grid; grid-template-columns: 300px 1fr; gap: 0">
+          <span></span>
+          <div style="position: relative; height: 18px">
+            <sc-for list="{{ axis }}" as="a" hint-placeholder-count="9"><span style="{{ a.style }}">{{ a.label }}</span></sc-for>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column">
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="9">
+            <div style="display: grid; grid-template-columns: 300px 1fr; border-top: 1px solid #E2E8F0">
+              <button onClick="{{ r.toggle }}" aria-expanded="{{ r.open }}" style="border: none; background: none; text-align: left; cursor: pointer; padding: 6px 8px 6px 0; font-family: Inter, sans-serif; display: flex; flex-direction: column; min-height: 44px; justify-content: center">
+                <span style="font-size: 14px; font-weight: 700; color: #0F172A">{{ r.arrow }} {{ r.title }}</span>
+                <span style="font-size: 12px; color: #475569">{{ r.when }}</span>
+                <sc-if value="{{ r.links }}" hint-placeholder-val="{{ false }}"><span style="font-size: 11px; color: #9A3412">{{ r.links }}</span></sc-if>
+              </button>
+              <div style="position: relative; min-height: 44px; background: repeating-linear-gradient(90deg, transparent 0, transparent calc(100% / 9.7 - 1px), #F1F5F9 calc(100% / 9.7 - 1px), #F1F5F9 calc(100% / 9.7))">
+                <span style="{{ todayLine }}"></span><span style="{{ targetLine }}"></span><span style="{{ r.bar }}"></span>
+              </div>
+            </div>
+            <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+              <sc-for list="{{ r.tasks }}" as="t" hint-placeholder-count="4">
+                <div style="display: grid; grid-template-columns: 300px 1fr; background: #F8FAFC">
+                  <span style="padding: 4px 8px 4px 18px; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 13px">{{ t.title }}</span><span style="font-size: 11px; color: #475569">{{ t.who }} · {{ t.dept }} · {{ t.dates }}</span></span>
+                  <div title="{{ t.why }}" style="position: relative; min-height: 36px"><span style="{{ todayLine }}"></span><span style="{{ t.bar }}"></span></div>
+                </div>
+              </sc-for>
+            </sc-if>
+          </sc-for>
+        </div>
+        <span style="font-size: 12px; color: #475569">Red line: today (Mar 8). Dashed line: move-in target (Apr 30). Outlined task bars decide the finish.</span>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ isDepts }}" hint-placeholder-val="{{ false }}">
+      <section aria-label="Departments" style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: baseline; gap: 12px"><h2 style="margin: 0; font-size: 17px">What each department owes, across all plans</h2><span style="font-size: 13px; color: #475569">Hours a week per person, counted across every plan. Red: fully booked.</span></div>
+        <div role="radiogroup" aria-label="Try a change" style="display: flex; gap: 8px">
+          <sc-for list="{{ scenarios }}" as="s" hint-placeholder-count="3"><button role="radio" aria-checked="{{ s.on }}" onClick="{{ s.pick }}" style="{{ s.style }}"><span style="font-size: 13px; font-weight: 600">{{ s.label }}</span><span style="font-size: 12px; color: #475569">{{ s.hint }}</span></button></sc-for>
+        </div>
+        <div style="display: grid; grid-template-columns: 260px repeat(10, minmax(0, 1fr)); gap: 4px; align-items: end">
+          <span></span><sc-for list="{{ weekHead }}" as="w" hint-placeholder-count="10"><span style="font-size: 11px; color: #64748B; text-align: center">{{ w.label }}</span></sc-for>
+        </div>
+        <sc-for list="{{ depts }}" as="d" hint-placeholder-count="5">
+          <div style="border-top: 1px solid #E2E8F0; padding-top: 10px; display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+              <span style="{{ d.chip.style }}"><span style="{{ d.chip.dot }}"></span>{{ d.name }}</span>
+              <span style="font-size: 13px; color: #334155">{{ d.contact }}</span>
+              <span style="font-size: 13px; font-weight: 600">{{ d.countLabel }}</span>
+              <span style="font-size: 13px; color: #475569">{{ d.where }}</span>
+              <span style="font-size: 13px; color: #475569">{{ d.next }}</span>
+              <span style="margin-left: auto; {{ d.warnStyle }}">{{ d.warnLabel }}</span>
+              <button onClick="{{ d.pick }}" aria-expanded="{{ d.selected }}" style="min-height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; cursor: pointer; font: 600 13px Inter, sans-serif">Tasks</button>
+            </div>
+            <sc-for list="{{ d.people }}" as="p" hint-placeholder-count="2">
+              <div style="display: grid; grid-template-columns: 260px repeat(10, minmax(0, 1fr)); gap: 4px; align-items: center">
+                <span style="display: flex; flex-direction: column"><span style="font-size: 13px; font-weight: 600">{{ p.name }} <span style="font-weight: 400; color: #475569">· {{ p.cap }}</span></span><span style="{{ p.fullStyle }}; align-self: flex-start">{{ p.fullLabel }}</span></span>
+                <sc-for list="{{ p.cells }}" as="c" hint-placeholder-count="10"><span title="{{ c.title }}" aria-label="{{ c.title }}" style="{{ c.style }}">{{ c.text }}</span></sc-for>
+              </div>
+            </sc-for>
+            <sc-if value="{{ d.selected }}" hint-placeholder-val="{{ false }}">
+              <table style="border-collapse: collapse; font-size: 13px; margin: 4px 0 6px">
+                <thead><tr style="text-align: left; color: #64748B; font-size: 11px; text-transform: uppercase"><th style="padding: 4px 8px">Task</th><th style="padding: 4px 8px">Plan</th><th style="padding: 4px 8px">Who</th><th style="padding: 4px 8px">Due</th><th style="padding: 4px 8px">Status</th></tr></thead>
+                <tbody><sc-for list="{{ d.tasks }}" as="t" hint-placeholder-count="3"><tr style="border-top: 1px solid #F1F5F9"><td style="padding: 5px 8px; font-weight: 600">{{ t.title }}</td><td style="padding: 5px 8px">{{ t.where }}</td><td style="padding: 5px 8px">{{ t.who }}</td><td style="padding: 5px 8px">{{ t.due }}</td><td style="padding: 5px 8px">{{ t.st }}</td></tr></sc-for></tbody>
+              </table>
+            </sc-if>
+          </div>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ isPlan }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; gap: 6px; flex-wrap: wrap"><sc-for list="{{ subPicks }}" as="p" hint-placeholder-count="8"><button onClick="{{ p.pick }}" style="{{ p.style }}">{{ p.label }}</button></sc-for></div>
+      <div style="display: grid; grid-template-columns: 1fr 340px; gap: 16px; align-items: start">
+        <section aria-label="{{ cur.title }}" style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
+          <span style="font-size: 13px; color: #475569"><button onClick="{{ back }}" style="border: none; background: none; padding: 0; color: #4338CA; font: 600 13px Inter, sans-serif; cursor: pointer">Northfield HQ remodel</button> › {{ cur.title }}</span>
+          <div style="display: flex; align-items: center; gap: 10px"><h2 style="margin: 0; font-size: 22px">{{ cur.title }}</h2><span style="{{ cur.healthStyle }}">{{ cur.health }}</span></div>
+          <span style="font-size: 14px; color: #334155">{{ cur.when }} · {{ cur.done }} of {{ cur.count }} done · its own checklist, timeline, team and comments</span>
+          <sc-for list="{{ curTasks }}" as="t" hint-placeholder-count="4">
+            <div style="border-top: 1px solid #E2E8F0; padding: 10px 0; display: flex; gap: 12px; align-items: flex-start">
+              <span style="{{ t.statusStyle }}; min-width: 52px; text-align: center">{{ t.status }}</span>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+                <span style="font-size: 15px; font-weight: 600">{{ t.title }}</span>
+                <span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"><span style="{{ t.chip.style }}"><span style="{{ t.chip.dot }}"></span>{{ t.chip.name }}</span><span style="font-size: 13px; color: #334155">{{ t.who }} · {{ t.dates }}</span></span>
+                <sc-for list="{{ t.ext }}" as="x" hint-placeholder-count="1"><span style="font-size: 12px; font-weight: 600; color: #9A3412; background: #FFF7ED; border-radius: 8px; padding: 3px 8px; align-self: flex-start">{{ x }}</span></sc-for>
+                <span style="font-size: 12px; color: #475569">{{ t.why }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </section>
+        <aside aria-label="Departments on this plan" style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
+          <h3 style="margin: 0; font-size: 16px">Departments on this plan</h3>
+          <sc-for list="{{ curDepts }}" as="d" hint-placeholder-count="2"><div style="display: flex; flex-direction: column; gap: 3px"><span style="{{ d.chip.style }}; align-self: flex-start"><span style="{{ d.chip.dot }}"></span>{{ d.chip.name }}</span><span style="font-size: 13px; color: #334155">{{ d.contact }}</span></div></sc-for>
+          <span style="font-size: 13px; color: #475569">People on this plan see the whole-building milestones it waits on, read-only. A plumber added here sees only this plan.</span>
+        </aside>
+      </div>
+    </sc-if>
+  </main>
+</div>

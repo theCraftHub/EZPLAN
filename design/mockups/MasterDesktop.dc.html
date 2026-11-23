@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Master plan</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc><helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}button:focus-visible,a:focus-visible{outline:3px solid #4F46E5;outline-offset:2px}</style>
+</helmet>
+<div style="width: 1440px; min-height: 1000px; box-sizing: border-box; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex">
+  <aside style="width: 232px; flex: none; background: #0F172A; color: #E2E8F0; padding: 20px 12px; display: flex; flex-direction: column; gap: 4px">
+    <span style="font-weight: 700; font-size: 17px; color: #FFFFFF; padding: 0 12px 18px">EZPLAN</span>
+    <span style="min-height: 44px; display: flex; align-items: center; padding: 0 12px; border-radius: 12px; color: #CBD5E1">Notifications</span>
+    <span style="min-height: 44px; display: flex; align-items: center; padding: 0 12px; border-radius: 12px; background: rgba(255,255,255,0.1); color: #FFFFFF">Home</span>
+    <span style="min-height: 44px; display: flex; align-items: center; padding: 0 12px; border-radius: 12px; color: #CBD5E1">New plan</span>
+    <span style="min-height: 44px; display: flex; align-items: center; padding: 0 12px; border-radius: 12px; color: #CBD5E1">Settings</span>
+  </aside>
+  <main style="flex: 1; min-width: 0; padding: 28px 32px; display: flex; flex-direction: column; gap: 18px">
+    <header style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 13px; color: #475569">All plans ›</span>
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+        <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em">{{ title }}</h1>
+        <span style="{{ masterHealthStyle }}">{{ masterHealth }}</span>
+        <span style="font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 999px; background: #EEF2FF; color: #3730A3">Master plan</span>
+      </div>
+      <span style="font-size: 14px; color: #334155">{{ sub }}</span>
+      <nav aria-label="Master plan views" style="display: flex; gap: 4px; border-bottom: 1px solid #E2E8F0; margin-top: 6px">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4"><button aria-current="{{ t.on }}" onClick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</button></sc-for>
+      </nav>
+    </header>
+
+    <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+        <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+          <section style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 13px; color: #475569">{{ k.k }}</span><span style="font-size: 26px; font-weight: 700">{{ k.v }}</span><span style="font-size: 13px; color: #334155">{{ k.s }}</span>
+          </section>
+        </sc-for>
+      </div>
+      <section aria-label="What decides move-in" style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; gap: 20px; align-items: flex-start">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 6px">
+          <h2 style="margin: 0; font-size: 17px">What decides move-in</h2>
+          <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #1E293B">{{ insight }}</p>
+        </div>
+        <div role="radiogroup" aria-label="Try a change" style="width: 420px; display: flex; flex-direction: column; gap: 6px">
+          <sc-for list="{{ scenarios }}" as="s" hint-placeholder-count="3"><button role="radio" aria-checked="{{ s.on }}" onClick="{{ s.pick }}" style="{{ s.style }}"><span style="font-size: 14px; font-weight: 600">{{ s.label }}</span><span style="font-size: 12px; color: #475569">{{ s.hint }}</span></button></sc-for>
+        </div>
+      </section>
+      <section aria-label="Whole-building milestones" style="background: #FFFFFF; border-radius: 16px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; gap: 28px; align-items: center">
+        <span style="font-size: 14px; font-weight: 700">Whole building</span>
+        <sc-for list="{{ milestones }}" as="m" hint-placeholder-count="5"><span style="display: flex; align-items: center; gap: 8px"><span style="{{ m.mark }}"></span><span style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">{{ m.label }}</span><span style="font-size: 12px; color: #475569">{{ m.date }} · {{ m.state }}</span></span></span></sc-for>
+      </section>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+        <sc-for list="{{ subs }}" as="s" hint-placeholder-count="8">
+          <article style="background: #FFFFFF; border-radius: 16px; padding: 14px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 8px">
+            <div style="display: flex; justify-content: space-between; gap: 8px; align-items: flex-start"><button onClick="{{ s.open }}" style="border: none; background: none; padding: 0; text-align: left; cursor: pointer; font: 700 16px Inter, sans-serif; color: #0F172A; min-height: 24px">{{ s.title }}</button><span style="{{ s.healthStyle }}">{{ s.health }}</span></div>
+            <span style="font-size: 13px; color: #475569">{{ s.when }} · {{ s.done }} of {{ s.count }} done</span>
+            <span aria-hidden="true" style="height: 6px; border-radius: 999px; background: #E2E8F0; overflow: hidden"><span style="{{ s.bar }}; display: block"></span></span>
+            <div style="display: flex; flex-wrap: wrap; gap: 4px"><span style="{{ s.lead.style }}"><span style="{{ s.lead.dot }}"></span>{{ s.lead.name }} leads</span><sc-for list="{{ s.needs }}" as="n" hint-placeholder-count="1"><span style="{{ n.style }}"><span style="{{ n.dot }}"></span>{{ n.name }}</span></sc-for></div>
+            <sc-if value="{{ s.waitsLabel }}" hint-placeholder-val="{{ true }}"><span style="font-size: 12px; color: #9A3412">{{ s.waitsLabel }}</span></sc-if>
+            <span style="font-size: 12px; color: #475569">{{ s.people }}</span>
+          </article>
+        </sc-for>
+      </div>
+      <section aria-label="Waiting across plans" style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 8px">
+        <h2 style="margin: 0; font-size: 17px">Waiting across plans</h2>
+        <sc-for list="{{ blockers }}" as="b" hint-placeholder-count="2">
+          <div style="display: flex; gap: 12px; align-items: center; border-top: 1px solid #E2E8F0; padding-top: 8px">
+            <span style="{{ b.dept.style }}"><span style="{{ b.dept.dot }}"></span>{{ b.dept.name }}</span>
+            <span style="font-weight: 600">{{ b.what }}</span><span style="font-size: 13px; color: #475569">{{ b.where }} · {{ b.who }} · due {{ b.due }}</span>
+            <span style="margin-left: auto; font-size: 13px; color: #334155">{{ b.waitingLabel }}</span>
+          </div>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ isTimeline }}" hint-placeholder-val="{{ false }}">
+      <section aria-label="Combined timeline" style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap">
+          <h2 style="margin: 0; font-size: 17px">All plans on one timeline</h2>
+          <span style="font-size: 13px; color: #334155">Dark bars decide move-in. Open a plan to see its tasks, colored by department.</span>
+          <span style="margin-left: auto; display: flex; gap: 6px"><sc-for list="{{ deptLegend }}" as="d" hint-placeholder-count="5"><span style="{{ d.style }}"><span style="{{ d.dot }}"></span>{{ d.name }}</span></sc-for></span>
+        </div>
+        <div role="radiogroup" aria-label="Try a change" style="display: flex; gap: 8px">
+          <sc-for list="{{ scenarios }}" as="s" hint-placeholder-count="3"><button role="radio" aria-checked="{{ s.on }}" onClick="{{ s.pick }}" style="{{ s.style }}"><span style="font-size: 13px; font-weight: 600">{{ s.label }}</span><span style="font-size: 12px; color: #475569">{{ s.hint }}</span></button></sc-for>
+        </div>
+        <div style="display: grid; grid-template-columns: 300px 1fr; gap: 0">
+          <span></span>
+          <div style="position: relative; height: 18px">
+            <sc-for list="{{ axis }}" as="a" hint-placeholder-count="9"><span style="{{ a.style }}">{{ a.label }}</span></sc-for>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column">
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="9">
+            <div style="display: grid; grid-template-columns: 300px 1fr; border-top: 1px solid #E2E8F0">
+              <button onClick="{{ r.toggle }}" aria-expanded="{{ r.open }}" style="border: none; background: none; text-align: left; cursor: pointer; padding: 6px 8px 6px 0; font-family: Inter, sans-serif; display: flex; flex-direction: column; min-height: 44px; justify-content: center">
+                <span style="font-size: 14px; font-weight: 700; color: #0F172A">{{ r.arrow }} {{ r.title }}</span>
+                <span style="font-size: 12px; color: #475569">{{ r.when }}</span>
+                <sc-if value="{{ r.links }}" hint-placeholder-val="{{ false }}"><span style="font-size: 11px; color: #9A3412">{{ r.links }}</span></sc-if>
+              </button>
+              <div style="position: relative; min-height: 44px; background: repeating-linear-gradient(90deg, transparent 0, transparent calc(100% / 9.7 - 1px), #F1F5F9 calc(100% / 9.7 - 1px), #F1F5F9 calc(100% / 9.7))">
+                <span style="{{ todayLine }}"></span><span style="{{ targetLine }}"></span><span style="{{ r.bar }}"></span>
+              </div>
+            </div>
+            <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+              <sc-for list="{{ r.tasks }}" as="t" hint-placeholder-count="4">
+                <div style="display: grid; grid-template-columns: 300px 1fr; background: #F8FAFC">
+                  <span style="padding: 4px 8px 4px 18px; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 13px">{{ t.title }}</span><span style="font-size: 11px; color: #475569">{{ t.who }} · {{ t.dept }} · {{ t.dates }}</span></span>
+                  <div title="{{ t.why }}" style="position: relative; min-height: 36px"><span style="{{ todayLine }}"></span><span style="{{ t.bar }}"></span></div>
+                </div>
+              </sc-for>
+            </sc-if>
+          </sc-for>
+        </div>
+        <span style="font-size: 12px; color: #475569">Red line: today (Mar 8). Dashed line: move-in target (Apr 30). Outlined task bars decide the finish.</span>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ isDepts }}" hint-placeholder-val="{{ false }}">
+      <section aria-label="Departments" style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: baseline; gap: 12px"><h2 style="margin: 0; font-size: 17px">What each department owes, across all plans</h2><span style="font-size: 13px; color: #475569">Hours a week per person, counted across every plan. Red: fully booked.</span></div>
+        <div role="radiogroup" aria-label="Try a change" style="display: flex; gap: 8px">
+          <sc-for list="{{ scenarios }}" as="s" hint-placeholder-count="3"><button role="radio" aria-checked="{{ s.on }}" onClick="{{ s.pick }}" style="{{ s.style }}"><span style="font-size: 13px; font-weight: 600">{{ s.label }}</span><span style="font-size: 12px; color: #475569">{{ s.hint }}</span></button></sc-for>
+        </div>
+        <div style="display: grid; grid-template-columns: 260px repeat(10, minmax(0, 1fr)); gap: 4px; align-items: end">
+          <span></span><sc-for list="{{ weekHead }}" as="w" hint-placeholder-count="10"><span style="font-size: 11px; color: #64748B; text-align: center">{{ w.label }}</span></sc-for>
+        </div>
+        <sc-for list="{{ depts }}" as="d" hint-placeholder-count="5">
+          <div style="border-top: 1px solid #E2E8F0; padding-top: 10px; display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+              <span style="{{ d.chip.style }}"><span style="{{ d.chip.dot }}"></span>{{ d.name }}</span>
+              <span style="font-size: 13px; color: #334155">{{ d.contact }}</span>
+              <span style="font-size: 13px; font-weight: 600">{{ d.countLabel }}</span>
+              <span style="font-size: 13px; color: #475569">{{ d.where }}</span>
+              <span style="font-size: 13px; color: #475569">{{ d.next }}</span>
+              <span style="margin-left: auto; {{ d.warnStyle }}">{{ d.warnLabel }}</span>
+              <button onClick="{{ d.pick }}" aria-expanded="{{ d.selected }}" style="min-height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; cursor: pointer; font: 600 13px Inter, sans-serif">Tasks</button>
+            </div>
+            <sc-for list="{{ d.people }}" as="p" hint-placeholder-count="2">
+              <div style="display: grid; grid-template-columns: 260px repeat(10, minmax(0, 1fr)); gap: 4px; align-items: center">
+                <span style="display: flex; flex-direction: column"><span style="font-size: 13px; font-weight: 600">{{ p.name }} <span style="font-weight: 400; color: #475569">· {{ p.cap }}</span></span><span style="{{ p.fullStyle }}; align-self: flex-start">{{ p.fullLabel }}</span></span>
+                <sc-for list="{{ p.cells }}" as="c" hint-placeholder-count="10"><span title="{{ c.title }}" aria-label="{{ c.title }}" style="{{ c.style }}">{{ c.text }}</span></sc-for>
+              </div>
+            </sc-for>
+            <sc-if value="{{ d.selected }}" hint-placeholder-val="{{ false }}">
+              <table style="border-collapse: collapse; font-size: 13px; margin: 4px 0 6px">
+                <thead><tr style="text-align: left; color: #64748B; font-size: 11px; text-transform: uppercase"><th style="padding: 4px 8px">Task</th><th style="padding: 4px 8px">Plan</th><th style="padding: 4px 8px">Who</th><th style="padding: 4px 8px">Due</th><th style="padding: 4px 8px">Status</th></tr></thead>
+                <tbody><sc-for list="{{ d.tasks }}" as="t" hint-placeholder-count="3"><tr style="border-top: 1px solid #F1F5F9"><td style="padding: 5px 8px; font-weight: 600">{{ t.title }}</td><td style="padding: 5px 8px">{{ t.where }}</td><td style="padding: 5px 8px">{{ t.who }}</td><td style="padding: 5px 8px">{{ t.due }}</td><td style="padding: 5px 8px">{{ t.st }}</td></tr></sc-for></tbody>
+              </table>
+            </sc-if>
+          </div>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ isPlan }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; gap: 6px; flex-wrap: wrap"><sc-for list="{{ subPicks }}" as="p" hint-placeholder-count="8"><button onClick="{{ p.pick }}" style="{{ p.style }}">{{ p.label }}</button></sc-for></div>
+      <div style="display: grid; grid-template-columns: 1fr 340px; gap: 16px; align-items: start">
+        <section aria-label="{{ cur.title }}" style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
+          <span style="font-size: 13px; color: #475569"><button onClick="{{ back }}" style="border: none; background: none; padding: 0; color: #4338CA; font: 600 13px Inter, sans-serif; cursor: pointer">Northfield HQ remodel</button> › {{ cur.title }}</span>
+          <div style="display: flex; align-items: center; gap: 10px"><h2 style="margin: 0; font-size: 22px">{{ cur.title }}</h2><span style="{{ cur.healthStyle }}">{{ cur.health }}</span></div>
+          <span style="font-size: 14px; color: #334155">{{ cur.when }} · {{ cur.done }} of {{ cur.count }} done · its own checklist, timeline, team and comments</span>
+          <sc-for list="{{ curTasks }}" as="t" hint-placeholder-count="4">
+            <div style="border-top: 1px solid #E2E8F0; padding: 10px 0; display: flex; gap: 12px; align-items: flex-start">
+              <span style="{{ t.statusStyle }}; min-width: 52px; text-align: center">{{ t.status }}</span>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+                <span style="font-size: 15px; font-weight: 600">{{ t.title }}</span>
+                <span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"><span style="{{ t.chip.style }}"><span style="{{ t.chip.dot }}"></span>{{ t.chip.name }}</span><span style="font-size: 13px; color: #334155">{{ t.who }} · {{ t.dates }}</span></span>
+                <sc-for list="{{ t.ext }}" as="x" hint-placeholder-count="1"><span style="font-size: 12px; font-weight: 600; color: #9A3412; background: #FFF7ED; border-radius: 8px; padding: 3px 8px; align-self: flex-start">{{ x }}</span></sc-for>
+                <span style="font-size: 12px; color: #475569">{{ t.why }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </section>
+        <aside aria-label="Departments on this plan" style="background: #FFFFFF; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px">
+          <h3 style="margin: 0; font-size: 16px">Departments on this plan</h3>
+          <sc-for list="{{ curDepts }}" as="d" hint-placeholder-count="2"><div style="display: flex; flex-direction: column; gap: 3px"><span style="{{ d.chip.style }}; align-self: flex-start"><span style="{{ d.chip.dot }}"></span>{{ d.chip.name }}</span><span style="font-size: 13px; color: #334155">{{ d.contact }}</span></div></sc-for>
+          <span style="font-size: 13px; color: #475569">People on this plan see the whole-building milestones it waits on, read-only. A plumber added here sees only this plan.</span>
+        </aside>
+      </div>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+var DATA = {"today":"2027-03-08","finish":"2027-05-06","start":"2027-03-01","whatIfCabinets":{"taskId":"T14","finish":"2027-05-11","dates":{"T3":["2027-03-01","2027-03-01"],"T2":["2027-03-01","2027-03-01"],"T1":["2027-03-01","2027-03-03"],"T5":["2027-05-05","2027-05-05"],"T6":["2027-05-06","2027-05-11"],"T7":["2027-03-08","2027-03-10"],"T4":["2027-03-10","2027-03-18"],"T8":["2027-03-10","2027-03-12"],"T9":["2027-04-06","2027-04-08"],"T10":["2027-04-08","2027-04-12"],"T11":["2027-03-01","2027-03-04"],"T12":["2027-03-03","2027-03-08"],"T13":["2027-03-08","2027-03-12"],"T14":["2027-03-16","2027-03-25"],"T15":["2027-03-26","2027-03-30"],"T16":["2027-03-10","2027-03-12"],"T17":["2027-03-12","2027-03-18"],"T18":["2027-03-12","2027-03-16"],"T19":["2027-03-25","2027-03-30"],"T20":["2027-03-12","2027-03-16"],"T21":["2027-03-18","2027-03-23"],"T22":["2027-03-16","2027-03-18"],"T23":["2027-03-30","2027-04-02"],"T24":["2027-03-17","2027-03-22"],"T25":["2027-04-02","2027-04-06"],"T26":["2027-04-06","2027-04-12"],"T27":["2027-04-06","2027-04-08"],"T28":["2027-04-13","2027-04-16"],"T29":["2027-04-08","2027-04-13"],"T30":["2027-04-13","2027-04-19"],"T31":["2027-04-21","2027-04-22"],"T32":["2027-04-16","2027-04-21"],"T33":["2027-04-21","2027-04-27"],"T34":["2027-04-28","2027-04-28"],"T35":["2027-04-22","2027-05-03"],"T36":["2027-04-22","2027-04-27"],"T37":["2027-04-27","2027-05-03"],"T38":["2027-05-04","2027-05-04"]}},"whatIfNoor":{"finish":"2027-04-26","dates":{"T3":["2027-03-01","2027-03-01","Omar"],"T2":["2027-03-01","2027-03-01","Tess"],"T1":["2027-03-01","2027-03-03","Dana"],"T5":["2027-04-20","2027-04-20","Dana"],"T6":["2027-04-21","2027-04-26","Mei"],"T7":["2027-03-08","2027-03-10","Kai"],"T4":["2027-03-10","2027-03-18","Ivan"],"T8":["2027-03-10","2027-03-12","Leo"],"T9":["2027-03-24","2027-03-26","Kai"],"T10":["2027-03-26","2027-03-30","Ivan"],"T11":["2027-03-01","2027-03-04","Omar"],"T12":["2027-03-03","2027-03-08","Kai"],"T13":["2027-03-08","2027-03-12","Rosa"],"T14":["2027-03-16","2027-03-22","Kai"],"T15":["2027-03-23","2027-03-25","Tess"],"T16":["2027-03-10","2027-03-12","Kai"],"T17":["2027-03-12","2027-03-18","Rosa"],"T18":["2027-03-12","2027-03-16","Leo"],"T19":["2027-03-18","2027-03-23","Noor"],"T20":["2027-03-12","2027-03-16","Kai"],"T21":["2027-03-18","2027-03-23","Rosa"],"T22":["2027-03-16","2027-03-18","Leo"],"T23":["2027-03-24","2027-03-26","Noor"],"T24":["2027-03-17","2027-03-22","Mei"],"T25":["2027-03-22","2027-03-24","Kai"],"T26":["2027-03-24","2027-03-30","Rosa"],"T27":["2027-03-24","2027-03-26","Leo"],"T28":["2027-03-30","2027-04-02","Noor"],"T29":["2027-03-26","2027-03-31","Kai"],"T30":["2027-03-31","2027-04-06","Ivan"],"T31":["2027-04-08","2027-04-09","Kai"],"T32":["2027-03-31","2027-04-05","Kai"],"T33":["2027-04-06","2027-04-12","Ivan"],"T34":["2027-04-13","2027-04-13","Kai"],"T35":["2027-04-06","2027-04-15","Mei"],"T36":["2027-04-05","2027-04-08","Kai"],"T37":["2027-04-12","2027-04-16","Ivan"],"T38":["2027-04-19","2027-04-19","Kai"]}},"subs":[{"key":"master","title":"HQ remodel (whole building)","lead":"Facilities","needs":["Finance","Safety"],"ids":["T3","T2","T1","T5","T6"]},{"key":"reception","title":"Reception","lead":"Facilities","needs":["IT"],"ids":["T7","T4","T8","T9","T10"]},{"key":"kitchen","title":"Kitchen","lead":"Facilities","needs":["Finance","Safety"],"ids":["T11","T12","T13","T14","T15"]},{"key":"bathroom-1","title":"Bathroom 1","lead":"Facilities","needs":[],"ids":["T16","T17","T18","T19"]},{"key":"bathroom-2","title":"Bathroom 2","lead":"Facilities","needs":["HR"],"ids":["T20","T21","T22","T23","T24"]},{"key":"bathroom-3","title":"Bathroom 3","lead":"Facilities","needs":[],"ids":["T25","T26","T27","T28"]},{"key":"office-1","title":"Office 1","lead":"Facilities","needs":["IT"],"ids":["T29","T30","T31"]},{"key":"office-2","title":"Office 2","lead":"Facilities","needs":["IT","HR"],"ids":["T32","T33","T34","T35"]},{"key":"office-3","title":"Office 3","lead":"Facilities","needs":["IT"],"ids":["T36","T37","T38"]}],"people":{"Kai":40,"Leo":40,"Rosa":32,"Ivan":20,"Mei":10,"Omar":10,"Tess":16,"Dana":40},"tasks":[{"id":"T3","est":"2d","sub":"master","title":"Approve remodel budget","owner":"Omar","dept":"Finance","status":"done","start":"2027-03-01","end":"2027-03-01","critical":true,"deps":[],"why":"Starts Mar 1, the project start."},{"id":"T2","est":"3d","sub":"master","title":"Asbestos survey","owner":"Tess","dept":"Safety","status":"done","start":"2027-03-01","end":"2027-03-01","critical":true,"deps":[],"why":"Starts Mar 1, the project start."},{"id":"T1","est":"5d","sub":"master","title":"Building permits approved","owner":"Dana","dept":"Facilities","status":"progress","start":"2027-03-01","end":"2027-03-03","critical":true,"deps":["T3","T2"],"why":"Starts Mar 1, the project start."},{"id":"T5","est":"1d","sub":"master","title":"Final walkthrough","owner":"Dana","dept":"Facilities","status":"todo","start":"2027-04-30","end":"2027-04-30","critical":true,"deps":["T7","T4","T8","T9","T10","T11","T12","T13","T14","T15","T16","T17","T18","T19","T20","T21","T22","T23","T24","T25","T26","T27","T28","T29","T30","T31","T32","T33","T34","T35","T36","T37","T38"],"why":"Starts Apr 30 because it waits on T38 \"Desks and chairs, Office 3\"."},{"id":"T6","est":"1d","sub":"master","title":"Move-in day","owner":"Mei","dept":"HR","status":"todo","start":"2027-05-03","end":"2027-05-06","critical":true,"deps":["T5"],"why":"Starts May 3 because it waits on T5 \"Final walkthrough\"."},{"id":"T7","est":"2d","sub":"reception","title":"Demolish old front desk","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-03-08","end":"2027-03-10","critical":true,"deps":["T1"],"why":"Starts Mar 8 because Kai is on T12 \"Strip old kitchen\" until then."},{"id":"T4","est":"3d","sub":"reception","title":"Move network closet","owner":"Ivan","dept":"IT","status":"todo","start":"2027-03-10","end":"2027-03-18","critical":false,"deps":["T7"],"why":"Starts Mar 10 because it waits on T7 \"Demolish old front desk\"."},{"id":"T8","est":"2d","sub":"reception","title":"New reception wiring","owner":"Leo","dept":"Facilities","status":"todo","start":"2027-03-10","end":"2027-03-12","critical":false,"deps":["T7"],"why":"Starts Mar 10 because it waits on T7 \"Demolish old front desk\"."},{"id":"T9","est":"2d","sub":"reception","title":"Install desk and visitor kiosk","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-04-01","end":"2027-04-05","critical":true,"deps":["T8"],"why":"Starts Apr 1 because Kai is on T25 \"Strip Bathroom 3\" until then."},{"id":"T10","est":"1d","sub":"reception","title":"Set up visitor sign-in system","owner":"Ivan","dept":"IT","status":"todo","start":"2027-04-05","end":"2027-04-07","critical":false,"deps":["T4","T9"],"why":"Starts Apr 5 because it waits on T9 \"Install desk and visitor kiosk\"."},{"id":"T11","est":"1d","sub":"kitchen","title":"Order appliances","owner":"Omar","dept":"Finance","status":"todo","start":"2027-03-01","end":"2027-03-04","critical":false,"deps":["T3"],"why":"Starts Mar 1, the project start."},{"id":"T12","est":"3d","sub":"kitchen","title":"Strip old kitchen","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-03-03","end":"2027-03-08","critical":true,"deps":["T1"],"why":"Starts Mar 3 because it waits on T1 \"Building permits approved\"."},{"id":"T13","est":"3d","sub":"kitchen","title":"Plumbing for sink and dishwasher","owner":"Rosa","dept":"Facilities","status":"todo","start":"2027-03-08","end":"2027-03-12","critical":false,"deps":["T12"],"why":"Starts Mar 8 because it waits on T12 \"Strip old kitchen\"."},{"id":"T14","est":"4d","sub":"kitchen","title":"Install cabinets","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-03-16","end":"2027-03-22","critical":true,"deps":["T13","T11"],"why":"Starts Mar 16 because Kai is on T20 \"Strip Bathroom 2\" until then."},{"id":"T15","est":"1d","sub":"kitchen","title":"Fire safety sign-off","owner":"Tess","dept":"Safety","status":"todo","start":"2027-03-23","end":"2027-03-25","critical":false,"deps":["T14"],"why":"Starts Mar 23 because it waits on T14 \"Install cabinets\"."},{"id":"T16","est":"2d","sub":"bathroom-1","title":"Strip Bathroom 1","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-03-10","end":"2027-03-12","critical":true,"deps":["T1"],"why":"Starts Mar 10 because Kai is on T7 \"Demolish old front desk\" until then."},{"id":"T17","est":"3d","sub":"bathroom-1","title":"Rough plumbing, Bathroom 1","owner":"Rosa","dept":"Facilities","status":"todo","start":"2027-03-12","end":"2027-03-18","critical":false,"deps":["T16"],"why":"Starts Mar 12 because it waits on T16 \"Strip Bathroom 1\"."},{"id":"T18","est":"2d","sub":"bathroom-1","title":"Lights and fans, Bathroom 1","owner":"Leo","dept":"Facilities","status":"todo","start":"2027-03-12","end":"2027-03-16","critical":false,"deps":["T16"],"why":"Starts Mar 12 because it waits on T16 \"Strip Bathroom 1\"."},{"id":"T19","est":"3d","sub":"bathroom-1","title":"Tile and fixtures, Bathroom 1","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-03-22","end":"2027-03-25","critical":true,"deps":["T17","T18"],"why":"Starts Mar 22 because Kai is on T14 \"Install cabinets\" until then."},{"id":"T20","est":"2d","sub":"bathroom-2","title":"Strip Bathroom 2","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-03-12","end":"2027-03-16","critical":true,"deps":["T1"],"why":"Starts Mar 12 because Kai is on T16 \"Strip Bathroom 1\" until then."},{"id":"T21","est":"3d","sub":"bathroom-2","title":"Rough plumbing, Bathroom 2","owner":"Rosa","dept":"Facilities","status":"todo","start":"2027-03-18","end":"2027-03-23","critical":false,"deps":["T20"],"why":"Starts Mar 18 because Rosa is on T17 \"Rough plumbing, Bathroom 1\" until then."},{"id":"T22","est":"2d","sub":"bathroom-2","title":"Lights and fans, Bathroom 2","owner":"Leo","dept":"Facilities","status":"todo","start":"2027-03-16","end":"2027-03-18","critical":false,"deps":["T20"],"why":"Starts Mar 16 because it waits on T20 \"Strip Bathroom 2\"."},{"id":"T23","est":"3d","sub":"bathroom-2","title":"Tile and fixtures, Bathroom 2","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-03-25","end":"2027-03-30","critical":true,"deps":["T21","T22"],"why":"Starts Mar 25 because Kai is on T19 \"Tile and fixtures, Bathroom 1\" until then."},{"id":"T24","est":"1d","sub":"bathroom-2","title":"Accessible stall layout approved","owner":"Mei","dept":"HR","status":"todo","start":"2027-03-17","end":"2027-03-22","critical":false,"deps":["T20"],"why":"Starts Mar 17 because it waits on T20 \"Strip Bathroom 2\"."},{"id":"T25","est":"2d","sub":"bathroom-3","title":"Strip Bathroom 3","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-03-30","end":"2027-04-01","critical":true,"deps":["T1"],"why":"Starts Mar 30 because Kai is on T23 \"Tile and fixtures, Bathroom 2\" until then."},{"id":"T26","est":"3d","sub":"bathroom-3","title":"Rough plumbing, Bathroom 3","owner":"Rosa","dept":"Facilities","status":"todo","start":"2027-04-01","end":"2027-04-07","critical":false,"deps":["T25"],"why":"Starts Apr 1 because it waits on T25 \"Strip Bathroom 3\"."},{"id":"T27","est":"2d","sub":"bathroom-3","title":"Lights and fans, Bathroom 3","owner":"Leo","dept":"Facilities","status":"todo","start":"2027-04-01","end":"2027-04-05","critical":false,"deps":["T25"],"why":"Starts Apr 1 because it waits on T25 \"Strip Bathroom 3\"."},{"id":"T28","est":"3d","sub":"bathroom-3","title":"Tile and fixtures, Bathroom 3","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-04-08","end":"2027-04-13","critical":true,"deps":["T26","T27"],"why":"Starts Apr 8 because Kai is on T29 \"Walls and paint, Office 1\" until then."},{"id":"T29","est":"3d","sub":"office-1","title":"Walls and paint, Office 1","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-04-05","end":"2027-04-08","critical":true,"deps":["T1"],"why":"Starts Apr 5 because Kai is on T9 \"Install desk and visitor kiosk\" until then."},{"id":"T30","est":"2d","sub":"office-1","title":"Network cabling, Office 1","owner":"Ivan","dept":"IT","status":"todo","start":"2027-04-08","end":"2027-04-14","critical":false,"deps":["T4","T29"],"why":"Starts Apr 8 because it waits on T29 \"Walls and paint, Office 1\"."},{"id":"T31","est":"1d","sub":"office-1","title":"Desks and chairs, Office 1","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-04-16","end":"2027-04-19","critical":true,"deps":["T30"],"why":"Starts Apr 16 because Kai is on T32 \"Walls and paint, Office 2\" until then."},{"id":"T32","est":"3d","sub":"office-2","title":"Walls and paint, Office 2","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-04-13","end":"2027-04-16","critical":true,"deps":["T1"],"why":"Starts Apr 13 because Kai is on T28 \"Tile and fixtures, Bathroom 3\" until then."},{"id":"T33","est":"2d","sub":"office-2","title":"Network cabling, Office 2","owner":"Ivan","dept":"IT","status":"todo","start":"2027-04-16","end":"2027-04-22","critical":false,"deps":["T4","T32"],"why":"Starts Apr 16 because it waits on T32 \"Walls and paint, Office 2\"."},{"id":"T34","est":"1d","sub":"office-2","title":"Desks and chairs, Office 2","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-04-23","end":"2027-04-23","critical":false,"deps":["T33"],"why":"Starts Apr 23 because it waits on T33 \"Network cabling, Office 2\"."},{"id":"T35","est":"2d","sub":"office-2","title":"Seating plan for the sales team","owner":"Mei","dept":"HR","status":"todo","start":"2027-04-19","end":"2027-04-28","critical":false,"deps":["T32"],"why":"Starts Apr 19 because it waits on T32 \"Walls and paint, Office 2\"."},{"id":"T36","est":"3d","sub":"office-3","title":"Walls and paint, Office 3","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-04-19","end":"2027-04-22","critical":true,"deps":["T1"],"why":"Starts Apr 19 because Kai is on T31 \"Desks and chairs, Office 1\" until then."},{"id":"T37","est":"2d","sub":"office-3","title":"Network cabling, Office 3","owner":"Ivan","dept":"IT","status":"todo","start":"2027-04-22","end":"2027-04-28","critical":true,"deps":["T4","T36"],"why":"Starts Apr 22 because it waits on T36 \"Walls and paint, Office 3\"."},{"id":"T38","est":"1d","sub":"office-3","title":"Desks and chairs, Office 3","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-04-29","end":"2027-04-29","critical":true,"deps":["T37"],"why":"Starts Apr 29 because it waits on T37 \"Network cabling, Office 3\"."}],"weekly":{"none":{"Omar":{"2027-03-01":8},"Dana":{"2027-03-01":20,"2027-04-26":8},"Kai":{"2027-03-01":20,"2027-03-08":40,"2027-03-15":40,"2027-03-22":40,"2027-03-29":40,"2027-04-05":40,"2027-04-12":40,"2027-04-19":36,"2027-04-26":8},"Rosa":{"2027-03-08":27.2,"2027-03-15":32,"2027-03-22":12.8,"2027-03-29":9.6,"2027-04-05":14.4},"Ivan":{"2027-03-08":10,"2027-03-15":14,"2027-04-05":14,"2027-04-12":12,"2027-04-19":20,"2027-04-26":10},"Leo":{"2027-03-08":20,"2027-03-15":28,"2027-03-29":12,"2027-04-05":4},"Mei":{"2027-03-15":6,"2027-03-22":2,"2027-04-19":10,"2027-04-26":6,"2027-05-03":8},"Tess":{"2027-03-22":8}},"cabinets":{"Omar":{"2027-03-01":8},"Dana":{"2027-03-01":20,"2027-05-03":8},"Kai":{"2027-03-01":20,"2027-03-08":40,"2027-03-15":40,"2027-03-22":40,"2027-03-29":40,"2027-04-05":40,"2027-04-12":40,"2027-04-19":40,"2027-04-26":20,"2027-05-03":8},"Rosa":{"2027-03-08":27.2,"2027-03-15":32,"2027-03-22":12.8,"2027-04-05":22.4,"2027-04-12":1.6},"Ivan":{"2027-03-08":10,"2027-03-15":14,"2027-04-05":6,"2027-04-12":16,"2027-04-19":12,"2027-04-26":20,"2027-05-03":2},"Leo":{"2027-03-08":20,"2027-03-15":28,"2027-04-05":16},"Mei":{"2027-03-15":6,"2027-03-22":2,"2027-04-19":4,"2027-04-26":10,"2027-05-03":6,"2027-05-10":4},"Tess":{"2027-03-22":3.2,"2027-03-29":4.8}},"noor":{"Omar":{"2027-03-01":8},"Dana":{"2027-03-01":20,"2027-04-19":8},"Kai":{"2027-03-01":20,"2027-03-08":40,"2027-03-15":40,"2027-03-22":40,"2027-03-29":40,"2027-04-05":36,"2027-04-12":8,"2027-04-19":8},"Rosa":{"2027-03-08":27.2,"2027-03-15":32,"2027-03-22":28.8,"2027-03-29":8},"Ivan":{"2027-03-08":10,"2027-03-15":14,"2027-03-22":2,"2027-03-29":16,"2027-04-05":20,"2027-04-12":18},"Leo":{"2027-03-08":20,"2027-03-15":28,"2027-03-22":16},"Mei":{"2027-03-15":6,"2027-03-22":2,"2027-04-05":8,"2027-04-12":8,"2027-04-19":6,"2027-04-26":2},"Noor":{"2027-03-15":14,"2027-03-22":34,"2027-03-29":24},"Tess":{"2027-03-22":8}}}};
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { view: 'overview', sub: 'office-2', open: {}, whatIf: 'none', dept: null };
+  }
+  renderVals() {
+    var self = this, st = this.state, D = DATA;
+    var DAY = 86400000;
+    var ms = function (iso) { return Date.parse(iso + 'T00:00:00Z'); };
+    var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var fmt = function (iso) { var d = new Date(ms(iso)); return MON[d.getUTCMonth()] + ' ' + d.getUTCDate(); };
+    var go = function (o) { return function () { self.setState(o); }; };
+    // Department colors: validated colorblind-safe slots, always shown with the department's name.
+    var DEPT = {
+      Facilities: { c: '#2a78d6', soft: '#E3EEFB', ink: '#1C5CAB', who: 'Dana Reyes', role: 'Facilities lead' },
+      IT: { c: '#eb6834', soft: '#FDEBE2', ink: '#9A3412', who: 'Ivan Petrov', role: 'IT lead' },
+      HR: { c: '#1baf7a', soft: '#DDF5EC', ink: '#0F6B4A', who: 'Mei Chen', role: 'People and HR' },
+      Finance: { c: '#eda100', soft: '#FCF0D2', ink: '#7A5300', who: 'Omar Haddad', role: 'Finance partner' },
+      Safety: { c: '#e87ba4', soft: '#FBE6EE', ink: '#9D2B57', who: 'Tess Morgan', role: 'Safety officer' }
+    };
+    var deptChip = function (d) { var x = DEPT[d]; return { name: d, style: 'display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: ' + x.soft + '; color: ' + x.ink + ';', dot: 'width: 8px; height: 8px; border-radius: 2px; background: ' + x.c + '; flex: none;' }; };
+    var TARGET = { master: '2027-04-30', reception: '2027-04-02', kitchen: '2027-03-26', 'bathroom-1': '2027-03-26', 'bathroom-2': '2027-03-30', 'bathroom-3': '2027-04-09', 'office-1': '2027-04-16', 'office-2': '2027-04-23', 'office-3': '2027-04-23' };
+    var NAME = { Kai: 'Kai Brooks', Leo: 'Leo Grant', Rosa: 'Rosa Diaz', Ivan: 'Ivan Petrov', Mei: 'Mei Chen', Omar: 'Omar Haddad', Tess: 'Tess Morgan', Dana: 'Dana Reyes', Noor: 'Noor Aziz' };
+    var today = D.today;
+    var scen = st.whatIf === 'noor' ? D.whatIfNoor : st.whatIf === 'cabinets' ? D.whatIfCabinets : null;
+    var T = D.tasks.map(function (t) {
+      var dd = scen && scen.dates[t.id];
+      var s = dd ? dd[0] : t.start, e = dd ? dd[1] : t.end;
+      var owner = dd && dd[2] ? dd[2] : t.owner;
+      // As of the sample's "today": work that went to plan is done or under way.
+      var status = t.status === 'done' || e < today ? 'done' : s <= today ? 'doing' : 'todo';
+      return Object.assign({}, t, { start: s, end: e, owner: owner, st: status });
+    });
+    var byId = {}; T.forEach(function (t) { byId[t.id] = t; });
+    var subTitle = {}; D.subs.forEach(function (s) { subTitle[s.key] = s.key === 'master' ? 'Whole building' : s.title; });
+    var finish = scen ? scen.finish : D.finish;
+    var moveIn = byId.T6;
+    var lateDays = function (a, b) { var n = 0; for (var d = ms(b) + DAY; d <= ms(a); d += DAY) { var w = new Date(d).getUTCDay(); if (w && w < 6) n++; } return n; };
+    var health = function (key, end) {
+      if (end <= TARGET[key]) return { label: 'On track', style: 'color: #115E59; background: #CCFBF1;' };
+      var n = lateDays(end, TARGET[key]);
+      return n > 3 ? { label: 'Off track', n: n, style: 'color: #991B1B; background: #FEE2E2;' } : { label: 'At risk', n: n, style: 'color: #9A3412; background: #FFEDD5;' };
+    };
+    var chipBase = 'flex: none; font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 999px; white-space: nowrap; ';
+
+    var subs = D.subs.filter(function (s) { return s.key !== 'master'; }).map(function (s) {
+      var ts = T.filter(function (t) { return t.sub === s.key; });
+      var start = ts.map(function (t) { return t.start; }).sort()[0], end = ts.map(function (t) { return t.end; }).sort().slice(-1)[0];
+      var done = ts.filter(function (t) { return t.st === 'done'; }).length;
+      var h = health(s.key, end);
+      var waits = [];
+      ts.forEach(function (t) { t.deps.forEach(function (d) { var o = byId[d]; if (o && o.sub !== s.key && o.st !== 'done' && waits.indexOf(o.id) < 0) waits.push(o.id); }); });
+      var people = []; ts.forEach(function (t) { if (people.indexOf(t.owner) < 0) people.push(t.owner); });
+      var pct = Math.round((done / ts.length) * 100);
+      return { key: s.key, title: s.title, lead: deptChip(s.lead), needs: s.needs.map(deptChip), hasNeeds: s.needs.length > 0, start: start, end: end, when: fmt(start) + ' to ' + fmt(end), done: done, count: ts.length, pct: pct, pctLabel: pct + '%', bar: 'height: 100%; border-radius: 999px; background: #4F46E5; width: ' + pct + '%;', health: h.label + (h.n ? ' · ' + h.n + 'd late' : ''), healthStyle: chipBase + h.style,
+        waits: waits.map(function (id) { return byId[id].title + ' (' + subTitle[byId[id].sub] + ')'; }), waitsLabel: waits.length ? 'Waits on ' + waits.map(function (id) { return byId[id].title; }).join(', ') : '',
+        people: people.map(function (p) { return NAME[p]; }).join(', '), open: go({ view: 'plan', sub: s.key }), late: h.label !== 'On track' };
+    });
+    var masterTasks = T.filter(function (t) { return t.sub === 'master'; });
+    var milestones = ['T3', 'T2', 'T1', 'T5', 'T6'].map(function (id) {
+      var t = byId[id];
+      var label = { T3: 'Budget approved', T2: 'Asbestos survey', T1: 'Permits approved', T5: 'Final walkthrough', T6: 'Move-in' }[id];
+      var state = t.st === 'done' ? 'Done' : t.st === 'doing' ? 'Under way' : 'Planned';
+      return { label: label, date: id === 'T6' ? fmt(t.end) : fmt(t.end), state: state, mark: 'width: 14px; height: 14px; transform: rotate(45deg); border-radius: 2px; flex: none; ' + (t.st === 'done' ? 'background: #0F766E;' : t.st === 'doing' ? 'background: #FFFFFF; border: 3px solid #4F46E5;' : 'background: #FFFFFF; border: 2px solid #94A3B8;') };
+    });
+    var all = T.filter(function (t) { return t.sub !== 'master'; });
+    var pctAll = Math.round(T.filter(function (t) { return t.st === 'done'; }).length / T.length * 100);
+    var hMaster = health('master', moveIn.end);
+    var lateSubs = subs.filter(function (s) { return s.late; });
+
+    // People across all sub-plans, by week: who is booked full, and on which plans.
+    var weeks = [];
+    for (var w = ms('2027-03-01'); w <= ms('2027-05-03'); w += 7 * DAY) weeks.push(new Date(w).toISOString().slice(0, 10));
+    var people = Object.keys(D.people);
+    if (st.whatIf === 'noor') people.push('Noor');
+    var hours = function (who) { return (D.weekly[st.whatIf] || D.weekly.none)[who] || {}; };
+    var cap = function (who) { return who === 'Noor' ? 40 : D.people[who]; };
+    var deptPeople = function (dept) { var o = []; T.forEach(function (t) { if (t.dept === dept && o.indexOf(t.owner) < 0) o.push(t.owner); }); return o; };
+    var depts = Object.keys(DEPT).map(function (name) {
+      var ts = all.concat(masterTasks).filter(function (t) { return t.dept === name; });
+      var open = ts.filter(function (t) { return t.st !== 'done'; });
+      var inSubs = []; open.forEach(function (t) { var n = subTitle[t.sub]; if (inSubs.indexOf(n) < 0) inSubs.push(n); });
+      var next = open.slice().sort(function (a, b) { return a.end < b.end ? -1 : 1; })[0];
+      var ppl = deptPeople(name).map(function (p) {
+        var hw = hours(p);
+        var full = weeks.filter(function (wk) { return (hw[wk] || 0) >= cap(p) - 0.5; }).length;
+        return { name: NAME[p], cap: cap(p) + ' h/week', full: full, fullLabel: full ? 'Fully booked ' + full + ' of ' + weeks.length + ' weeks' : 'Has room',
+          fullStyle: chipBase + (full >= 6 ? 'color: #991B1B; background: #FEE2E2;' : full ? 'color: #9A3412; background: #FFEDD5;' : 'color: #115E59; background: #CCFBF1;'),
+          cells: weeks.map(function (wk) { var h = hw[wk] || 0; var r = h / cap(p); return { title: fmtWeek(wk) + ': ' + Math.round(h) + ' of ' + cap(p) + ' h', text: h ? Math.round(h) : '', style: 'height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; ' + (h === 0 ? 'background: #F1F5F9; color: #94A3B8;' : r >= 0.99 ? 'background: #FEE2E2; color: #991B1B; outline: 2px solid #DC2626; outline-offset: -2px;' : r > 0.6 ? 'background: #DBEAFE; color: #1E3A8A;' : 'background: #EFF6FF; color: #1E40AF;') }; }) };
+      });
+      var anyFull = ppl.some(function (p) { return p.full >= 6; });
+      return { name: name, chip: deptChip(name), contact: DEPT[name].who + ' · ' + DEPT[name].role, count: open.length, countLabel: open.length ? open.length + ' open task' + (open.length === 1 ? '' : 's') : 'Nothing open', where: inSubs.length ? 'in ' + inSubs.join(', ') : '', next: next ? 'Next: ' + next.title + ', due ' + fmt(next.end) : 'All done', people: ppl, warn: anyFull, warnLabel: anyFull ? 'Overloaded' : 'OK',
+        warnStyle: chipBase + (anyFull ? 'color: #991B1B; background: #FEE2E2;' : 'color: #115E59; background: #CCFBF1;'),
+        selected: st.dept === name, pick: go({ dept: st.dept === name ? null : name }),
+        tasks: open.sort(function (a, b) { return a.end < b.end ? -1 : 1; }).map(function (t) { return { title: t.title, where: subTitle[t.sub], who: NAME[t.owner], due: fmt(t.end), st: t.st === 'doing' ? 'Doing' : 'To do' }; }) };
+    });
+    function fmtWeek(wk) { return 'Week of ' + fmt(wk); }
+    var weekHead = weeks.map(function (wk) { return { label: fmt(wk) }; });
+
+    // Combined timeline: one bar per sub-plan; expand for tasks. Day scale from Mar 1 to May 7.
+    var t0 = ms('2027-03-01'), t1 = ms('2027-05-08'), span = t1 - t0;
+    var X = function (iso) { return ((ms(iso) - t0) / span * 100).toFixed(2) + '%'; };
+    var W = function (a, b) { return (((ms(b) + DAY) - ms(a)) / span * 100).toFixed(2) + '%'; };
+    var rows = [{ key: 'master', title: 'Whole building', tasks: masterTasks }].concat(subs.map(function (s) { return { key: s.key, title: s.title, tasks: T.filter(function (t) { return t.sub === s.key; }) }; })).map(function (r) {
+      var start = r.tasks.map(function (t) { return t.start; }).sort()[0], end = r.tasks.map(function (t) { return t.end; }).sort().slice(-1)[0];
+      var crit = r.tasks.some(function (t) { return t.critical; });
+      var open = !!st.open[r.key];
+      var tog = {}; tog[r.key] = !open;
+      var links = [];
+      if (r.key !== 'master') r.tasks.forEach(function (t) { t.deps.forEach(function (d) { var o = byId[d]; if (o && o.sub !== r.key && o.sub !== 'master' && links.indexOf(o.title) < 0) links.push(o.title); }); });
+      return { title: r.title, when: fmt(start) + ' to ' + fmt(end), open: open, toggle: function () { self.setState({ open: Object.assign({}, st.open, tog) }); }, arrow: open ? '▾' : '▸', links: links.length ? 'waits on ' + links.join(', ') : '',
+        bar: 'position: absolute; top: 9px; height: 18px; border-radius: 5px; left: ' + X(start) + '; width: ' + W(start, end) + '; background: ' + (crit ? '#4F46E5' : '#A5B4FC') + ';',
+        tasks: r.tasks.map(function (t) { var x = DEPT[t.dept]; return { title: t.title, who: NAME[t.owner], dept: t.dept, dates: fmt(t.start) + (t.start === t.end ? '' : ' to ' + fmt(t.end)), why: t.why.replace(/T\d+ "/g, '"'),
+          bar: 'position: absolute; top: 7px; height: 14px; border-radius: 4px; left: ' + X(t.start) + '; width: ' + W(t.start, t.end) + '; background: ' + x.c + ';' + (t.critical ? ' box-shadow: 0 0 0 2px #0F172A;' : ''), chip: deptChip(t.dept), crit: t.critical }; }) };
+    });
+    var todayLine = 'position: absolute; top: 0; bottom: 0; width: 2px; background: #DC2626; left: ' + X(today) + ';';
+    var targetLine = 'position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed #0F172A; left: ' + X(TARGET.master) + ';';
+    var axis = [];
+    for (var a = t0; a < t1; a += 7 * DAY) axis.push({ label: fmt(new Date(a).toISOString().slice(0, 10)), style: 'position: absolute; top: 0; font-size: 11px; color: #64748B; left: ' + ((a - t0) / span * 100).toFixed(2) + '%;' });
+
+    // The open sub-plan (inside the master).
+    var cur = subs.filter(function (s) { return s.key === st.sub; })[0] || subs[0];
+    var curTasks = T.filter(function (t) { return t.sub === cur.key; }).map(function (t) {
+      var ext = t.deps.map(function (d) { return byId[d]; }).filter(function (o) { return o && o.sub !== cur.key; });
+      var STS = { done: ['Done', 'color: #115E59; background: #CCFBF1;'], doing: ['Doing', 'color: #3730A3; background: #EEF2FF;'], todo: ['To do', 'color: #334155; background: #F1F5F9;'] }[t.st];
+      return { title: t.title, who: NAME[t.owner], dates: fmt(t.start) + (t.start === t.end ? '' : ' to ' + fmt(t.end)), chip: deptChip(t.dept), status: STS[0], statusStyle: chipBase + STS[1], ext: ext.map(function (o) { return 'Waits on ' + subTitle[o.sub] + ': ' + o.title + (o.st === 'done' ? ' (done)' : ', ' + fmt(o.end)); }), hasExt: ext.length > 0, why: t.why.replace(/T\d+ "/g, '"') };
+    });
+    var curDepts = [cur.lead].concat(cur.needs).map(function (c) { return { chip: c, contact: DEPT[c.name].who + ' · ' + DEPT[c.name].role }; });
+
+    var tabs = [['overview', 'Overview'], ['timeline', 'Timeline'], ['departments', 'Departments'], ['plan', 'Inside a plan']].map(function (t) {
+      var on = st.view === t[0];
+      return { label: t[1], on: on ? 'page' : 'false', pick: go({ view: t[0] }), style: 'min-height: 44px; padding: 0 16px; border: none; background: transparent; cursor: pointer; font: 600 15px Inter, sans-serif; border-bottom: 3px solid ' + (on ? '#4F46E5' : 'transparent') + '; color: ' + (on ? '#0F172A' : '#475569') + ';' };
+    });
+    var scenarios = [
+      { key: 'none', label: 'As planned', hint: 'Move-in ' + fmt(D.finish) },
+      { key: 'noor', label: 'Add a second carpenter for the bathroom tiling', hint: 'Noor Aziz, 40 h/week: move-in ' + fmt(D.whatIfNoor.finish) },
+      { key: 'cabinets', label: 'Kitchen cabinets take 3 days longer', hint: 'Move-in ' + fmt(D.whatIfCabinets.finish) }
+    ].map(function (s) { var on = st.whatIf === s.key; return { label: s.label, hint: s.hint, on: on ? 'true' : 'false', pick: go({ whatIf: s.key }), style: 'display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; min-height: 44px; border-radius: 12px; cursor: pointer; text-align: left; font-family: Inter, sans-serif; color: #0F172A; ' + (on ? 'border: 2px solid #4F46E5; background: #EEF2FF;' : 'border: 1px solid #E2E8F0; background: #FFFFFF;') }; });
+
+    var kaiFull = depts.filter(function (d) { return d.name === 'Facilities'; })[0].people.filter(function (p) { return p.name === 'Kai Brooks'; })[0];
+    var insight = st.whatIf === 'noor'
+      ? 'With Noor Aziz tiling Bathrooms 1 to 3, Kai Brooks is freed for the offices: move-in moves from ' + fmt(D.finish) + ' to ' + fmt(D.whatIfNoor.finish) + ', ' + lateDays(D.finish, D.whatIfNoor.finish) + ' working days earlier and inside the Apr 30 target.'
+      : st.whatIf === 'cabinets'
+        ? 'Kitchen cabinets 3 days longer: Kai Brooks starts every later room 3 days later, so move-in moves from ' + fmt(D.finish) + ' to ' + fmt(D.whatIfCabinets.finish) + '.'
+        : 'Kai Brooks (carpenter) is on 6 of the 8 rooms and ' + kaiFull.fullLabel.toLowerCase() + '. Every room waits for Kai, so Kai decides move-in. A second carpenter for the bathroom tiling would move it to ' + fmt(D.whatIfNoor.finish) + '.';
+
+    var blockers = [];
+    T.forEach(function (t) { t.deps.forEach(function (d) { var o = byId[d]; if (o && o.sub !== t.sub && o.st !== 'done' && t.sub !== 'master') blockers.push({ what: o.title, where: subTitle[o.sub], who: NAME[o.owner], dept: deptChip(o.dept), due: fmt(o.end), waiting: subTitle[t.sub] }); }); });
+    var grouped = {};
+    blockers.forEach(function (b) { var k = b.what; (grouped[k] = grouped[k] || Object.assign({}, b, { waiting: [] })).waiting.push(b.waiting); });
+    var blockerList = Object.keys(grouped).map(function (k) { var g = grouped[k]; var uniq = g.waiting.filter(function (x, i) { return g.waiting.indexOf(x) === i; }); return Object.assign({}, g, { waitingLabel: uniq.length + ' plan' + (uniq.length === 1 ? '' : 's') + ' wait: ' + uniq.join(', ') }); });
+
+    return {
+      isOverview: st.view === 'overview', isTimeline: st.view === 'timeline', isDepts: st.view === 'departments', isPlan: st.view === 'plan',
+      tabs: tabs, title: 'Northfield HQ remodel', sub: 'Master plan · 8 plans inside · Facilities leads, with IT, HR, Finance and Safety',
+      kpis: [
+        { k: 'Done', v: pctAll + '%', s: T.filter(function (t) { return t.st === 'done'; }).length + ' of ' + T.length + ' tasks across all plans' },
+        { k: 'Move-in', v: fmt(moveIn.end), s: moveIn.end <= TARGET.master ? 'Target Apr 30: on time' : 'Target Apr 30: ' + lateDays(moveIn.end, TARGET.master) + ' working days late' },
+        { k: 'Plans at risk', v: String(lateSubs.length) + ' of ' + subs.length, s: lateSubs.length ? lateSubs.map(function (s) { return s.title; }).join(', ') : 'All plans on track' },
+        { k: 'Waiting across plans', v: String(blockerList.length), s: blockerList.map(function (b) { return b.what; }).join(', ') || 'Nothing' }
+      ],
+      masterHealth: hMaster.label + (hMaster.n ? ' · ' + hMaster.n + 'd late' : ''), masterHealthStyle: chipBase + hMaster.style,
+      insight: insight, scenarios: scenarios, milestones: milestones, subs: subs, blockers: blockerList,
+      depts: depts, weekHead: weekHead, deptSel: depts.filter(function (d) { return d.selected; })[0] || false,
+      rows: rows, axis: axis, todayLine: todayLine, targetLine: targetLine,
+      cur: cur, curTasks: curTasks, curDepts: curDepts, subPicks: subs.map(function (s) { var on = s.key === cur.key; return { label: s.title, pick: go({ sub: s.key }), style: chipBase + 'min-height: 36px; padding: 0 12px; cursor: pointer; font-family: Inter, sans-serif; ' + (on ? 'border: 2px solid #0F172A; background: #FFFFFF; color: #0F172A;' : 'border: 1px solid #E2E8F0; background: #FFFFFF; color: #475569;') }; }),
+      back: go({ view: 'overview' }),
+      deptLegend: Object.keys(DEPT).map(deptChip)
+    };
+  }
+}
+</script>
+</body>
+</html>

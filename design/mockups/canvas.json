@@ -141,6 +141,23 @@
    "h": 844,
    "title": "IT admin on a phone (every section, same as desktop)",
    "is_interactive": true
+  },
+  "MasterDesktop.dc.html": {
+   "x": 0,
+   "y": 4100,
+   "w": 1440,
+   "h": 1000,
+   "title": "Desktop: master plan (overview, timeline, departments, a plan inside)",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "MasterPhone.dc.html": {
+   "x": 1520,
+   "y": 4100,
+   "w": 390,
+   "h": 844,
+   "title": "Master plan on a phone",
+   "is_interactive": true
   }
  },
  "order": [
@@ -159,7 +176,9 @@
   "AdminConsole.dc.html",
   "TeamDesktop.dc.html",
   "BusinessOnboarding.dc.html",
-  "AdminPhone.dc.html"
+  "AdminPhone.dc.html",
+  "MasterDesktop.dc.html",
+  "MasterPhone.dc.html"
  ],
  "notes": {
   "phoneTitle": {
@@ -203,6 +222,20 @@
    "w": 340,
    "text": "Sample company: Northfield Builders (fictional, about 180 people, Microsoft 365). Admin on phone and desktop share the same sections, data and steps. Try: People \u2192 + Add people (preview before anyone is invited), tap a name for sign out / resend / deactivate, select a few \u2192 Move (dry run, then undo). Onboarding: domain, sign-in questions, connect and test, pick directory groups, second admin and welcome email, seats follow the people count, go live. Only SAML goes to specialized pricing; \"I'm not sure\" never does.",
    "fill": "purple"
+  },
+  "masterTitle": {
+   "x": 0,
+   "y": 3810,
+   "text": "Master plans: many plans, many departments, one schedule",
+   "kind": "title1",
+   "maxW": 2400
+  },
+  "masterNote": {
+   "x": 1990,
+   "y": 4100,
+   "w": 340,
+   "text": "Sample: Northfield HQ remodel, 8 plans inside (Reception, Kitchen, Bathrooms 1 to 3, Offices 1 to 3) run by Facilities with IT, HR, Finance and Safety. Every date comes from the real scheduling engine, counting each person's hours across all plans. Try: the carpenter what-if on Overview, Departments (Kai is booked solid), open a plan on Timeline, Inside a plan: Office 2.",
+   "fill": "teal"
   }
  },
  "designSystems": []
