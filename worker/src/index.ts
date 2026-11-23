@@ -3,7 +3,7 @@
  * plus the PlanRoom Durable Object for live editing.
  */
 import { configFromEnv, createApp, LiveRoom, PlanRoomCore, systemClock, testAuthEnabled, type Clock, type Peer } from "@ezplan/server";
-import { LIVE_MAX_MESSAGE, type Actor, type OpEnvelope } from "@ezplan/shared";
+import { LIVE_MAX_MESSAGE, type Actor, type OpEnvelope, type ServerMessage } from "@ezplan/shared";
 import { D1Db, DurableRoomHost, R2Blobs, type LiveTicket } from "./adapters";
 
 export interface Env {
@@ -76,7 +76,7 @@ export class PlanRoom implements DurableObject {
 
   private peer(ws: WebSocket): Peer {
     const t = ws.deserializeAttachment() as LiveTicket;
-    return { actor: t.actor, role: t.role, send: (m) => ws.send(m) };
+    return { actor: t.actor, role: t.role, send: (m) => ws.send(m), close: (code, reason) => ws.close(code, reason) };
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -84,6 +84,16 @@ export class PlanRoom implements DurableObject {
     if (path === "/apply") {
       const { planId, envelope, actor } = (await request.json()) as { planId: string; envelope: OpEnvelope; actor: Actor };
       return Response.json(await this.room(planId).applyFromApi(envelope, actor));
+    }
+    if (path === "/notify") {
+      const { planId, message } = (await request.json()) as { planId: string; message: ServerMessage };
+      this.room(planId).notify(message);
+      return new Response(null, { status: 204 });
+    }
+    if (path === "/kick") {
+      const { planId, userId } = (await request.json()) as { planId: string; userId: string };
+      this.room(planId).kick(userId);
+      return new Response(null, { status: 204 });
     }
     if (path === "/live") {
       // Only the Worker reaches this object; it has already checked sign-in and access.

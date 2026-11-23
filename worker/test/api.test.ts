@@ -11,6 +11,7 @@ import { Miniflare } from "miniflare";
 import { apiContract, TODAY, type HostFactory, type TestHost } from "../../server/test/contract";
 import { testEnv, testHttp } from "../../server/test/hostConfig";
 import { LiveClient, liveContract } from "../../server/test/live.contract";
+import { sharingContract } from "../../server/test/sharing.contract";
 import { signInContract } from "../../server/test/signin.contract";
 
 let bundled: Promise<string> | null = null;
@@ -62,6 +63,7 @@ const factory: HostFactory = {
           send: (t) => ws.send(t),
           close: () => ws.close(),
           onMessage: (fn) => ws.addEventListener("message", (e) => fn(typeof e.data === "string" ? e.data : new TextDecoder().decode(e.data as ArrayBuffer))),
+          onClose: (fn) => ws.addEventListener("close", (e) => fn((e as CloseEvent).code)),
         });
       },
       async fetch(path, init = {}, user, cookie) {
@@ -87,3 +89,4 @@ const factory: HostFactory = {
 apiContract("cloud (Workers + D1 + Durable Objects)", factory);
 signInContract("cloud (Workers + D1 + Durable Objects)", factory);
 liveContract("cloud (Workers + D1 + Durable Objects)", factory);
+sharingContract("cloud (Workers + D1 + Durable Objects)", factory);

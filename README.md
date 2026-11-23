@@ -38,6 +38,8 @@ OIDC_PROVIDERS='[{"id":"google","label":"Google","issuer":"https://accounts.goog
 npm start -w selfhost
 ```
 
+Sharing a plan: open the plan, choose **Share**, and make an invite link for someone's email (Editor or Viewer). Send the link yourself; it works once, for that address, for 7 days. If the server has `ALLOWED_EMAILS` set (the private build), add the person's address there too, or they can't sign in.
+
 Checks:
 
 ```bash

@@ -3,7 +3,7 @@
  * Durable Objects running the same room code as the self-hosted server.
  */
 import type { ApplyResult, Blobs, Db, LiveRole, RoomHost, SqlValue } from "@ezplan/server";
-import type { Actor, OpEnvelope } from "@ezplan/shared";
+import type { Actor, OpEnvelope, ServerMessage } from "@ezplan/shared";
 
 export class D1Db implements Db {
   constructor(private readonly d1: D1Database) {}
@@ -85,6 +85,14 @@ export class DurableRoomHost implements RoomHost {
     const res = await this.stub(planId).fetch("https://room/apply", { method: "POST", body: JSON.stringify(body) });
     if (!res.ok) throw new Error(`Room failed: ${res.status}`);
     return (await res.json()) as ApplyResult;
+  }
+
+  async notify(planId: string, message: ServerMessage): Promise<void> {
+    await this.stub(planId).fetch("https://room/notify", { method: "POST", body: JSON.stringify({ planId, message }) });
+  }
+
+  async kick(planId: string, userId: string): Promise<void> {
+    await this.stub(planId).fetch("https://room/kick", { method: "POST", body: JSON.stringify({ planId, userId }) });
   }
 
   async connect(request: Request, planId: string, actor: Actor, role: LiveRole): Promise<Response> {

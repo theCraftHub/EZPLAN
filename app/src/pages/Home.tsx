@@ -41,7 +41,10 @@ export function Home({ me }: { me: Me }) {
                   <ProgressRing percent={p.summary?.percent ?? 0} />
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                     <span className="text-[17px] leading-snug font-bold">{p.title}</span>
-                    {p.summary && <HealthChip value={p.state === "review" ? "On hold" : p.summary.health} />}
+                    <span className="flex flex-wrap gap-1.5">
+                      {p.summary && <HealthChip value={p.state === "review" ? "On hold" : p.summary.health} />}
+                      {p.shared && <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary-ink">Shared with you</span>}
+                    </span>
                   </div>
                 </div>
                 {p.summary && (

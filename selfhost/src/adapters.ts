@@ -7,7 +7,7 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { DatabaseSync, type SQLInputValue } from "node:sqlite";
 import { LiveRoom, PlanRoomCore, type ApplyResult, type Blobs, type Clock, type Db, type LiveRole, type Peer, type RoomHost, type SqlValue } from "@ezplan/server";
 import type { WebSocket } from "ws";
-import type { Actor, OpEnvelope } from "@ezplan/shared";
+import type { Actor, OpEnvelope, ServerMessage } from "@ezplan/shared";
 
 export class NodeSqliteDb implements Db {
   readonly raw: DatabaseSync;
@@ -152,7 +152,7 @@ export class MemoryRoomHost implements RoomHost {
       return;
     }
     const r = this.room(t.planId);
-    const peer: NodePeer = { actor: t.actor, role: t.role, socket, send: (m) => socket.send(m) };
+    const peer: NodePeer = { actor: t.actor, role: t.role, socket, send: (m) => socket.send(m), close: (code, reason) => socket.close(code, reason) };
     r.peers.add(peer);
     socket.on("message", (data, isBinary) => {
       void r.live.message(peer, isBinary ? new ArrayBuffer(0) : data.toString());
@@ -162,6 +162,14 @@ export class MemoryRoomHost implements RoomHost {
       r.live.presence();
     });
     r.live.presence();
+  }
+
+  async notify(planId: string, message: ServerMessage): Promise<void> {
+    this.rooms.get(planId)?.live.notify(message);
+  }
+
+  async kick(planId: string, userId: string): Promise<void> {
+    this.rooms.get(planId)?.live.kick(userId);
   }
 
   /** Closes every live connection (server shutdown). */

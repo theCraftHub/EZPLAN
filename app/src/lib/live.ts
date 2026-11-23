@@ -15,6 +15,8 @@ export function usePlanRoom(planId: string, me: Me) {
   const [presence, setPresence] = useState<PresencePerson[]>([]);
   const [notice, setNotice] = useState("");
   const [tick, setTick] = useState(0);
+  // Bumped when the server says our access changed: load the plan again (new role, or no access).
+  const [reload, setReload] = useState(0);
   const replica = useRef<ClientReplica | null>(null);
   const socket = useRef<WebSocket | null>(null);
   const rerender = () => setTick((n) => n + 1);
@@ -49,12 +51,19 @@ export function usePlanRoom(planId: string, me: Me) {
           setNotice(m.error ?? "That change wasn't saved.");
         } else if (m.t === "presence") {
           setPresence(m.people);
+        } else if (m.t === "people") {
+          // Someone changed availability: dates update here too.
+          setDetail((d) => (d ? { ...d, people: m.people } : d));
         }
         rerender();
       };
-      ws.onclose = () => {
+      ws.onclose = (ev) => {
         if (socket.current === ws) socket.current = null;
         if (stopped) return;
+        if (ev.code === 4003) {
+          setReload((n) => n + 1);
+          return;
+        }
         setStatus("offline");
         timer = setTimeout(connect, Math.min(15_000, 500 * 2 ** retry++));
       };
@@ -91,7 +100,7 @@ export function usePlanRoom(planId: string, me: Me) {
       socket.current = null;
       replica.current = null;
     };
-  }, [planId, me.user.id, me.user.name]);
+  }, [planId, me.user.id, me.user.name, reload]);
 
   const edit = useCallback((op: Op) => {
     const r = replica.current;

@@ -130,7 +130,7 @@ export function Team(props: Props) {
           </span>
         </Notice>
       )}
-      {desktop ? <Grid data={data} today={today} math={math} onPerson={(n) => setSheet({ name: n })} onTask={setTaskId} canEdit={canEdit} drag={drag} setDrag={setDrag} onDrop={previewDrop} /> : <PhoneView data={data} today={today} math={math} onPerson={(n) => setSheet({ name: n })} onTask={setTaskId} />}
+      {desktop ? <Grid data={data} today={today} math={math} onPerson={(n) => setSheet({ name: n })} onTask={setTaskId} canEdit={canEdit} drag={drag} setDrag={setDrag} onDrop={previewDrop} /> : <PhoneView data={data} today={today} math={math} onPerson={(n) => (canEdit ? setSheet({ name: n }) : undefined)} onTask={setTaskId} canEdit={canEdit} />}
 
       {sheet && <PersonSheet planId={props.planId} name={sheet.name} initial={sheet.isNew ? undefined : findPerson(people, sheet.name)} workWeek={workWeek} {...(sheet.isNew ? { isNew: true } : {})} {...(sheet.mine ? { title: "My availability" } : {})} onSaved={(n, a) => saved(n, a, sheet.isNew && !sheet.mine)} onClose={() => setSheet(null)} />}
       {taskId && math.byId.get(taskId) && <TaskSheet task={math.byId.get(taskId)!} plan={plan} math={math} canEdit={canEdit} edit={edit} onClose={() => setTaskId(null)} options={options ?? undefined} optionsLoading={canEdit && !options} />}
@@ -246,7 +246,7 @@ function Grid({ data, today, math, onPerson, onTask, canEdit, drag, setDrag, onD
   );
 }
 
-function PhoneView({ data, today, math, onPerson, onTask }: { data: ReturnType<typeof useTeamData>; today: string; math: Math; onPerson: (n: string) => void; onTask: (id: string) => void }) {
+function PhoneView({ data, today, math, onPerson, onTask, canEdit }: { data: ReturnType<typeof useTeamData>; today: string; math: Math; onPerson: (n: string) => void; onTask: (id: string) => void; canEdit: boolean }) {
   const [mode, setMode] = useState<"day" | "person">("day");
   const startIdx = Math.max(0, data.dates.indexOf(today));
   const [week, setWeek] = useState(Math.floor(startIdx / 7));
@@ -300,7 +300,7 @@ function PhoneView({ data, today, math, onPerson, onTask }: { data: ReturnType<t
                   </Card>
                   <button aria-label="Next week" disabled={week >= maxWeek} onClick={() => setWeek(week + 1)} className="flex h-11 w-9 items-center justify-center disabled:opacity-30"><ChevronRight aria-hidden /></button>
                 </div>
-                <Button variant="secondary" onClick={() => onPerson(row.name)}>Edit {row.name}'s availability</Button>
+                {canEdit && <Button variant="secondary" onClick={() => onPerson(row.name)}>Edit {row.name}'s availability</Button>}
                 {days.map((c) => <PersonDay key={c.date} r={row} c={c} math={math} onPerson={onPerson} onTask={onTask} dayTitle />)}
               </>
             );

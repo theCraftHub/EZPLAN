@@ -2,6 +2,7 @@
  * Messages on a plan's live connection (WebSocket), shared by the server and the app.
  * Edits are sent as envelopes and confirmed in one order for everyone (see ops.ts).
  */
+import type { PersonAvailability } from "./level";
 import type { Applied } from "./ops";
 import type { Plan } from "./schema";
 
@@ -27,6 +28,8 @@ export type ServerMessage =
   /** The answer to this client's own edit. */
   | { t: "ack"; opId: string; status: "applied" | "duplicate" | "rejected"; version: number; error?: string }
   | { t: "presence"; people: PresencePerson[] }
+  /** Availability changed (hours a week, days off): everyone's dates update without reloading. */
+  | { t: "people"; people: Record<string, PersonAvailability> }
   | { t: "error"; error: string };
 
 /** Largest message a client may send (bytes). */

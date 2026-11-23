@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { apiContract, TODAY, type HostFactory, type TestHost } from "../../server/test/contract";
 import { testConfig, testHttp } from "../../server/test/hostConfig";
 import { LiveClient, liveContract } from "../../server/test/live.contract";
+import { sharingContract } from "../../server/test/sharing.contract";
 import { signInContract } from "../../server/test/signin.contract";
 import { WebSocket } from "ws";
 import { createSelfHost } from "../src/host";
@@ -40,6 +41,7 @@ const factory: HostFactory = {
                 send: (t) => ws.send(t),
                 close: () => ws.close(),
                 onMessage: (fn) => ws.on("message", (d) => fn(d.toString())),
+                onClose: (fn) => ws.on("close", (code) => fn(code)),
               }),
             ),
           );
@@ -69,3 +71,4 @@ const factory: HostFactory = {
 apiContract("self-hosted (Node + SQLite)", factory);
 signInContract("self-hosted (Node + SQLite)", factory);
 liveContract("self-hosted (Node + SQLite)", factory);
+sharingContract("self-hosted (Node + SQLite)", factory);

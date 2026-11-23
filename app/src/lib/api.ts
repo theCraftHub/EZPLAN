@@ -25,6 +25,7 @@ export interface PlanSummary {
   state: string;
   workspace_id: string;
   updated_at: number;
+  shared?: boolean;
   summary: { percent: number; doneCount: number; countedTasks: number; overdueCount: number; finish: string; health: string; nextMilestone: { title: string; date: string } | null } | null;
 }
 
@@ -52,6 +53,12 @@ export interface ImportPreview {
 
 export type People = Record<string, PersonAvailability>;
 
+export interface Sharing {
+  canShare: boolean;
+  members: { userId: string; name: string; email: string; role: "manager" | "editor" | "viewer"; via: "workspace" | "invite" }[];
+  invites: { id: string; email: string; role: "editor" | "viewer"; personName: string | null; expiresAt: number }[];
+}
+
 export const api = {
   me: () => call<Me>("/api/me"),
   providers: () => call<{ providers: { id: string; label: string }[] }>("/auth/providers"),
@@ -65,5 +72,12 @@ export const api = {
   versions: (planId: string) => call<{ versions: { version: number; reason: string; createdAt: number; by: string; title: string; tasks: number; done: number; plan: Plan }[] }>(`/api/plans/${encodeURIComponent(planId)}/versions`),
   restoreVersion: (planId: string, v: number) => call<{ version: number }>(`/api/plans/${encodeURIComponent(planId)}/versions/${v}/restore`, { method: "POST", body: "{}" }),
   trash: (planId: string) => call<{ items: { taskId: string; title: string; deletedAt: string; by: string }[] }>(`/api/plans/${encodeURIComponent(planId)}/trash`),
+  sharing: (planId: string) => call<Sharing>(`/api/plans/${encodeURIComponent(planId)}/sharing`),
+  invite: (planId: string, email: string, role: "editor" | "viewer", personName?: string) => call<{ id: string; link: string; expiresAt: number }>(`/api/plans/${encodeURIComponent(planId)}/invites`, { method: "POST", body: JSON.stringify({ email, role, ...(personName ? { personName } : {}) }) }),
+  cancelInvite: (planId: string, inviteId: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/invites/${encodeURIComponent(inviteId)}`, { method: "DELETE" }),
+  setRole: (planId: string, userId: string, role: "editor" | "viewer") => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/members/${encodeURIComponent(userId)}`, { method: "PUT", body: JSON.stringify({ role }) }),
+  removeMember: (planId: string, userId: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/members/${encodeURIComponent(userId)}`, { method: "DELETE" }),
+  inviteInfo: (token: string) => call<{ planTitle: string | null; inviter: string; role: "editor" | "viewer"; email: string; problem: string | null; accepted: boolean; planId: string | null }>(`/api/invites/${encodeURIComponent(token)}`),
+  acceptInvite: (token: string) => call<{ planId: string }>(`/api/invites/${encodeURIComponent(token)}/accept`, { method: "POST", body: "{}" }),
   logout: () => call<{ ok: true }>("/auth/logout", { method: "POST", body: "{}" }),
 };

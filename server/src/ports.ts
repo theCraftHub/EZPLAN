@@ -2,7 +2,7 @@
  * The connectors ("ports") the server talks to. The same server code runs on our cloud
  * (Cloudflare adapters in worker/) and self-hosted (Node adapters in selfhost/). Plan section 7b.
  */
-import type { Actor, Applied, OpEnvelope, WorkWeek } from "@ezplan/shared";
+import type { Actor, Applied, OpEnvelope, ServerMessage, WorkWeek } from "@ezplan/shared";
 
 export type SqlValue = string | number | null;
 
@@ -45,6 +45,10 @@ export interface RoomHost {
    * Returns the upgrade response; hosts that upgrade elsewhere return a ticket response.
    */
   connect(request: Request, planId: string, actor: Actor, role: "manager" | "editor" | "viewer"): Promise<Response>;
+  /** Sends a message to everyone connected to the plan. */
+  notify(planId: string, message: ServerMessage): Promise<void>;
+  /** Ends one person's live connections to the plan (their access changed). */
+  kick(planId: string, userId: string): Promise<void>;
 }
 
 export interface Clock {

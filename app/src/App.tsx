@@ -3,6 +3,7 @@ import { api, ApiError, type Me } from "./lib/api";
 import { match, RouterProvider, useRouter } from "./lib/router";
 import { Home } from "./pages/Home";
 import { NewPlan } from "./pages/NewPlan";
+import { Invite } from "./pages/Invite";
 import { PlanPage } from "./pages/plan/PlanPage";
 import { NotFound } from "./pages/Placeholder";
 import { SignIn } from "./pages/SignIn";
@@ -14,9 +15,11 @@ function Routes({ me, onSignOut, onMe }: { me: Me; onSignOut: () => void; onMe: 
   const { path } = useRouter();
   if (match("/", path)) return <Home me={me} />;
   if (match("/new", path)) return <NewPlan me={me} />;
+  const inv = match("/invite/:token", path);
+  if (inv) return <Invite token={inv.token!} />;
   if (match("/settings", path)) return <Settings me={me} onSignOut={onSignOut} onMe={onMe} />;
   const p = match("/p/:id", path) ?? match("/p/:id/:view", path);
-  if (p && ["", "checklist", "timeline", "team", "update", "history", "print"].includes(p.view ?? "")) return <PlanPage key={p.id} me={me} id={p.id!} view={p.view ?? ""} />;
+  if (p && ["", "checklist", "timeline", "team", "update", "history", "print", "share"].includes(p.view ?? "")) return <PlanPage key={p.id} me={me} id={p.id!} view={p.view ?? ""} />;
   return <NotFound />;
 }
 

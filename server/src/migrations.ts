@@ -47,6 +47,18 @@ export const MIGRATIONS: Migration[] = [
       `CREATE TABLE plan_people (plan_id TEXT NOT NULL REFERENCES plans(id), name_key TEXT NOT NULL, name TEXT NOT NULL, availability TEXT NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY (plan_id, name_key))`,
     ],
   },
+  {
+    id: 4,
+    name: "plan sharing: members with roles, invites, names linked to accounts",
+    statements: [
+      `CREATE TABLE plan_members (plan_id TEXT NOT NULL REFERENCES plans(id), user_id TEXT NOT NULL REFERENCES users(id), role TEXT NOT NULL CHECK (role IN ('editor', 'viewer')), added_by TEXT NOT NULL, added_at INTEGER NOT NULL, PRIMARY KEY (plan_id, user_id))`,
+      `CREATE INDEX plan_members_user ON plan_members(user_id)`,
+      // Only a hash of the link's secret is kept; the link itself is shown once to whoever invites.
+      `CREATE TABLE invites (id TEXT PRIMARY KEY, token_hash TEXT NOT NULL UNIQUE, plan_id TEXT NOT NULL REFERENCES plans(id), email TEXT NOT NULL, role TEXT NOT NULL CHECK (role IN ('editor', 'viewer')), person_name TEXT, created_by TEXT NOT NULL, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, accepted_by TEXT, accepted_at INTEGER, revoked_at INTEGER)`,
+      `CREATE INDEX invites_plan ON invites(plan_id)`,
+      `ALTER TABLE plan_people ADD COLUMN user_id TEXT`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

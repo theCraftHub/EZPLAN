@@ -10,6 +10,7 @@ export interface LiveSocket {
   send(text: string): void;
   close(): void;
   onMessage(fn: (text: string) => void): void;
+  onClose?(fn: (code: number) => void): void;
 }
 
 /** Test client: keeps every message and lets tests wait for the next one that matches. */
@@ -18,7 +19,13 @@ export class LiveClient {
   private waiters: { pred: (m: ServerMessage) => boolean; resolve: (m: ServerMessage) => void }[] = [];
   private consumed = new Set<number>();
 
+  /** Resolves with the close code when the server ends the connection. */
+  readonly closedBy: Promise<number>;
+
   constructor(private readonly socket: LiveSocket) {
+    let done: (code: number) => void = () => {};
+    this.closedBy = new Promise((r) => (done = r));
+    socket.onClose?.((code) => done(code));
     socket.onMessage((text) => {
       const m = JSON.parse(text) as ServerMessage;
       this.received.push(m);

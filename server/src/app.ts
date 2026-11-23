@@ -26,7 +26,8 @@ import { userFromTestHeader } from "./auth";
 import { migrate } from "./migrations";
 import { finishLogin, SignInError, startLogin, userForSignIn } from "./oidc";
 import { loadRoom, newRoomJson } from "./room";
-import { createSession, endAllSessions, endSession, SESSION_COOKIE, SESSION_DAYS, userForSession } from "./sessions";
+import { EMAIL_RE, INVITE_DAYS, inviteProblem, maskEmail, PLAN_ROLES, strongest, type InviteRow, type PlanRole } from "./invites";
+import { createSession, endAllSessions, endSession, randomToken, sha256, SESSION_COOKIE, SESSION_DAYS, userForSession } from "./sessions";
 import type { Ports, User } from "./ports";
 
 type Role = "manager" | "editor" | "viewer";
@@ -139,15 +140,23 @@ export function createApp(ports: Ports) {
     await ensureWorkspace(user);
   }
 
-  /** The plan and the person's role in its workspace, or null when they can't see it. */
+  /**
+   * The plan and the person's role, or null when they can't see it. People reach a plan through
+   * its workspace or by being invited to the plan; the stronger role wins. Only workspace managers
+   * and editors share the plan with others (people invited to one plan can't invite more).
+   */
   async function access(planId: string, userId: string) {
-    return db.first<{ workspace_id: string; role: Role; work_week: string; title: string; version: number }>(
-      `SELECT p.workspace_id, m.role, w.work_week, p.title, p.version FROM plans p
-       JOIN members m ON m.workspace_id = p.workspace_id AND m.user_id = ?
+    const row = await db.first<{ workspace_id: string; ws_role: Role | null; plan_role: PlanRole | null; work_week: string; title: string; version: number }>(
+      `SELECT p.workspace_id, m.role AS ws_role, pm.role AS plan_role, w.work_week, p.title, p.version FROM plans p
        JOIN workspaces w ON w.id = p.workspace_id
-       WHERE p.id = ?`,
-      [userId, planId],
+       LEFT JOIN members m ON m.workspace_id = p.workspace_id AND m.user_id = ?
+       LEFT JOIN plan_members pm ON pm.plan_id = p.id AND pm.user_id = ?
+       WHERE p.id = ? AND (m.user_id IS NOT NULL OR pm.user_id IS NOT NULL)`,
+      [userId, userId, planId],
     );
+    if (!row) return null;
+    const role = strongest<Role>(row.ws_role, row.plan_role)!;
+    return { ...row, role, canShare: row.ws_role === "manager" || row.ws_role === "editor" };
   }
   // Someone else's plan answers exactly like a missing one, so IDs can't be probed.
   const notFound = { error: "This plan doesn't exist or you don't have access to it." };
@@ -252,6 +261,8 @@ export function createApp(ports: Ports) {
        ON CONFLICT (plan_id, name_key) DO UPDATE SET name = excluded.name, availability = excluded.availability, updated_at = excluded.updated_at`,
       [id, name.toLowerCase(), name, JSON.stringify(availability), clock.now()],
     );
+    // Everyone with the plan open sees the new dates at once.
+    await rooms.notify(id, { t: "people", people: await loadPeople(id) });
     return c.json({ name, availability });
   });
 
@@ -288,17 +299,19 @@ export function createApp(ports: Ports) {
 
   app.get("/api/plans", async (c) => {
     const user = c.get("user");
-    const rows = await db.all<{ id: string; title: string; state: string; version: number; workspace_id: string; updated_at: number; work_week: string }>(
-      `SELECT p.id, p.title, p.state, p.version, p.workspace_id, p.updated_at, w.work_week FROM plans p
-       JOIN members m ON m.workspace_id = p.workspace_id AND m.user_id = ?
+    const rows = await db.all<{ id: string; title: string; state: string; version: number; workspace_id: string; updated_at: number; work_week: string; shared: number }>(
+      `SELECT p.id, p.title, p.state, p.version, p.workspace_id, p.updated_at, w.work_week, CASE WHEN m.user_id IS NULL THEN 1 ELSE 0 END AS shared FROM plans p
        JOIN workspaces w ON w.id = p.workspace_id
+       LEFT JOIN members m ON m.workspace_id = p.workspace_id AND m.user_id = ?
+       LEFT JOIN plan_members pm ON pm.plan_id = p.id AND pm.user_id = ?
+       WHERE m.user_id IS NOT NULL OR pm.user_id IS NOT NULL
        ORDER BY p.updated_at DESC`,
-      [user.id],
+      [user.id, user.id],
     );
     const today = clock.today();
     // Home shows each plan's progress, health, finish and next milestone, computed by the same engine.
     const plans = await Promise.all(
-      rows.map(async ({ work_week, ...p }) => {
+      rows.map(async ({ work_week, shared, ...p }) => {
         const room = await loadRoom(db, p.id);
         if (!room) return { ...p, summary: null };
         const workWeek = parseWorkWeek(work_week);
@@ -311,6 +324,7 @@ export function createApp(ports: Ports) {
           .sort((a, b) => (a.date < b.date ? -1 : 1))[0];
         return {
           ...p,
+          shared: Number(shared) === 1,
           title: room.plan.title,
           summary: { percent: progress.percent, doneCount: progress.doneCount, countedTasks: progress.countedTasks, overdueCount: progress.overdueCount, finish: schedule.finish, health: progress.suggestedHealth, nextMilestone: next ?? null },
         };
@@ -436,6 +450,121 @@ export function createApp(ports: Ports) {
     const r = await rooms.apply(id, { opId: `restore-${crypto.randomUUID().slice(0, 8)}`, clientId: "restore", op: { kind: "replacePlan", plan } }, { userId: user.id, name: user.name });
     if (r.status === "missing") return c.json(notFound, 404);
     return c.json({ version: r.version, savedVersion: saved });
+  });
+
+  // ---------------------------------------------------------------- sharing a plan
+
+  app.get("/api/plans/:id/sharing", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    const ws = await db.all<{ id: string; name: string; email: string; role: Role }>(`SELECT u.id, u.name, u.email, m.role FROM members m JOIN users u ON u.id = m.user_id WHERE m.workspace_id = ?`, [a.workspace_id]);
+    const invited = await db.all<{ id: string; name: string; email: string; role: PlanRole }>(`SELECT u.id, u.name, u.email, pm.role FROM plan_members pm JOIN users u ON u.id = pm.user_id WHERE pm.plan_id = ?`, [id]);
+    const members = [...ws.map((m) => ({ userId: m.id, name: m.name, email: m.email, role: m.role, via: "workspace" as const })), ...invited.filter((p) => !ws.some((w) => w.id === p.id)).map((m) => ({ userId: m.id, name: m.name, email: m.email, role: m.role, via: "invite" as const }))];
+    const invites = a.canShare
+      ? (await db.all<{ id: string; email: string; role: PlanRole; person_name: string | null; expires_at: number }>(`SELECT id, email, role, person_name, expires_at FROM invites WHERE plan_id = ? AND accepted_by IS NULL AND revoked_at IS NULL AND expires_at > ? ORDER BY created_at DESC`, [id, clock.now()])).map((i) => ({ id: i.id, email: i.email, role: i.role, personName: i.person_name, expiresAt: Number(i.expires_at) }))
+      : [];
+    return c.json({ canShare: a.canShare, members, invites });
+  });
+
+  app.post("/api/plans/:id/invites", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    if (!a.canShare) return c.json({ error: "Only people in this plan's workspace can invite others." }, 403);
+    const body = await c.req.json<{ email?: unknown; role?: unknown; personName?: unknown }>().catch(() => null);
+    const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+    const role = body?.role as PlanRole;
+    const personName = typeof body?.personName === "string" && body.personName.trim() ? body.personName.trim().slice(0, 80) : null;
+    if (!EMAIL_RE.test(email) || email.length > 254) return c.json({ error: "Enter a full email address, like name@example.com." }, 400);
+    if (!PLAN_ROLES.includes(role)) return c.json({ error: "Choose Editor or Viewer." }, 400);
+    const already = await db.first(
+      `SELECT 1 AS x FROM users u WHERE lower(u.email) = ? AND (EXISTS (SELECT 1 FROM members m WHERE m.user_id = u.id AND m.workspace_id = ?) OR EXISTS (SELECT 1 FROM plan_members pm WHERE pm.user_id = u.id AND pm.plan_id = ?))`,
+      [email, a.workspace_id, id],
+    );
+    if (already) return c.json({ error: "That person already has access to this plan." }, 409);
+    const token = randomToken();
+    const inviteId = crypto.randomUUID();
+    const expiresAt = clock.now() + INVITE_DAYS * 86_400_000;
+    await db.run(`INSERT INTO invites (id, token_hash, plan_id, email, role, person_name, created_by, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [inviteId, await sha256(token), id, email, role, personName, user.id, clock.now(), expiresAt]);
+    // The link is shown once, to the person inviting; only its hash is stored.
+    return c.json({ id: inviteId, link: `${siteOrigin}/invite/${token}`, expiresAt }, 201);
+  });
+
+  app.delete("/api/plans/:id/invites/:inviteId", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    if (!a.canShare) return c.json({ error: "Only people in this plan's workspace can manage invites." }, 403);
+    const r = await db.run(`UPDATE invites SET revoked_at = ? WHERE id = ? AND plan_id = ? AND accepted_by IS NULL`, [clock.now(), c.req.param("inviteId"), id]);
+    return r.changes ? c.json({ ok: true }) : c.json({ error: "That invite doesn't exist or was already used." }, 404);
+  });
+
+  app.put("/api/plans/:id/members/:userId", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    if (!a.canShare) return c.json({ error: "Only people in this plan's workspace can change roles." }, 403);
+    const role = ((await c.req.json<{ role?: unknown }>().catch(() => null))?.role ?? "") as PlanRole;
+    if (!PLAN_ROLES.includes(role)) return c.json({ error: "Choose Editor or Viewer." }, 400);
+    const target = c.req.param("userId");
+    const r = await db.run(`UPDATE plan_members SET role = ? WHERE plan_id = ? AND user_id = ?`, [role, id, target]);
+    if (!r.changes) return c.json({ error: "Only people invited to this plan can be changed here." }, 404);
+    await rooms.kick(id, target); // they reconnect with the new role
+    return c.json({ ok: true });
+  });
+
+  app.delete("/api/plans/:id/members/:userId", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    if (!a.canShare) return c.json({ error: "Only people in this plan's workspace can remove others." }, 403);
+    const target = c.req.param("userId");
+    const r = await db.run(`DELETE FROM plan_members WHERE plan_id = ? AND user_id = ?`, [id, target]);
+    if (!r.changes) return c.json({ error: "Only people invited to this plan can be removed here." }, 404);
+    await db.run(`UPDATE plan_people SET user_id = NULL WHERE plan_id = ? AND user_id = ?`, [id, target]);
+    await rooms.kick(id, target); // open connections end at once
+    return c.json({ ok: true });
+  });
+
+  /** An invite by its link secret (the signed-in person is checked against it). */
+  async function inviteFor(token: string) {
+    if (!token || token.length > 100) return null;
+    return db.first<InviteRow & { plan_title: string; inviter: string | null }>(
+      `SELECT i.*, p.title AS plan_title, u.name AS inviter FROM invites i JOIN plans p ON p.id = i.plan_id LEFT JOIN users u ON u.id = i.created_by WHERE i.token_hash = ?`,
+      [await sha256(token)],
+    );
+  }
+  const noInvite = { error: "This invite link isn't valid. Ask for a new one." };
+
+  app.get("/api/invites/:token", async (c) => {
+    const user = c.get("user");
+    const inv = await inviteFor(c.req.param("token"));
+    if (!inv) return c.json(noInvite, 404);
+    const problem = inviteProblem(inv, clock.now(), user.email, user.id);
+    return c.json({ planTitle: problem ? null : inv.plan_title, inviter: inv.inviter ?? "Someone", role: inv.role, email: maskEmail(inv.email), problem, accepted: inv.accepted_by === user.id, planId: inv.accepted_by === user.id ? inv.plan_id : null });
+  });
+
+  app.post("/api/invites/:token/accept", async (c) => {
+    const user = c.get("user");
+    const inv = await inviteFor(c.req.param("token"));
+    if (!inv) return c.json(noInvite, 404);
+    const problem = inviteProblem(inv, clock.now(), user.email, user.id);
+    if (problem) return c.json({ error: problem }, 403);
+    if (!inv.accepted_by) {
+      await db.batch([
+        { sql: `INSERT INTO plan_members (plan_id, user_id, role, added_by, added_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (plan_id, user_id) DO UPDATE SET role = excluded.role`, params: [inv.plan_id, user.id, inv.role, inv.created_by, clock.now()] },
+        { sql: `UPDATE invites SET accepted_by = ?, accepted_at = ? WHERE id = ?`, params: [user.id, clock.now(), inv.id] },
+        // The name the inviter used on the plan (e.g. "Sam") now means this account.
+        ...(inv.person_name ? [{ sql: `UPDATE plan_people SET user_id = ? WHERE plan_id = ? AND name_key = ?`, params: [user.id, inv.plan_id, inv.person_name.toLowerCase()] }] : []),
+      ]);
+    }
+    return c.json({ planId: inv.plan_id });
   });
 
   app.get("/api/plans/:id/trash", async (c) => {

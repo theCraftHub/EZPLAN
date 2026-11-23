@@ -6,4 +6,5 @@ export * from "./live";
 export * from "./sessions";
 export * from "./oidc";
 export * from "./config";
+export * from "./invites";
 export { createApp } from "./app";

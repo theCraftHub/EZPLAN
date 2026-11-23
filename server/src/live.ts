@@ -14,7 +14,12 @@ export interface Peer {
   actor: Actor;
   role: LiveRole;
   send(message: string): void;
+  /** Ends this connection (access removed or role changed). */
+  close?(code: number, reason: string): void;
 }
+
+/** Close code telling the app its access changed: it reloads the plan (or shows it's gone). */
+export const ACCESS_CHANGED = 4003;
 
 export class LiveRoom {
   private queue: Promise<unknown> = Promise.resolve();
@@ -30,6 +35,16 @@ export class LiveRoom {
     const run = this.queue.then(fn);
     this.queue = run.catch(() => undefined);
     return run;
+  }
+
+  /** A message for everyone in the room (e.g. availability changed). */
+  notify(message: ServerMessage): void {
+    this.broadcast(message);
+  }
+
+  /** Ends a person's connections here; they reconnect with their new role, or are refused. */
+  kick(userId: string): void {
+    for (const p of this.peers()) if (p.actor.userId === userId) p.close?.(ACCESS_CHANGED, "Access changed");
   }
 
   private broadcast(message: ServerMessage, except?: Peer) {
