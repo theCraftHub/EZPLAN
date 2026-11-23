@@ -99,15 +99,6 @@
    "expand": "fill",
    "is_interactive": true
   },
-  "Admin.dc.html": {
-   "x": 1520,
-   "y": 1400,
-   "w": 1440,
-   "h": 1000,
-   "title": "Desktop: IT admin console (Gate B rework pending)",
-   "expand": "fill",
-   "is_interactive": true
-  },
   "Availability.dc.html": {
    "x": 4700,
    "y": 0,
@@ -124,6 +115,41 @@
    "title": "Desktop: Team schedule",
    "expand": "fill",
    "is_interactive": true
+  },
+  "AdminConsole.dc.html": {
+   "x": 1520,
+   "y": 1400,
+   "w": 1440,
+   "h": 1000,
+   "title": "Desktop: IT admin (overview, people, offboarding, groups)",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "AdminSecurity.dc.html": {
+   "x": 0,
+   "y": 2700,
+   "w": 1440,
+   "h": 1000,
+   "title": "Desktop: IT admin (setup, policies, audit, licenses)",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "BusinessOnboarding.dc.html": {
+   "x": 1520,
+   "y": 2700,
+   "w": 1440,
+   "h": 1000,
+   "title": "Business onboarding (sign-in questions, pricing routing)",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "AdminPhone.dc.html": {
+   "x": 3040,
+   "y": 2700,
+   "w": 390,
+   "h": 844,
+   "title": "IT admin on a phone (urgent actions)",
+   "is_interactive": true
   }
  },
  "order": [
@@ -139,8 +165,11 @@
   "FirstRun.dc.html",
   "Availability.dc.html",
   "Desktop.dc.html",
-  "Admin.dc.html",
-  "TeamDesktop.dc.html"
+  "AdminConsole.dc.html",
+  "TeamDesktop.dc.html",
+  "AdminSecurity.dc.html",
+  "BusinessOnboarding.dc.html",
+  "AdminPhone.dc.html"
  ],
  "notes": {
   "phoneTitle": {
@@ -170,6 +199,20 @@
    "w": 320,
    "text": "Team schedule: availability sits under the work. Kitchen example: Jordan full time with Tuesday meetings, Priya 20 h a week and off Jan 12 to 13. Every date, finish and what-if here comes from the real scheduling engine. Click T2, then try a change.",
    "fill": "teal"
+  },
+  "gateBTitle": {
+   "x": 0,
+   "y": 2410,
+   "text": "Gate B: company IT admin and business onboarding",
+   "kind": "title1",
+   "maxW": 3430
+  },
+  "gateBNote": {
+   "x": 3510,
+   "y": 2700,
+   "w": 340,
+   "text": "Sample company: Northfield Builders (fictional, about 180 people, Microsoft 365). Try: People \u2192 select a few \u2192 Select all 23 \u2192 Move (dry run, then undo). Policies show who each change affects before saving. Onboarding: the two dashed buttons jump to the self-serve and SAML paths; only SAML goes to specialized pricing, and \"I'm not sure\" never does.",
+   "fill": "purple"
   }
  },
  "designSystems": []

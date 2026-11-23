@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Admin on phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-direction: column; overflow: hidden; position: relative">
+  <header style="background: #0F172A; color: #FFFFFF; padding: 20px 20px 16px; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; flex-direction: column; gap: 2px">
+      <span style="font-size: 12px; font-weight: 600; color: #94A3B8; letter-spacing: 0.06em">ADMIN · NORTHFIELD BUILDERS</span>
+      <h1 style="margin: 0; font-size: 22px; font-weight: 700">Urgent actions</h1>
+    </div>
+    <label for="find" style="position: absolute; left: -9999px">Find a person</label>
+    <input id="find" value="{{ q }}" onChange="{{ setQ }}" placeholder="Find a person" style="min-height: 46px; border-radius: 12px; border: none; padding: 0 14px; font: 500 15px Inter, sans-serif; color: #0F172A">
+  </header>
+  <main style="flex: 1; overflow-y: auto; padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 12px">
+    <sc-if value="{{ showAlerts }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <span style="font-size: 13px; font-weight: 600; color: #475569">Needs attention</span>
+        <section style="background: #FFFFFF; border-radius: 16px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 6px; border-left: 4px solid #EA580C">
+          <span style="font-size: 15px; font-weight: 600">5 failed sign-ins</span>
+          <span style="font-size: 13px; color: #334155">luis.park@northfield.example, yesterday 17:55, from 203.0.113.7.</span>
+          <button onClick="{{ findLuis }}" style="align-self: flex-start; min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F172A; cursor: pointer">Review Luis Park</button>
+        </section>
+        <section style="background: #FFFFFF; border-radius: 16px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 6px; border-left: 4px solid #94A3B8">
+          <span style="font-size: 15px; font-weight: 600">16 seats left</span>
+          <span style="font-size: 13px; color: #334155">Sync adds new hires automatically.</span>
+        </section>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showResults }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 13px; font-weight: 600; color: #475569">People</span>
+        <sc-for list="{{ results }}" as="r" hint-placeholder-count="2">
+          <button onClick="{{ r.open }}" style="display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px 14px; border-radius: 14px; border: none; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,23,42,0.06); text-align: left; cursor: pointer; font-family: Inter, sans-serif; color: #0F172A">
+            <span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">{{ r.name }}</span><span style="font-size: 12px; color: #475569">{{ r.sub }}</span></span>
+            <span style="{{ r.badgeStyle }}">{{ r.badge }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ done }}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="background: #F0FDFA; border: 1px solid #5EEAD4; border-radius: 14px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: #134E4A">{{ done }}</div>
+    </sc-if>
+  </main>
+
+  <sc-if value="{{ sheet }}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(15,23,42,0.45); display: flex; flex-direction: column; justify-content: flex-end; z-index: 5">
+      <section role="dialog" aria-modal="true" aria-label="Person actions" style="background: #FFFFFF; border-radius: 22px 22px 0 0; padding: 12px 20px 26px; display: flex; flex-direction: column; gap: 12px">
+        <span aria-hidden="true" style="align-self: center; width: 40px; height: 4px; border-radius: 2px; background: #CBD5E1"></span>
+        <div style="display: flex; flex-direction: column; gap: 2px"><h2 style="margin: 0; font-size: 19px; font-weight: 700">{{ sheet.name }}</h2><span style="font-size: 13px; color: #475569">{{ sheet.sub }}</span></div>
+        <sc-if value="{{ sheet.confirming }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 15px; font-weight: 600">Deactivate now?</span>
+            <span style="font-size: 14px; line-height: 1.5; color: #334155">{{ sheet.name }} is signed out of {{ sheet.sessions }} devices at once and can't sign in. Their tasks and plans stay where they are until you finish offboarding on a computer. You can undo this today.</span>
+            <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px">
+              <button onClick="{{ cancelConfirm }}" style="min-height: 50px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer">Cancel</button>
+              <button onClick="{{ deactivate }}" style="min-height: 50px; border-radius: 12px; border: none; background: #B91C1C; font: 600 15px Inter, sans-serif; color: #FFFFFF; cursor: pointer">Deactivate</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ sheet.choosing }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <button onClick="{{ signOutAll }}" style="min-height: 52px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer; text-align: left; padding: 0 14px">Sign out everywhere ({{ sheet.sessions }} devices)</button>
+            <button onClick="{{ resend }}" style="min-height: 52px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer; text-align: left; padding: 0 14px">Resend invite</button>
+            <button onClick="{{ askDeactivate }}" style="min-height: 52px; border-radius: 12px; border: 1px solid #FCA5A5; background: #FEF2F2; font: 600 15px Inter, sans-serif; color: #991B1B; cursor: pointer; text-align: left; padding: 0 14px">Deactivate…</button>
+            <button onClick="{{ closeSheet }}" style="min-height: 48px; border-radius: 12px; border: none; background: transparent; font: 600 15px Inter, sans-serif; color: #475569; cursor: pointer">Close</button>
+          </div>
+        </sc-if>
+      </section>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { q: '', open: null, confirming: false, done: '' };
+  }
+  renderVals() {
+    var self = this;
+    var st = this.state;
+    var people = [
+      { name: 'Luis Park', sub: 'Guest · Kitchen Remodel · expires Feb 2', badge: '5 failed sign-ins', warn: true, sessions: 1 },
+      { name: 'Lena Fischer', sub: 'Office · Editor · last active today', badge: 'Active', warn: false, sessions: 2 },
+      { name: 'Tess Nguyen', sub: 'Field Ops · Editor · last active today', badge: 'Active', warn: false, sessions: 3 }
+    ];
+    var q = st.q.trim().toLowerCase();
+    var results = people.filter(function (p) { return q && p.name.toLowerCase().indexOf(q) >= 0; }).map(function (p) {
+      return { name: p.name, sub: p.sub, badge: p.badge, open: function () { self.setState({ open: p.name, confirming: false }); },
+        badgeStyle: 'font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; white-space: nowrap; ' + (p.warn ? 'background: #FFEDD5; color: #9A3412;' : 'background: #CCFBF1; color: #115E59;') };
+    });
+    var cur = people.filter(function (p) { return p.name === st.open; })[0];
+    return {
+      q: st.q, setQ: function (e) { self.setState({ q: e.target.value, done: '' }); },
+      showAlerts: !q, showResults: !!q,
+      results: results.length ? results : [],
+      findLuis: function () { self.setState({ q: 'Luis', done: '' }); },
+      sheet: cur ? { name: cur.name, sub: cur.sub, sessions: cur.sessions, confirming: st.confirming, choosing: !st.confirming } : false,
+      closeSheet: function () { self.setState({ open: null }); },
+      cancelConfirm: function () { self.setState({ confirming: false }); },
+      askDeactivate: function () { self.setState({ confirming: true }); },
+      signOutAll: function () { self.setState({ open: null, done: cur.name + ' was signed out on ' + cur.sessions + ' device' + (cur.sessions === 1 ? '' : 's') + '. Logged in the audit log.' }); },
+      resend: function () { self.setState({ open: null, done: 'Invite sent again to ' + cur.name + '.' }); },
+      deactivate: function () { self.setState({ open: null, confirming: false, done: cur.name + ' is deactivated and signed out everywhere. Finish handing over their work on a computer: Offboarding. Undo is available until midnight.' }); },
+      done: st.done || false
+    };
+  }
+}
+</script>
+</body>
+</html>

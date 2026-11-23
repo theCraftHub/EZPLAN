@@ -18,7 +18,12 @@ Files are `.dc.html` design components (one per screen) plus `canvas.json` (layo
 | Calendar | Calendar.dc.html |
 | Personal first run | FirstRun.dc.html |
 | Desktop project workspace (overview, grid + Gantt, RAID, status updates, task drawer) | Desktop.dc.html |
-| Desktop IT admin console | Admin.dc.html |
 | Desktop Team schedule (people × days, availability under the work, drag preview, what-if) | TeamDesktop.dc.html |
+| **Gate B:** IT admin console (Overview with security checklist, People with bulk dry run + undo, Offboarding wizard, Groups mapping) | AdminConsole.dc.html |
+| **Gate B:** Admin security (Setup wizard, Policies with impact preview incl. company work week, Audit log + SIEM streaming, Licenses with seat reclaim + chargeback) | AdminSecurity.dc.html |
+| **Gate B:** Admin on phone (urgent actions: alerts, find a person, sign out everywhere, deactivate) | AdminPhone.dc.html |
+| **Gate B:** Business onboarding (company, domain, sign-in questions with "Send to my IT person", self-serve or specialized pricing, people, AI, rules, first plan, go live) | BusinessOnboarding.dc.html |
 
 The Team schedule and Availability boards use the kitchen remodel sample. Every date, finish date and what-if in them is real output of the scheduling engine (`levelPlan` in `shared/src/level.ts`): Jordan full time with 3h Tuesday meetings, Priya 20 h a week and off Jan 12 to 13.
+
+The Gate B boards use a fictional company, Northfield Builders (construction, about 180 people, `northfield.example`, Microsoft 365), with whole-dollar prices from the finance model. Screenshots of key states are in `screenshots/` (`ac-*`, `as-*`, `ap-*`, `bo-*`).

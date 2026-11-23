@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Business onboarding</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1000px; box-sizing: border-box; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 24px 16px 48px">
+
+  <div style="width: 100%; max-width: 760px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between">
+    <span style="font-size: 13px; font-weight: 600; color: #475569">Set up your business · {{ stepLabel }}</span>
+    <div role="group" aria-label="Mockup shortcuts" style="display: flex; gap: 6px; flex-wrap: wrap">
+      <span style="font-size: 12px; color: #475569; align-self: center">Mockup paths:</span>
+      <button onClick="{{ demoMs }}" style="min-height: 32px; padding: 0 10px; border-radius: 8px; border: 1px dashed #94A3B8; background: #FFFFFF; font: 600 12px Inter, sans-serif; color: #334155; cursor: pointer">Microsoft → self-serve</button>
+      <button onClick="{{ demoSaml }}" style="min-height: 32px; padding: 0 10px; border-radius: 8px; border: 1px dashed #94A3B8; background: #FFFFFF; font: 600 12px Inter, sans-serif; color: #334155; cursor: pointer">SAML → specialized pricing</button>
+    </div>
+  </div>
+  <div aria-hidden="true" style="width: 100%; max-width: 760px; height: 8px; border-radius: 4px; background: #E2E8F0; overflow: hidden; display: flex"><span style="{{ progress }}"></span></div>
+
+  <main style="width: 100%; max-width: 760px; background: #FFFFFF; border-radius: 20px; box-shadow: 0 1px 3px rgba(15,23,42,0.08); padding: 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 12px; font-weight: 700; color: #4338CA; letter-spacing: 0.05em">{{ kicker }}</span>
+      <h1 style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25">{{ title }}</h1>
+      <sc-if value="{{ lead }}" hint-placeholder-val="{{ true }}"><span style="font-size: 15px; line-height: 1.55; color: #334155">{{ lead }}</span></sc-if>
+    </div>
+
+    <sc-if value="{{ banner }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ bannerStyle }}">
+        <span style="font-size: 14px; line-height: 1.5">{{ banner }}</span>
+        <sc-if value="{{ bannerYes }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap"><button onClick="{{ bannerYes }}" style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: none; background: #0F172A; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Yes, that's right</button><button onClick="{{ bannerNo }}" style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #94A3B8; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F172A; cursor: pointer">No, I'll choose</button></div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ fields }}" hint-placeholder-val="{{ false }}">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px">
+        <sc-for list="{{ fields }}" as="f" hint-placeholder-count="4">
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">{{ f.label }}<input value="{{ f.value }}" readonly style="min-height: 44px; border-radius: 10px; border: 1px solid #CBD5E1; padding: 0 12px; font: 500 15px Inter, sans-serif; color: #0F172A; background: #F8FAFC"></label>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ dns }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div style="display: grid; grid-template-columns: 110px 1fr; gap: 8px; font-size: 14px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px">
+          <span style="color: #475569">Type</span><span style="font-weight: 600">TXT</span>
+          <span style="color: #475569">Name</span><span style="font-weight: 600">@ (northfield.example)</span>
+          <span style="color: #475569">Value</span><code style="font-size: 13px; word-break: break-all">plans-verify=8c1f-27aa-4e90-b3d1</code>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+          <button onClick="{{ checkDns }}" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F172A; cursor: pointer">Check now</button>
+          <span style="{{ dnsStyle }}">{{ dnsState }}</span>
+        </div>
+        <span style="font-size: 13px; color: #475569">Or prove it by signing in as a Microsoft 365 or Google Workspace admin for northfield.example.</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ options }}" hint-placeholder-val="{{ false }}">
+      <div role="radiogroup" aria-label="{{ title }}" style="display: flex; flex-direction: column; gap: 8px">
+        <sc-for list="{{ options }}" as="o" hint-placeholder-count="5">
+          <button role="radio" aria-checked="{{ o.checked }}" onClick="{{ o.pick }}" style="{{ o.style }}">
+            <span style="font-size: 15px; font-weight: 600">{{ o.label }}</span>
+            <sc-if value="{{ o.hint }}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #475569">{{ o.hint }}</span></sc-if>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ explain }}" hint-placeholder-val="{{ false }}">
+      <details style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 12px 14px; font-size: 14px; line-height: 1.55; color: #334155"><summary style="cursor: pointer; font-weight: 600; color: #0F172A">What does this mean?</summary><span>{{ explain }}</span></details>
+    </sc-if>
+
+    <sc-if value="{{ askIt }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 12px; background: #EEF2FF; border: 1px solid #C7D2FE">
+        <span style="flex: 1 1 280px; font-size: 14px; color: #1E1B4B">{{ askItText }}</span>
+        <button onClick="{{ sendIt }}" style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: none; background: #4F46E5; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">{{ askItLabel }}</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ pricing }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">Seats<span style="display: flex; align-items: center; gap: 6px"><button onClick="{{ lessSeats }}" aria-label="Fewer seats" style="width: 44px; height: 44px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 20px Inter, sans-serif; cursor: pointer">−</button><span style="min-width: 60px; text-align: center; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums">{{ seats }}</span><button onClick="{{ moreSeats }}" aria-label="More seats" style="width: 44px; height: 44px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 20px Inter, sans-serif; cursor: pointer">+</button></span></label>
+          <div role="radiogroup" aria-label="Billing" style="display: flex; background: #E9ECF1; border-radius: 10px; padding: 3px; gap: 3px">
+            <sc-for list="{{ billing }}" as="b" hint-placeholder-count="2"><button role="radio" aria-checked="{{ b.checked }}" onClick="{{ b.pick }}" style="{{ b.style }}">{{ b.label }}</button></sc-for>
+          </div>
+        </div>
+        <label style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #E2E8F0; cursor: pointer"><input type="checkbox" checked="{{ esOn }}" onChange="{{ toggleEs }}" style="width: 20px; height: 20px; margin-top: 2px"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">Add Enterprise Security ($3 per seat a month)</span><span style="font-size: 13px; color: #475569">Stream the audit log to your security tools, legal hold, IP allow list, longer audit retention. Optional; everything else is already included.</span></span></label>
+        <div style="display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 12px; background: #F8FAFC; border: 1px solid #E2E8F0">
+          <span style="font-size: 14px; color: #334155">{{ priceLine }}</span>
+          <span style="font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums">{{ total }}</span>
+          <span style="font-size: 13px; color: #475569">All business features included: admin console, Microsoft sign-in, directory sync, audit log, API. Invoice and PO billing available.</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ special }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <div style="padding: 16px; border-radius: 14px; background: #EEF2FF; border: 1px solid #C7D2FE; font-size: 15px; line-height: 1.55; color: #1E1B4B">Your sign-in setup needs a custom connection (SAML), so <strong>your business qualifies for specialized pricing</strong>. Our team sends a tailored quote, usually within one business day.</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px">
+          <button style="min-height: 46px; padding: 0 16px; border-radius: 10px; border: none; background: #4F46E5; color: #FFFFFF; font: 600 15px Inter, sans-serif; cursor: pointer">Book a call</button>
+          <button style="min-height: 46px; padding: 0 16px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer">Request a quote</button>
+        </div>
+        <span style="font-size: 14px; color: #334155">You don't have to wait: <strong>start a free 14-day trial now</strong> with email sign-in, and switch to your company sign-in when the connection is ready.</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ checklist }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <sc-for list="{{ checklist }}" as="c" hint-placeholder-count="3">
+          <div style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: #F8FAFC"><span aria-hidden="true" style="color: #0F766E; font-weight: 700">✓</span><span style="font-size: 14px; line-height: 1.5">{{ c }}</span></div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 10px; padding-top: 4px">
+      <sc-if value="{{ canBack }}" hint-placeholder-val="{{ false }}"><button onClick="{{ back }}" style="min-height: 48px; padding: 0 18px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer">{{ backLabel }}</button></sc-if>
+      <sc-if value="{{ nextLabel }}" hint-placeholder-val="{{ true }}"><button onClick="{{ next }}" disabled="{{ nextDisabled }}" style="{{ nextStyle }}">{{ nextLabel }}</button></sc-if>
+      <sc-if value="{{ altLabel }}" hint-placeholder-val="{{ false }}"><button onClick="{{ alt }}" style="min-height: 48px; padding: 0 18px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer">{{ altLabel }}</button></sc-if>
+      <sc-if value="{{ toAdmin }}" hint-placeholder-val="{{ false }}"><a href="AdminConsole.dc.html" style="min-height: 48px; padding: 0 18px; border-radius: 12px; background: #0F172A; color: #FFFFFF; font: 600 15px Inter, sans-serif; display: flex; align-items: center">Open the admin console</a></sc-if>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { step: 'company', q1: null, detected: true, q2: null, q3: null, sentIt: false, dns: 'waiting', seats: 180, annual: true, es: false, people: 'sync', ai: 'builtin', rules: 'standard', first: 'starter' };
+  }
+  renderVals() {
+    var self = this;
+    var st = this.state;
+    var go = function (step, extra) { self.setState(Object.assign({ step: step }, extra || {})); };
+    var opt = function (on) { return 'display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-height: 56px; padding: 12px 14px; border-radius: 14px; text-align: left; cursor: pointer; font-family: Inter, sans-serif; color: #0F172A; ' + (on ? 'background: #F8FAFC; border: 2px solid #0F172A;' : 'background: #FFFFFF; border: 1px solid #E2E8F0;'); };
+    var choices = function (key, list) {
+      return list.map(function (c) {
+        var on = st[key] === c[0];
+        return { label: c[1], hint: c[2] || false, checked: on ? 'true' : 'false', style: opt(on), pick: function () { var o = {}; o[key] = c[0]; if (key === 'q1') o.detected = false; self.setState(o); } };
+      });
+    };
+    var vendors = { okta: 'Okta', jumpcloud: 'JumpCloud', onelogin: 'OneLogin', ping: 'Ping Identity', adfs: 'Microsoft AD FS', other: 'your sign-in service', unsure: 'your sign-in service' };
+    var vendor = vendors[st.q2] || 'your sign-in service';
+    // Routing rule: only SAML (or a service with no OpenID Connect) goes to specialized pricing.
+    // "I'm not sure" never goes to sales: email sign-in now, company sign-in later.
+    var signIn = st.q1 === 'microsoft' ? 'microsoft' : st.q1 === 'google' ? 'google' : st.q1 === 'none' || st.q1 === 'unsure' ? 'email' : st.q3 === 'oidc' ? 'oidc' : st.q3 === 'saml' ? 'saml' : st.q3 === 'unsure' ? 'email' : null;
+    var special = signIn === 'saml';
+    var order = ['company', 'domain', 'q1', 'q2', 'q3', 'summary', 'price', 'people', 'ai', 'rules', 'first', 'live'];
+    var path = order.filter(function (s) { return (s !== 'q2' && s !== 'q3') || st.q1 === 'separate'; });
+    var idx = path.indexOf(st.step);
+    var nextStep = function () { return path[Math.min(path.length - 1, idx + 1)]; };
+    var prevStep = function () { return path[Math.max(0, idx - 1)]; };
+    var v = { banner: false, bannerYes: false, bannerNo: false, bannerStyle: '', fields: false, dns: false, options: false, explain: false, askIt: false, pricing: false, special: false, checklist: false, lead: false, altLabel: false, alt: null, toAdmin: false, nextDisabled: false, nextLabel: 'Continue', backLabel: 'Back' };
+
+    if (st.step === 'company') {
+      v.kicker = 'ABOUT YOUR COMPANY'; v.title = 'Start your business account';
+      v.lead = 'You\'ll be the owner. You can add other admins later.';
+      v.fields = [{ label: 'Company name', value: 'Northfield Builders' }, { label: 'Your work email', value: 'hana.kim@northfield.example' }, { label: 'Industry', value: 'Construction' }, { label: 'People who will use it', value: 'About 180' }];
+    } else if (st.step === 'domain') {
+      v.kicker = 'VERIFY YOUR DOMAIN'; v.title = 'Show that northfield.example is yours';
+      v.lead = 'Add this record where your domain is managed (your IT person or domain provider can do it in 2 minutes). Verifying lets everyone with an @northfield.example address join automatically.';
+      v.dns = true; v.nextDisabled = st.dns !== 'found';
+    } else if (st.step === 'q1') {
+      v.kicker = 'SIGN-IN · QUESTION 1 OF 3'; v.title = 'How do your employees sign in to their work email and computers today?';
+      if (st.detected) { v.banner = 'It looks like your company uses Microsoft 365 (from northfield.example\'s email settings). Is that right?'; v.bannerStyle = 'display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 12px; background: #EEF2FF; border: 1px solid #C7D2FE; color: #1E1B4B'; v.bannerYes = function () { go('summary', { q1: 'microsoft', detected: false }); }; v.bannerNo = function () { self.setState({ detected: false }); }; }
+      v.options = choices('q1', [['microsoft', 'With Microsoft', 'Outlook, Teams, Microsoft 365'], ['google', 'With Google', 'Gmail, Google Workspace'], ['separate', 'With a separate sign-in service', 'For example Okta or JumpCloud'], ['none', 'We don\'t have a company sign-in', 'Everyone uses their own email and password'], ['unsure', 'I\'m not sure', 'That\'s fine; you can set this up later']]);
+      v.nextDisabled = !st.q1;
+    } else if (st.step === 'q2') {
+      v.kicker = 'SIGN-IN · QUESTION 2 OF 3'; v.title = 'Which sign-in service does your company use?';
+      v.options = choices('q2', [['okta', 'Okta'], ['jumpcloud', 'JumpCloud'], ['onelogin', 'OneLogin'], ['ping', 'Ping Identity'], ['adfs', 'Microsoft AD FS', 'A Microsoft server your IT team runs'], ['other', 'Something else', 'You can type its name'], ['unsure', 'I\'m not sure']]);
+      v.nextDisabled = !st.q2;
+    } else if (st.step === 'q3') {
+      v.kicker = 'SIGN-IN · QUESTION 3 OF 3'; v.title = 'How does your IT team usually connect new apps to ' + vendor + '?';
+      v.options = choices('q3', [['oidc', 'With OpenID Connect (OIDC)'], ['saml', 'With SAML'], ['unsure', 'I\'m not sure, I\'ll ask IT']]);
+      v.explain = 'These are two common ways apps connect to company sign-in. OIDC works with us at no extra cost. SAML needs a custom setup. ' + (st.q2 === 'adfs' ? 'AD FS 2016 and later supports OIDC. ' : '') + 'If you\'re not sure, your IT team will know.';
+      v.askIt = true; v.askItText = st.sentIt ? 'Sent to it@northfield.example. We\'ll continue here when they answer; you can keep going meanwhile.' : 'Not sure? Send just these sign-in questions to your IT person. They get a short secure link.';
+      v.askItLabel = st.sentIt ? 'Sent' : 'Send to my IT person'; v.sendIt = function () { self.setState({ sentIt: true }); };
+      v.nextDisabled = !st.q3;
+    } else if (st.step === 'summary') {
+      v.kicker = 'SIGN-IN · CHECK YOUR ANSWERS'; v.title = 'Here\'s how your employees will sign in';
+      var lines = { microsoft: 'Your employees will sign in with their Microsoft work accounts. Included in your plan at no extra cost.', google: 'Your employees will sign in with their Google Workspace accounts. Included in your plan at no extra cost.', oidc: 'Your employees will sign in through ' + vendor + ' (OIDC). Included in your plan at no extra cost.', saml: 'Your sign-in service (' + vendor + ') connects with SAML, which needs a custom setup. Your business qualifies for specialized pricing.', email: 'For now, people sign in with a one-time code sent to their work email. You can connect company sign-in later in the admin console, at no extra cost.' };
+      v.banner = lines[signIn] || ''; v.bannerStyle = 'padding: 16px; border-radius: 12px; font-size: 15px; ' + (special ? 'background: #EEF2FF; border: 1px solid #C7D2FE; color: #1E1B4B;' : 'background: #F0FDFA; border: 1px solid #5EEAD4; color: #134E4A;');
+      v.nextLabel = 'Looks right'; v.altLabel = 'Change my answers'; v.alt = function () { go('q1', { q1: null, q2: null, q3: null }); };
+    } else if (st.step === 'price') {
+      v.kicker = special ? 'PRICING' : 'PRICING · SELF-SERVE'; v.title = special ? 'Your business qualifies for specialized pricing' : 'Choose seats and billing';
+      if (special) { v.special = true; v.nextLabel = 'Start free trial now'; }
+      else {
+        v.pricing = true;
+        var per = st.annual ? 12 : 15; var es = st.es ? 3 : 0;
+        v.seats = st.seats; v.lessSeats = function () { self.setState({ seats: Math.max(5, st.seats - 5) }); }; v.moreSeats = function () { self.setState({ seats: st.seats + 5 }); };
+        v.billing = [['annual', 'Yearly ($12/seat/mo)'], ['monthly', 'Monthly ($15/seat/mo)']].map(function (b) { var on = (b[0] === 'annual') === st.annual; return { label: b[1], checked: on ? 'true' : 'false', pick: function () { self.setState({ annual: b[0] === 'annual' }); }, style: 'min-height: 40px; padding: 0 12px; border-radius: 8px; border: none; cursor: pointer; font: 600 13px Inter, sans-serif; ' + (on ? 'background: #FFFFFF; color: #0F172A; box-shadow: 0 1px 2px rgba(15,23,42,0.12);' : 'background: transparent; color: #475569;') }; });
+        v.esOn = st.es; v.toggleEs = function () { self.setState({ es: !st.es }); };
+        var month = st.seats * (per + es);
+        v.priceLine = st.seats + ' seats × $' + (per + es) + ' a month' + (st.es ? ' (incl. $3 Enterprise Security)' : '') + (st.annual ? ', billed yearly' : ', billed monthly');
+        v.total = st.annual ? '$' + (month * 12).toLocaleString('en-US') + ' a year' : '$' + month.toLocaleString('en-US') + ' a month';
+        v.nextLabel = 'Start 14-day trial, no card'; v.altLabel = 'Pay by card or invoice'; v.alt = function () { go('people'); };
+      }
+    } else if (st.step === 'people') {
+      v.kicker = 'BRING YOUR PEOPLE'; v.title = 'How should people join?';
+      v.options = choices('people', signIn === 'microsoft' ? [['sync', 'Automatic sync from Microsoft Entra ID (recommended)', 'Hires, leavers and changes flow in by themselves. Takes about 5 minutes with our step-by-step guide.'], ['csv', 'Upload a spreadsheet (CSV)', 'Name, email, department; we check every row before adding anyone.'], ['invite', 'Send invite links', 'Good for a small pilot team.']] : [['csv', 'Upload a spreadsheet (CSV)', 'Name, email, department; we check every row before adding anyone.'], ['invite', 'Send invite links', 'Good for a small pilot team.']]);
+      v.explain = 'We suggest one workspace per department (Field Ops, Estimating, Office, Safety). You can change this any time in Groups.';
+    } else if (st.step === 'ai') {
+      v.kicker = 'AI (OPTIONAL)'; v.title = 'Which AI should we use for Plan Check and status reports?';
+      v.options = choices('ai', [['builtin', 'Our built-in AI (default)', 'Nothing to set up. Your plans are never used to train AI models.'], ['own', 'Your company\'s own AI', 'Anthropic, Azure OpenAI, Amazon Bedrock, Google Vertex AI or a compatible endpoint. Add the key later in the admin console.'], ['off', 'No AI for now', 'Every planning feature still works; free checks stay on.']]);
+    } else if (st.step === 'rules') {
+      v.kicker = 'YOUR RULES'; v.title = 'Pick a starting set of rules';
+      v.options = choices('rules', [['standard', 'Standard (recommended)', 'Share links need approval, guests expire after 90 days, AI on.'], ['strict', 'Strict', 'No public links, guests need admin approval and expire after 30 days, data exports logged and limited to admins.'], ['open', 'Open', 'Anyone can share links and invite guests; good for small teams.']]);
+      v.explain = 'Every rule can be changed later in Policies, and each change shows who it affects before you save.';
+    } else if (st.step === 'first') {
+      v.kicker = 'FIRST PROJECT'; v.title = 'Make your first plan (2 minutes)';
+      v.options = choices('first', [['starter', 'Start from "Construction job"', 'Phases, permits, inspections and waits already in place.'], ['ai', 'Use my AI assistant', 'Paste our prompt into a chat where you planned something.'], ['file', 'Import a plan file or spreadsheet', 'From Asana, Trello, Monday, Smartsheet, ClickUp or a plan file.']]);
+    } else {
+      v.kicker = 'GO LIVE'; v.title = 'Northfield Builders is ready';
+      v.checklist = [(signIn === 'microsoft' ? 'Employees sign in with Microsoft' : signIn === 'saml' ? 'Trial running with email sign-in; SAML connection quote on its way' : 'Sign-in ready'), (st.people === 'sync' ? '184 people will be added by Entra sync, with a welcome email you can preview' : 'People added from your list'), 'Rules: ' + st.rules.charAt(0).toUpperCase() + st.rules.slice(1), 'First plan: Construction job, ready to edit', 'A printable "How to start" page for your team'];
+      v.nextLabel = false; v.toAdmin = true;
+    }
+
+    var labels = { company: 'Company', domain: 'Domain', q1: 'Sign-in', q2: 'Sign-in', q3: 'Sign-in', summary: 'Sign-in', price: 'Pricing', people: 'People', ai: 'AI', rules: 'Rules', first: 'First plan', live: 'Go live' };
+    v.stepLabel = 'Step ' + (idx + 1) + ' of ' + path.length + ': ' + labels[st.step];
+    v.progress = 'width: ' + ((idx + 1) / path.length * 100) + '%; background: #4F46E5;';
+    v.canBack = idx > 0 && st.step !== 'live';
+    v.back = function () { go(prevStep()); };
+    v.next = function () { if (!v.nextDisabled) go(nextStep()); };
+    v.nextStyle = 'min-height: 48px; padding: 0 20px; border-radius: 12px; border: none; font: 600 15px Inter, sans-serif; color: #FFFFFF; ' + (v.nextDisabled ? 'background: #94A3B8; cursor: not-allowed;' : 'background: #4F46E5; cursor: pointer;');
+    v.dnsState = st.dns === 'found' ? '✓ Found. northfield.example is verified.' : st.dns === 'checking' ? 'Not found yet. DNS changes can take a few minutes; we keep checking.' : 'Waiting for the record';
+    v.dnsStyle = 'font-size: 14px; font-weight: 600; ' + (st.dns === 'found' ? 'color: #115E59;' : 'color: #475569;');
+    v.checkDns = function () { self.setState({ dns: st.dns === 'waiting' ? 'checking' : 'found' }); };
+    v.demoMs = function () { go('price', { q1: 'microsoft', q2: null, q3: null, dns: 'found' }); };
+    v.demoSaml = function () { go('summary', { q1: 'separate', q2: 'okta', q3: 'saml', dns: 'found' }); };
+    return v;
+  }
+}
+</script>
+</body>
+</html>
