@@ -360,6 +360,70 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
         </section>
       </div>
     </sc-if>
+
+
+
+    <!-- ===================== AI SPENDING ===================== -->
+    <sc-if value="{{ isSpending }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <header style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px">
+          <div style="display: flex; flex-direction: column; gap: 4px"><h1 style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em">AI spending</h1><span style="font-size: 14px; color: #475569">Where AI tokens and money go, by person, project and department. Click any name for its breakdown.</span></div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center"><sc-for list="{{ spPeriods }}" as="p" hint-placeholder-count="3"><button aria-pressed="{{ p.on }}" onClick="{{ p.pick }}" style="{{ p.style }}">{{ p.label }}</button></sc-for><button onClick="{{ spCsv }}" style="min-height: 36px; padding: 0 12px; border-radius: 9px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F172A; cursor: pointer">{{ spCsvLabel }}</button></div>
+        </header>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px">
+          <section style="background: #FFFFFF; border-radius: 16px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px; gap: 4px"><span style="font-size: 13px; color: #475569">Cost</span><span style="font-size: 26px; font-weight: 700">{{ spTotal }}</span><span style="font-size: 13px; color: #334155">{{ spChange }}</span></section>
+          <section style="background: #FFFFFF; border-radius: 16px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px; gap: 4px"><span style="font-size: 13px; color: #475569">Runs</span><span style="font-size: 15px; font-weight: 600">{{ spRuns }}</span><span style="font-size: 13px; color: #334155">{{ spTokens }}</span></section>
+          <section style="background: #FFFFFF; border-radius: 16px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px; gap: 6px"><span style="font-size: 13px; color: #475569">Pool this month</span><span style="font-size: 14px; font-weight: 600">{{ spPool }}</span><span aria-hidden="true" style="height: 8px; background: #EEF2F6; border-radius: 4px; display: flex"><span style="{{ spPoolBar }}"></span></span></section>
+        </div>
+        <section style="background: #FFFFFF; border-radius: 16px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px"><h2 style="margin: 0; font-size: 17px; font-weight: 700">Cost per day</h2><div style="max-width: 900px"><figure style="margin: 0; display: flex; flex-direction: column; gap: 6px">
+          <figcaption style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: #334155"><span style="display: flex; align-items: center; gap: 6px"><svg width="22" height="8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" stroke="#2a78d6" stroke-width="2"/></svg>{{ spCurLabel }}</span><span style="display: flex; align-items: center; gap: 6px"><svg width="22" height="8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" stroke="#eb6834" stroke-width="2" stroke-dasharray="4 3"/></svg>{{ spPrevLabel }}</span></figcaption>
+          <svg viewBox="0 0 600 150" role="img" aria-label="AI cost per day, this month compared with last month" style="width: 100%; height: auto; overflow: visible; padding-bottom: 4px">
+            <line x1="40" y1="130" x2="580" y2="130" stroke="#E2E8F0" stroke-width="1"/>
+            <line x1="40" y1="44" x2="580" y2="44" stroke="#EEF2F6" stroke-width="1"/>
+            <line x1="40" y1="87" x2="580" y2="87" stroke="#EEF2F6" stroke-width="1"/>
+            <text x="34" y="48" text-anchor="end" font-size="7" fill="#64748B">$1.00</text>
+            <text x="34" y="91" text-anchor="end" font-size="7" fill="#64748B">$0.50</text>
+            <text x="34" y="134" text-anchor="end" font-size="7" fill="#64748B">$0</text>
+            <text x="44" y="141" font-size="7" fill="#64748B">Day 1</text>
+            <text x="580" y="141" text-anchor="end" font-size="7" fill="#64748B">Day 30</text>
+            <polyline points="{{ spPrev }}" fill="none" stroke="#eb6834" stroke-width="2" stroke-dasharray="4 3" stroke-linejoin="round"/>
+            <polyline points="{{ spCur }}" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round"/>
+            <circle cx="{{ spCurEnd.x }}" cy="{{ spCurEnd.y }}" r="4" fill="#2a78d6" stroke="#FFFFFF" stroke-width="2"/>
+          </svg>
+        </figure></div></section>
+        <sc-if value="{{ spDetail }}" hint-placeholder-val="{{ false }}">
+        <section aria-label="Cost detail" style="background: #FFFFFF; border-radius: 16px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px; gap: 12px; border: 2px solid #C7D2FE">
+          <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px"><button onClick="{{ spBack }}" style="min-height: 40px; padding: 0 12px; border-radius: 9px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F172A; cursor: pointer">← Back</button><span style="font-size: 12px; font-weight: 700; color: #4338CA; letter-spacing: 0.05em">{{ spDetail.kind }}</span><h3 style="margin: 0; font-size: 19px; font-weight: 700">{{ spDetail.title }}</h3><span style="margin-left: auto; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums">{{ spDetail.cost }}</span></div>
+          <sc-if value="{{ spDetail.note }}" hint-placeholder-val="{{ false }}"><span style="font-size: 14px; color: #7C2D12; background: #FFF7ED; padding: 10px 12px; border-radius: 10px">{{ spDetail.note }}</span></sc-if>
+          <dl style="margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+            <sc-for list="{{ spDetail.facts }}" as="x" hint-placeholder-count="6"><div style="background: #F8FAFC; border-radius: 12px; padding: 10px 12px"><dt style="font-size: 12px; color: #475569">{{ x.k }}</dt><dd style="margin: 2px 0 0; font-size: 15px; font-weight: 700">{{ x.v }}</dd></div></sc-for>
+          </dl>
+          <span style="font-size: 13px; font-weight: 700">Related</span>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{ spDetail.related }}" as="r" hint-placeholder-count="3"><button onClick="{{ r.open }}" style="min-height: 40px; padding: 0 12px; border-radius: 999px; border: 1px solid #C7D2FE; background: #EEF2FF; font: 600 13px Inter, sans-serif; color: #1E1B4B; cursor: pointer">{{ r.kind }}: {{ r.label }} →</button></sc-for></div>
+        </section>
+      </sc-if>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px"><section style="background: #FFFFFF; border-radius: 16px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px"><h3 style="margin: 0; font-size: 15px; font-weight: 700">Top people</h3>
+            <sc-for list="{{ spTopPeople }}" as="r" hint-placeholder-count="5"><button onClick="{{ r.open }}" style="display: grid; grid-template-columns: 1fr 64px; gap: 4px 8px; align-items: center; min-height: 44px; border: none; background: transparent; padding: 4px 0; text-align: left; cursor: pointer; font-family: Inter, sans-serif; color: #0F172A"><span style="font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #CBD5E1">{{ r.name }}</span><span style="font-size: 13px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums">{{ r.cost }}</span><span aria-hidden="true" style="grid-column: 1 / -1; height: 8px; background: #EEF2F6; border-radius: 4px; display: flex"><span style="{{ r.bar }}"></span></span></button></sc-for>
+          </section><section style="background: #FFFFFF; border-radius: 16px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px"><h3 style="margin: 0; font-size: 15px; font-weight: 700">Top projects</h3>
+            <sc-for list="{{ spTopProjects }}" as="r" hint-placeholder-count="5"><button onClick="{{ r.open }}" style="display: grid; grid-template-columns: 1fr 64px; gap: 4px 8px; align-items: center; min-height: 44px; border: none; background: transparent; padding: 4px 0; text-align: left; cursor: pointer; font-family: Inter, sans-serif; color: #0F172A"><span style="font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #CBD5E1">{{ r.name }}</span><span style="font-size: 13px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums">{{ r.cost }}</span><span aria-hidden="true" style="grid-column: 1 / -1; height: 8px; background: #EEF2F6; border-radius: 4px; display: flex"><span style="{{ r.bar }}"></span></span></button></sc-for>
+          </section><section style="background: #FFFFFF; border-radius: 16px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px"><h3 style="margin: 0; font-size: 15px; font-weight: 700">Departments</h3>
+            <sc-for list="{{ spTopDepts }}" as="r" hint-placeholder-count="5"><button onClick="{{ r.open }}" style="display: grid; grid-template-columns: 1fr 64px; gap: 4px 8px; align-items: center; min-height: 44px; border: none; background: transparent; padding: 4px 0; text-align: left; cursor: pointer; font-family: Inter, sans-serif; color: #0F172A"><span style="font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: #CBD5E1">{{ r.name }}</span><span style="font-size: 13px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums">{{ r.cost }}</span><span aria-hidden="true" style="grid-column: 1 / -1; height: 8px; background: #EEF2F6; border-radius: 4px; display: flex"><span style="{{ r.bar }}"></span></span></button></sc-for>
+          </section></div>
+        <section style="background: #FFFFFF; border-radius: 16px; padding: 16px 18px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); display: flex; flex-direction: column; gap: 10px; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; background: #F8FAFC"><strong style="font-size: 14px">Not using AI this period:</strong><span style="font-size: 14px; color: #334155">{{ spIdle }}</span></section>
+        <div role="radiogroup" aria-label="Break down by" style="display: flex; background: #E9ECF1; border-radius: 10px; padding: 3px; gap: 3px; max-width: 480px"><sc-for list="{{ spTabs }}" as="t" hint-placeholder-count="3"><button role="radio" aria-checked="{{ t.on }}" onClick="{{ t.pick }}" style="{{ t.style }}">{{ t.label }}</button></sc-for></div>
+        <section style="background: #FFFFFF; border-radius: 16px; box-shadow: 0 1px 2px rgba(15,23,42,0.06); overflow-x: auto">
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px; min-width: 720px">
+            <thead><tr style="text-align: left; color: #475569; font-size: 12px; letter-spacing: 0.04em"><th style="padding: 12px 16px"><button onClick="{{ spSortName }}" style="border: none; background: none; font: 700 12px Inter, sans-serif; color: #475569; cursor: pointer; padding: 0">NAME ↕</button></th><th style="padding: 12px 8px"><button onClick="{{ spSortCost }}" style="border: none; background: none; font: 700 12px Inter, sans-serif; color: #475569; cursor: pointer; padding: 0">COST ↕</button></th><th style="padding: 12px 8px; width: 160px">SHARE</th><th style="padding: 12px 8px">USE</th><th style="padding: 12px 8px"></th><th style="padding: 12px 8px"></th></tr></thead>
+            <tbody><sc-for list="{{ spRows }}" as="r" hint-placeholder-count="6"><tr style="border-top: 1px solid #EEF2F6">
+              <td style="padding: 10px 16px"><button onClick="{{ r.open }}" style="display: flex; flex-direction: column; align-items: flex-start; border: none; background: transparent; padding: 0; cursor: pointer; font-family: Inter, sans-serif; text-align: left"><span style="font-size: 14px; font-weight: 600; color: #3730A3; text-decoration: underline; text-underline-offset: 3px">{{ r.name }}</span><span style="font-size: 12px; color: #475569">{{ r.sub }}</span></button></td>
+              <td style="padding: 10px 8px; font-weight: 700; font-variant-numeric: tabular-nums">{{ r.cost }}</td>
+              <td style="padding: 10px 8px"><span style="display: flex; align-items: center; gap: 8px"><span aria-hidden="true" style="flex: 1; height: 8px; background: #EEF2F6; border-radius: 4px; display: flex"><span style="{{ r.bar }}"></span></span><span style="font-size: 12px; width: 34px; text-align: right">{{ r.share }}</span></span></td>
+              <td style="padding: 10px 8px; color: #334155">{{ r.a }}</td><td style="padding: 10px 8px; color: #334155">{{ r.b }}</td><td style="padding: 10px 8px; color: #334155">{{ r.c }}</td>
+            </tr></sc-for></tbody>
+          </table>
+        </section>
+      </div>
+    </sc-if>
   </main>
 
   <!-- Person panel (same content as the phone sheet) -->
@@ -481,7 +545,7 @@ class Component extends DCLogic {
     var st = this.state;
     var items = [
       ['overview', 'Overview', null, 'Manage'], ['people', 'People', null, null], ['off', 'Offboarding', '1', null], ['groups', 'Groups and access', null, null],
-      ['setup', 'Setup', null, 'Security and billing'], ['policies', 'Policies', null, null], ['audit', 'Audit log', null, null], ['licenses', 'Licenses and billing', null, null]
+      ['setup', 'Setup', null, 'Security and billing'], ['policies', 'Policies', null, null], ['audit', 'Audit log', null, null], ['licenses', 'Licenses and billing', null, null], ['spending', 'AI spending', null, null]
     ];
     var nav = items.map(function (n) {
       var on = st.tab === n[0];
@@ -494,7 +558,7 @@ class Component extends DCLogic {
       return { label: n[1], badge: n[2] || false, heading: n[3] || false, current: on ? 'page' : 'false', pick: function () { self.setState({ tab: n[0], menu: false, person: null }); },
         style: 'min-height: 52px; padding: 0 14px; border-radius: 12px; border: none; display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer; font: ' + (on ? '700' : '600') + ' 16px Inter, sans-serif; ' + (on ? 'background: #EEF2FF; color: #1E1B4B;' : 'background: transparent; color: #0F172A;') };
     });
-    return Object.assign({}, this.manageVals(), this.securityVals(), this.extraVals(), { nav: nav, menu: menu, sectionTitle: cur ? cur[1] : '', menuOpen: st.menu, openMenu: function () { self.setState({ menu: true }); }, closeMenu: function () { self.setState({ menu: false }); } });
+    return Object.assign({}, this.manageVals(), this.securityVals(), this.extraVals(), this.spendVals(), { nav: nav, menu: menu, sectionTitle: cur ? cur[1] : '', menuOpen: st.menu, openMenu: function () { self.setState({ menu: true }); }, closeMenu: function () { self.setState({ menu: false }); } });
   }
   manageVals() {
     var self = this;
@@ -722,6 +786,103 @@ class Component extends DCLogic {
       previewStyle: 'min-height: 46px; padding: 0 18px; border-radius: 10px; border: none; font: 600 15px Inter, sans-serif; color: #FFFFFF; ' + (st.addMode === 'one' && !validEmail ? 'background: #94A3B8; cursor: not-allowed;' : 'background: #4F46E5; cursor: pointer;')
     };
   }
+  spendVals() {
+    var self = this;
+    var st = this.state;
+    var f = { month: 1, last: 1.18, q: 3.1 }[st.spPeriod || 'month'];
+    var money = function (v) { return '$' + (v * f).toFixed(2); };
+    // Fictional Northfield usage: Opus 5.5 checks (~5.5 cents each), Haiku 5.5 reports (~0.1 cent).
+    var people = [
+      ['Hana Kim', 'Estimating', 5.12, 88, 14, 612, 140, 4.10, ['Kitchen Remodel', 'Lobby Refit']],
+      ['Ana Lima', 'Field Ops', 3.95, 68, 11, 470, 108, 4.40, ['Kitchen Remodel', 'Yard Office']],
+      ['Tess Nguyen', 'Field Ops', 2.6, 45, 6, 310, 71, 1.20, ['Yard Office', 'Warehouse Roof']],
+      ['Jun Watanabe', 'Field Ops', 1.7, 29, 9, 203, 47, 1.90, ['Warehouse Roof']],
+      ['Sofia Costa', 'Safety', 0.94, 16, 4, 112, 26, 0.80, ['Safety Audit Q4']],
+      ['Dana Okafor', 'Field Ops', 0.33, 6, 0, 40, 9, 0, ['Fit-out Level 3']],
+      ['Ravi Shah', 'Office', 0, 0, 0, 0, 0, 0.30, []],
+      ['Mira Haddad', 'Field Ops', 0, 0, 0, 0, 0, 0, []]
+    ];
+    var projects = [
+      ['Kitchen Remodel', 'Field Ops', 4.8, 83, ['Hana Kim', 'Ana Lima']],
+      ['Lobby Refit', 'Estimating', 3.9, 70, ['Hana Kim']],
+      ['Yard Office', 'Field Ops', 2.75, 48, ['Ana Lima', 'Tess Nguyen']],
+      ['Warehouse Roof', 'Field Ops', 1.6, 31, ['Tess Nguyen', 'Jun Watanabe']],
+      ['Safety Audit Q4', 'Safety', 0.94, 20, ['Sofia Costa']],
+      ['Fit-out Level 3', 'Field Ops', 0.33, 6, ['Dana Okafor']],
+      ['Parking Lot Resurface', 'Office', 0, 0, []]
+    ];
+    var depts = [['Field Ops', 8.58, 96, 22], ['Estimating', 5.12, 31, 6], ['Safety', 0.94, 16, 3], ['Office', 0, 41, 0]];
+    var total = people.reduce(function (n, p) { return n + p[2]; }, 0) + 1.1; // + import screening
+    var lastTotal = 13.80;
+    var key = st.spTab || 'people';
+    var sortBy = st.spSort || 'cost';
+    var dir = function (a, b) { return sortBy === 'name' ? (a.name < b.name ? -1 : 1) : b.costN - a.costN; };
+    var go = function (type, name) { return function () { self.setState({ spDetail: { type: type, name: name } }); }; };
+    var share = function (c) { return total ? Math.round(c / total * 100) : 0; };
+    var bar = function (c) { var mx = 5.12; return 'width: ' + Math.max(c ? 3 : 0, Math.round(c / mx * 100)) + '%; background: #2a78d6; border-radius: 0 4px 4px 0;'; };
+    var rowsPeople = people.map(function (p) { return { name: p[0], sub: p[1], costN: p[2], cost: money(p[2]), a: p[3] + ' checks', b: p[4] + ' reports', c: Math.round((p[3] / 100) * 100) + '% of allowance', change: p[2] === p[7] ? 'same' : (p[2] > p[7] ? '+' : '−') + money(Math.abs(p[2] - p[7])).slice(0), share: share(p[2]) + '%', bar: bar(p[2]), open: go('person', p[0]) }; });
+    var rowsProjects = projects.map(function (p) { return { name: p[0], sub: p[1], costN: p[2], cost: money(p[2]), a: p[3] + ' runs', b: p[3] ? '$' + (p[2] / p[3]).toFixed(3) + ' per run' : 'no runs', c: p[4].length + ' using AI', change: '', share: share(p[2]) + '%', bar: bar(p[2]), open: go('project', p[0]) }; });
+    var rowsDepts = depts.map(function (d) { return { name: d[0], sub: d[2] + ' people', costN: d[1], cost: money(d[1]), a: d[3] + ' using AI', b: d[3] ? '$' + (d[1] / d[3]).toFixed(2) + ' per active person' : 'nobody yet', c: Math.round(d[3] / d[2] * 100) + '% of people', change: '', share: share(d[1]) + '%', bar: bar(d[1]), open: go('department', d[0]) }; });
+    var rows = (key === 'people' ? rowsPeople : key === 'projects' ? rowsProjects : rowsDepts).slice().sort(dir);
+    var tabs = [['people', 'People'], ['projects', 'Projects'], ['departments', 'Departments']].map(function (x) { var on = key === x[0]; return { label: x[1], on: on ? 'true' : 'false', pick: function () { self.setState({ spTab: x[0], spDetail: null }); }, style: 'flex: 1; min-height: 40px; padding: 0 12px; border-radius: 8px; border: none; cursor: pointer; font: 600 14px Inter, sans-serif; ' + (on ? 'background: #FFFFFF; color: #0F172A; box-shadow: 0 1px 2px rgba(15,23,42,0.12);' : 'background: transparent; color: #475569;') }; });
+    var periods = [['month', 'This month'], ['last', 'Last month'], ['q', 'Last 90 days']].map(function (x) { var on = (st.spPeriod || 'month') === x[0]; return { label: x[1], on: on ? 'true' : 'false', pick: function () { self.setState({ spPeriod: x[0] }); }, style: 'min-height: 36px; padding: 0 12px; border-radius: 999px; cursor: pointer; font: 600 13px Inter, sans-serif; ' + (on ? 'background: #0F172A; color: #FFFFFF; border: 1px solid #0F172A;' : 'background: #FFFFFF; color: #0F172A; border: 1px solid #CBD5E1;') }; });
+    // Cost per day: this month (solid blue) vs last month (dashed orange), one axis.
+    var cur = [0.42,0.61,0.55,0.38,0.12,0.08,0.71,0.83,0.66,0.59,0.74,0.15,0.1,0.92,1.08,0.77,0.69,0.81,0.2,0.11,0.95,1.12,0.94];
+    var prev = [0.35,0.5,0.47,0.52,0.1,0.07,0.6,0.58,0.64,0.49,0.55,0.12,0.09,0.66,0.71,0.62,0.6,0.58,0.14,0.08,0.73,0.69,0.75,0.61,0.57,0.11,0.07,0.52,0.48,0.39];
+    // Scale the day series so the chart's totals match the cost cards exactly.
+    var ks = function (arr, to) { var s = arr.reduce(function (a, b) { return a + b; }, 0); return arr.map(function (v) { return v * to / s; }); };
+    cur = ks(cur, total); prev = ks(prev, lastTotal);
+    var W = 600, H = 150, mx = 1.4;
+    var pts = function (arr) { return arr.map(function (v, i) { return Math.round(40 + i * (W - 60) / 29) + ',' + Math.round(10 + (H - 30) * (1 - v / mx)); }).join(' '); };
+    var lastPt = function (arr) { var i = arr.length - 1; return { x: Math.round(40 + i * (W - 60) / 29), y: Math.round(10 + (H - 30) * (1 - arr[i] / mx)) }; };
+    var top = function (rs) { return rs.slice().sort(function (a, b) { return b.costN - a.costN; }).slice(0, 5).map(function (r) { return { name: r.name, cost: r.cost, share: r.share, open: r.open, bar: r.bar }; }); };
+    // Detail
+    var det = st.spDetail;
+    var detail = false;
+    if (det) {
+      var p = people.filter(function (x) { return x[0] === det.name; })[0];
+      var pr = projects.filter(function (x) { return x[0] === det.name; })[0];
+      var dp = depts.filter(function (x) { return x[0] === det.name; })[0];
+      var cost = p ? p[2] : pr ? pr[2] : dp ? dp[1] : 0;
+      var related = p ? p[8].map(function (n) { return { label: n, kind: 'Project', open: go('project', n) }; }).concat([{ label: p[1], kind: 'Department', open: go('department', p[1]) }])
+        : pr ? pr[4].map(function (n) { return { label: n, kind: 'Person', open: go('person', n) }; }).concat([{ label: pr[1], kind: 'Department', open: go('department', pr[1]) }])
+        : people.filter(function (x) { return x[1] === det.name; }).map(function (x) { return { label: x[0], kind: 'Person', open: go('person', x[0]) }; }).concat(projects.filter(function (x) { return x[1] === det.name; }).map(function (x) { return { label: x[0], kind: 'Project', open: go('project', x[0]) }; }));
+      var checksShare = cost ? 0.93 : 0;
+      detail = {
+        title: det.name, kind: { person: 'Person', project: 'Project', department: 'Department' }[det.type],
+        cost: money(cost),
+        facts: [
+          ['Plan Check (Opus 5.5)', money(cost * checksShare)],
+          ['Status reports (Haiku 5.5)', money(cost * (1 - checksShare))],
+          ['Input tokens', p ? p[5] + 'K' : Math.round(cost * 120) + 'K'],
+          ['Output tokens', p ? p[6] + 'K' : Math.round(cost * 27) + 'K'],
+          ['Average cost per run', cost ? '$' + (cost / Math.max(1, p ? p[3] + p[4] : pr ? pr[3] : dp[3] * 10)).toFixed(3) : 'no runs'],
+          ['Declined by the AI', det.name === 'Yard Office' || det.name === 'Ana Lima' ? '1 (held for review, released)' : 'none']
+        ].map(function (x) { return { k: x[0], v: x[1] }; }),
+        related: related,
+        note: cost === 0 ? 'No AI use this period. If this team plans a lot, it may be worth showing them the AI check.' : ''
+      };
+    }
+    return {
+      isSpending: st.tab === 'spending',
+      spPeriods: periods, spTabs: tabs, spRows: rows,
+      spSortCost: function () { self.setState({ spSort: 'cost' }); }, spSortName: function () { self.setState({ spSort: 'name' }); },
+      spTotal: money(total), spChange: Math.round((total / lastTotal - 1) * 100) + '% vs last month',
+      spPool: '612 of 1,000 checks used · 64 of 300 reports',
+      spPoolBar: 'width: 61%; background: #2a78d6; border-radius: 4px;',
+      spTokens: '1.9M input · 0.4M output tokens',
+      spRuns: '257 checks · 44 reports · 31 imports screened',
+      spCur: pts(cur), spPrev: pts(prev),
+      spCurEnd: lastPt(cur), spPrevEnd: lastPt(prev),
+      spCurLabel: 'This month so far ' + money(total),
+      spPrevLabel: 'Last month $' + lastTotal.toFixed(2),
+      spTopPeople: top(rowsPeople), spTopProjects: top(rowsProjects), spTopDepts: top(rowsDepts),
+      spIdle: 'Ravi Shah, Mira Haddad · Parking Lot Resurface · Office (41 people)',
+      spDetail: detail, spBack: function () { self.setState({ spDetail: null }); },
+      spCsv: function () { self.setState({ spCsvDone: true }); }, spCsvLabel: st.spCsvDone ? 'Downloaded' : 'Export CSV'
+    };
+  }
+
   securityVals() {
     var self = this;
     var st = this.state;

@@ -8,7 +8,7 @@ class Component extends DCLogic {
     var st = this.state;
     var items = [
       ['overview', 'Overview', null, 'Manage'], ['people', 'People', null, null], ['off', 'Offboarding', '1', null], ['groups', 'Groups and access', null, null],
-      ['setup', 'Setup', null, 'Security and billing'], ['policies', 'Policies', null, null], ['audit', 'Audit log', null, null], ['licenses', 'Licenses and billing', null, null]
+      ['setup', 'Setup', null, 'Security and billing'], ['policies', 'Policies', null, null], ['audit', 'Audit log', null, null], ['licenses', 'Licenses and billing', null, null], ['spending', 'AI spending', null, null]
     ];
     var nav = items.map(function (n) {
       var on = st.tab === n[0];
@@ -21,7 +21,7 @@ class Component extends DCLogic {
       return { label: n[1], badge: n[2] || false, heading: n[3] || false, current: on ? 'page' : 'false', pick: function () { self.setState({ tab: n[0], menu: false, person: null }); },
         style: 'min-height: 52px; padding: 0 14px; border-radius: 12px; border: none; display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer; font: ' + (on ? '700' : '600') + ' 16px Inter, sans-serif; ' + (on ? 'background: #EEF2FF; color: #1E1B4B;' : 'background: transparent; color: #0F172A;') };
     });
-    return Object.assign({}, this.manageVals(), this.securityVals(), this.extraVals(), { nav: nav, menu: menu, sectionTitle: cur ? cur[1] : '', menuOpen: st.menu, openMenu: function () { self.setState({ menu: true }); }, closeMenu: function () { self.setState({ menu: false }); } });
+    return Object.assign({}, this.manageVals(), this.securityVals(), this.extraVals(), this.spendVals(), { nav: nav, menu: menu, sectionTitle: cur ? cur[1] : '', menuOpen: st.menu, openMenu: function () { self.setState({ menu: true }); }, closeMenu: function () { self.setState({ menu: false }); } });
   }
   manageVals() {
     var self = this;
@@ -249,6 +249,103 @@ class Component extends DCLogic {
       previewStyle: 'min-height: 46px; padding: 0 18px; border-radius: 10px; border: none; font: 600 15px Inter, sans-serif; color: #FFFFFF; ' + (st.addMode === 'one' && !validEmail ? 'background: #94A3B8; cursor: not-allowed;' : 'background: #4F46E5; cursor: pointer;')
     };
   }
+  spendVals() {
+    var self = this;
+    var st = this.state;
+    var f = { month: 1, last: 1.18, q: 3.1 }[st.spPeriod || 'month'];
+    var money = function (v) { return '$' + (v * f).toFixed(2); };
+    // Fictional Northfield usage: Opus 5.5 checks (~5.5 cents each), Haiku 5.5 reports (~0.1 cent).
+    var people = [
+      ['Hana Kim', 'Estimating', 5.12, 88, 14, 612, 140, 4.10, ['Kitchen Remodel', 'Lobby Refit']],
+      ['Ana Lima', 'Field Ops', 3.95, 68, 11, 470, 108, 4.40, ['Kitchen Remodel', 'Yard Office']],
+      ['Tess Nguyen', 'Field Ops', 2.6, 45, 6, 310, 71, 1.20, ['Yard Office', 'Warehouse Roof']],
+      ['Jun Watanabe', 'Field Ops', 1.7, 29, 9, 203, 47, 1.90, ['Warehouse Roof']],
+      ['Sofia Costa', 'Safety', 0.94, 16, 4, 112, 26, 0.80, ['Safety Audit Q4']],
+      ['Dana Okafor', 'Field Ops', 0.33, 6, 0, 40, 9, 0, ['Fit-out Level 3']],
+      ['Ravi Shah', 'Office', 0, 0, 0, 0, 0, 0.30, []],
+      ['Mira Haddad', 'Field Ops', 0, 0, 0, 0, 0, 0, []]
+    ];
+    var projects = [
+      ['Kitchen Remodel', 'Field Ops', 4.8, 83, ['Hana Kim', 'Ana Lima']],
+      ['Lobby Refit', 'Estimating', 3.9, 70, ['Hana Kim']],
+      ['Yard Office', 'Field Ops', 2.75, 48, ['Ana Lima', 'Tess Nguyen']],
+      ['Warehouse Roof', 'Field Ops', 1.6, 31, ['Tess Nguyen', 'Jun Watanabe']],
+      ['Safety Audit Q4', 'Safety', 0.94, 20, ['Sofia Costa']],
+      ['Fit-out Level 3', 'Field Ops', 0.33, 6, ['Dana Okafor']],
+      ['Parking Lot Resurface', 'Office', 0, 0, []]
+    ];
+    var depts = [['Field Ops', 8.58, 96, 22], ['Estimating', 5.12, 31, 6], ['Safety', 0.94, 16, 3], ['Office', 0, 41, 0]];
+    var total = people.reduce(function (n, p) { return n + p[2]; }, 0) + 1.1; // + import screening
+    var lastTotal = 13.80;
+    var key = st.spTab || 'people';
+    var sortBy = st.spSort || 'cost';
+    var dir = function (a, b) { return sortBy === 'name' ? (a.name < b.name ? -1 : 1) : b.costN - a.costN; };
+    var go = function (type, name) { return function () { self.setState({ spDetail: { type: type, name: name } }); }; };
+    var share = function (c) { return total ? Math.round(c / total * 100) : 0; };
+    var bar = function (c) { var mx = 5.12; return 'width: ' + Math.max(c ? 3 : 0, Math.round(c / mx * 100)) + '%; background: #2a78d6; border-radius: 0 4px 4px 0;'; };
+    var rowsPeople = people.map(function (p) { return { name: p[0], sub: p[1], costN: p[2], cost: money(p[2]), a: p[3] + ' checks', b: p[4] + ' reports', c: Math.round((p[3] / 100) * 100) + '% of allowance', change: p[2] === p[7] ? 'same' : (p[2] > p[7] ? '+' : '−') + money(Math.abs(p[2] - p[7])).slice(0), share: share(p[2]) + '%', bar: bar(p[2]), open: go('person', p[0]) }; });
+    var rowsProjects = projects.map(function (p) { return { name: p[0], sub: p[1], costN: p[2], cost: money(p[2]), a: p[3] + ' runs', b: p[3] ? '$' + (p[2] / p[3]).toFixed(3) + ' per run' : 'no runs', c: p[4].length + ' using AI', change: '', share: share(p[2]) + '%', bar: bar(p[2]), open: go('project', p[0]) }; });
+    var rowsDepts = depts.map(function (d) { return { name: d[0], sub: d[2] + ' people', costN: d[1], cost: money(d[1]), a: d[3] + ' using AI', b: d[3] ? '$' + (d[1] / d[3]).toFixed(2) + ' per active person' : 'nobody yet', c: Math.round(d[3] / d[2] * 100) + '% of people', change: '', share: share(d[1]) + '%', bar: bar(d[1]), open: go('department', d[0]) }; });
+    var rows = (key === 'people' ? rowsPeople : key === 'projects' ? rowsProjects : rowsDepts).slice().sort(dir);
+    var tabs = [['people', 'People'], ['projects', 'Projects'], ['departments', 'Departments']].map(function (x) { var on = key === x[0]; return { label: x[1], on: on ? 'true' : 'false', pick: function () { self.setState({ spTab: x[0], spDetail: null }); }, style: 'flex: 1; min-height: 40px; padding: 0 12px; border-radius: 8px; border: none; cursor: pointer; font: 600 14px Inter, sans-serif; ' + (on ? 'background: #FFFFFF; color: #0F172A; box-shadow: 0 1px 2px rgba(15,23,42,0.12);' : 'background: transparent; color: #475569;') }; });
+    var periods = [['month', 'This month'], ['last', 'Last month'], ['q', 'Last 90 days']].map(function (x) { var on = (st.spPeriod || 'month') === x[0]; return { label: x[1], on: on ? 'true' : 'false', pick: function () { self.setState({ spPeriod: x[0] }); }, style: 'min-height: 36px; padding: 0 12px; border-radius: 999px; cursor: pointer; font: 600 13px Inter, sans-serif; ' + (on ? 'background: #0F172A; color: #FFFFFF; border: 1px solid #0F172A;' : 'background: #FFFFFF; color: #0F172A; border: 1px solid #CBD5E1;') }; });
+    // Cost per day: this month (solid blue) vs last month (dashed orange), one axis.
+    var cur = [0.42,0.61,0.55,0.38,0.12,0.08,0.71,0.83,0.66,0.59,0.74,0.15,0.1,0.92,1.08,0.77,0.69,0.81,0.2,0.11,0.95,1.12,0.94];
+    var prev = [0.35,0.5,0.47,0.52,0.1,0.07,0.6,0.58,0.64,0.49,0.55,0.12,0.09,0.66,0.71,0.62,0.6,0.58,0.14,0.08,0.73,0.69,0.75,0.61,0.57,0.11,0.07,0.52,0.48,0.39];
+    // Scale the day series so the chart's totals match the cost cards exactly.
+    var ks = function (arr, to) { var s = arr.reduce(function (a, b) { return a + b; }, 0); return arr.map(function (v) { return v * to / s; }); };
+    cur = ks(cur, total); prev = ks(prev, lastTotal);
+    var W = 600, H = 150, mx = 1.4;
+    var pts = function (arr) { return arr.map(function (v, i) { return Math.round(40 + i * (W - 60) / 29) + ',' + Math.round(10 + (H - 30) * (1 - v / mx)); }).join(' '); };
+    var lastPt = function (arr) { var i = arr.length - 1; return { x: Math.round(40 + i * (W - 60) / 29), y: Math.round(10 + (H - 30) * (1 - arr[i] / mx)) }; };
+    var top = function (rs) { return rs.slice().sort(function (a, b) { return b.costN - a.costN; }).slice(0, 5).map(function (r) { return { name: r.name, cost: r.cost, share: r.share, open: r.open, bar: r.bar }; }); };
+    // Detail
+    var det = st.spDetail;
+    var detail = false;
+    if (det) {
+      var p = people.filter(function (x) { return x[0] === det.name; })[0];
+      var pr = projects.filter(function (x) { return x[0] === det.name; })[0];
+      var dp = depts.filter(function (x) { return x[0] === det.name; })[0];
+      var cost = p ? p[2] : pr ? pr[2] : dp ? dp[1] : 0;
+      var related = p ? p[8].map(function (n) { return { label: n, kind: 'Project', open: go('project', n) }; }).concat([{ label: p[1], kind: 'Department', open: go('department', p[1]) }])
+        : pr ? pr[4].map(function (n) { return { label: n, kind: 'Person', open: go('person', n) }; }).concat([{ label: pr[1], kind: 'Department', open: go('department', pr[1]) }])
+        : people.filter(function (x) { return x[1] === det.name; }).map(function (x) { return { label: x[0], kind: 'Person', open: go('person', x[0]) }; }).concat(projects.filter(function (x) { return x[1] === det.name; }).map(function (x) { return { label: x[0], kind: 'Project', open: go('project', x[0]) }; }));
+      var checksShare = cost ? 0.93 : 0;
+      detail = {
+        title: det.name, kind: { person: 'Person', project: 'Project', department: 'Department' }[det.type],
+        cost: money(cost),
+        facts: [
+          ['Plan Check (Opus 5.5)', money(cost * checksShare)],
+          ['Status reports (Haiku 5.5)', money(cost * (1 - checksShare))],
+          ['Input tokens', p ? p[5] + 'K' : Math.round(cost * 120) + 'K'],
+          ['Output tokens', p ? p[6] + 'K' : Math.round(cost * 27) + 'K'],
+          ['Average cost per run', cost ? '$' + (cost / Math.max(1, p ? p[3] + p[4] : pr ? pr[3] : dp[3] * 10)).toFixed(3) : 'no runs'],
+          ['Declined by the AI', det.name === 'Yard Office' || det.name === 'Ana Lima' ? '1 (held for review, released)' : 'none']
+        ].map(function (x) { return { k: x[0], v: x[1] }; }),
+        related: related,
+        note: cost === 0 ? 'No AI use this period. If this team plans a lot, it may be worth showing them the AI check.' : ''
+      };
+    }
+    return {
+      isSpending: st.tab === 'spending',
+      spPeriods: periods, spTabs: tabs, spRows: rows,
+      spSortCost: function () { self.setState({ spSort: 'cost' }); }, spSortName: function () { self.setState({ spSort: 'name' }); },
+      spTotal: money(total), spChange: Math.round((total / lastTotal - 1) * 100) + '% vs last month',
+      spPool: '612 of 1,000 checks used · 64 of 300 reports',
+      spPoolBar: 'width: 61%; background: #2a78d6; border-radius: 4px;',
+      spTokens: '1.9M input · 0.4M output tokens',
+      spRuns: '257 checks · 44 reports · 31 imports screened',
+      spCur: pts(cur), spPrev: pts(prev),
+      spCurEnd: lastPt(cur), spPrevEnd: lastPt(prev),
+      spCurLabel: 'This month so far ' + money(total),
+      spPrevLabel: 'Last month $' + lastTotal.toFixed(2),
+      spTopPeople: top(rowsPeople), spTopProjects: top(rowsProjects), spTopDepts: top(rowsDepts),
+      spIdle: 'Ravi Shah, Mira Haddad · Parking Lot Resurface · Office (41 people)',
+      spDetail: detail, spBack: function () { self.setState({ spDetail: null }); },
+      spCsv: function () { self.setState({ spCsvDone: true }); }, spCsvLabel: st.spCsvDone ? 'Downloaded' : 'Export CSV'
+    };
+  }
+
   securityVals() {
     var self = this;
     var st = this.state;
