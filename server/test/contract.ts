@@ -15,6 +15,8 @@ export interface TestHost {
   /** Stops and starts the host on the same stored data (a restart or redeploy). */
   restart(): Promise<void>;
   stop(): Promise<void>;
+  /** Opens a live connection (WebSocket), or returns the refusal status. */
+  live?: import("./live.contract").LiveOpen;
 }
 
 export interface HostFactory {

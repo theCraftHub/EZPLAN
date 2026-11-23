@@ -3,8 +3,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { apiContract, TODAY, type HostFactory, type TestHost } from "../../server/test/contract";
 import { testConfig, testHttp } from "../../server/test/hostConfig";
+import { LiveClient, liveContract } from "../../server/test/live.contract";
 import { signInContract } from "../../server/test/signin.contract";
+import { WebSocket } from "ws";
 import { createSelfHost } from "../src/host";
+import { startServer } from "../src/server";
 
 const clock = { today: () => TODAY, now: () => Date.parse(`${TODAY}T12:00:00Z`) };
 
@@ -13,7 +16,35 @@ const factory: HostFactory = {
     const dataDir = mkdtempSync(join(tmpdir(), "selfhost-"));
     const make = () => createSelfHost({ dataDir, clock, config: testConfig(fake), http: testHttp(fake), testAuth });
     let server = make();
+    let http: ReturnType<typeof startServer> | null = null;
+    const listening = async () => {
+      if (!http) {
+        http = startServer({ app: server.app, rooms: server.rooms, port: 0, hostname: "127.0.0.1" });
+        await new Promise<void>((r) => (http!.server.listening ? r() : http!.server.once("listening", () => r())));
+      }
+      return http.port();
+    };
     return {
+      async live(path, { user, origin }) {
+        const port = await listening();
+        const headers: Record<string, string> = {};
+        if (user) headers["x-test-user"] = user;
+        if (origin) headers.origin = origin;
+        const ws = new WebSocket(`ws://127.0.0.1:${port}${path}`, { headers });
+        return new Promise((resolve, reject) => {
+          ws.once("unexpected-response", (_req, res) => resolve({ status: res.statusCode ?? 0 }));
+          ws.once("error", reject);
+          ws.once("open", () =>
+            resolve(
+              new LiveClient({
+                send: (t) => ws.send(t),
+                close: () => ws.close(),
+                onMessage: (fn) => ws.on("message", (d) => fn(d.toString())),
+              }),
+            ),
+          );
+        });
+      },
       fetch(path, init = {}, user, cookie) {
         const headers = new Headers(init.headers);
         if (user) headers.set("x-test-user", user);
@@ -21,10 +52,13 @@ const factory: HostFactory = {
         return Promise.resolve(server.app.fetch(new Request(`https://plans.test${path}`, { ...init, headers, redirect: "manual" })));
       },
       async restart() {
+        await http?.close();
+        http = null;
         server.close();
         server = make();
       },
       async stop() {
+        await http?.close();
         server.close();
         rmSync(dataDir, { recursive: true, force: true });
       },
@@ -34,3 +68,4 @@ const factory: HostFactory = {
 
 apiContract("self-hosted (Node + SQLite)", factory);
 signInContract("self-hosted (Node + SQLite)", factory);
+liveContract("self-hosted (Node + SQLite)", factory);

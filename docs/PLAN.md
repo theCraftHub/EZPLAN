@@ -531,6 +531,8 @@ Goal: a company goes from "Start EZPLAN for my business" to employees working in
 - Deps: `jose` (pinned, at least two weeks old when added).
 - Tests (contract, both hosts; cloud through Miniflare's outbound service hook): full login flow against a fake OIDC provider; wrong state, reused state, wrong nonce, wrong audience, expired or badly signed token, unverified email, email not on the allow list all refused; open-redirect attempts refused; logout and logout-everywhere end sessions immediately; cross-site POST refused; the test-only header sign-in still off by default.
 
+**B. Live editing over WebSockets: done (Nov 23).** `shared/src/live.ts` (messages), `server/src/live.ts` (LiveRoom: queue, ack, broadcast, presence, catch-up from the last 500 edits), Durable Object hibernation sockets (cloud), `ws` upgrade server (`selfhost/src/server.ts`, upgrade only after the app's sign-in/access/origin checks via a per-process secret). 8 live tests pass on both hosts (burst of 80 edits from two clients, client replica equals server). Not yet covered: viewer-only connections (needs invites) and a 2,000-edit burst (later performance pass).
+
 **B. Live editing over WebSockets (both hosts, pulled forward from 1b).**
 - `GET /api/plans/:id/live` upgrades to a WebSocket after the session and workspace checks (viewers receive edits but can't send them).
 - Cloud: the PlanRoom Durable Object accepts the sockets (hibernation API) and broadcasts each applied edit; self-hosted: the in-memory room keeps its sockets (`ws` package) and does the same. Shared message format in `shared/` (hello with last seen version → missed edits replayed; edit → applied/duplicate/rejected; presence join/leave).

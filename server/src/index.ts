@@ -2,6 +2,7 @@ export * from "./ports";
 export * from "./auth";
 export * from "./migrations";
 export * from "./room";
+export * from "./live";
 export * from "./sessions";
 export * from "./oidc";
 export * from "./config";

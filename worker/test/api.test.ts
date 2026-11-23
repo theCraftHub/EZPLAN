@@ -10,6 +10,7 @@ import { build } from "esbuild";
 import { Miniflare } from "miniflare";
 import { apiContract, TODAY, type HostFactory, type TestHost } from "../../server/test/contract";
 import { testEnv, testHttp } from "../../server/test/hostConfig";
+import { LiveClient, liveContract } from "../../server/test/live.contract";
 import { signInContract } from "../../server/test/signin.contract";
 
 let bundled: Promise<string> | null = null;
@@ -49,6 +50,20 @@ const factory: HostFactory = {
     let mf = make();
     await mf.ready;
     return {
+      async live(path, { user, origin }) {
+        const headers: Record<string, string> = { upgrade: "websocket" };
+        if (user) headers["x-test-user"] = user;
+        if (origin) headers.origin = origin;
+        const res = await mf.dispatchFetch(`https://plans.test${path}`, { headers });
+        const ws = res.webSocket;
+        if (res.status !== 101 || !ws) return { status: res.status };
+        ws.accept();
+        return new LiveClient({
+          send: (t) => ws.send(t),
+          close: () => ws.close(),
+          onMessage: (fn) => ws.addEventListener("message", (e) => fn(typeof e.data === "string" ? e.data : new TextDecoder().decode(e.data as ArrayBuffer))),
+        });
+      },
       async fetch(path, init = {}, user, cookie) {
         const headers = new Headers(init.headers);
         if (user) headers.set("x-test-user", user);
@@ -71,3 +86,4 @@ const factory: HostFactory = {
 
 apiContract("cloud (Workers + D1 + Durable Objects)", factory);
 signInContract("cloud (Workers + D1 + Durable Objects)", factory);
+liveContract("cloud (Workers + D1 + Durable Objects)", factory);

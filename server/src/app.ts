@@ -236,6 +236,19 @@ export function createApp(ports: Ports) {
     return c.json(result);
   });
 
+  // Live editing. WebSockets are GET requests, so check the origin here too (blocks other sites
+  // from opening a connection with someone's cookie).
+  app.get("/api/plans/:id/live", async (c) => {
+    const origin = c.req.header("origin");
+    if (origin && origin !== siteOrigin) return c.json({ error: "This request didn't come from this site." }, 403);
+    if ((c.req.header("upgrade") ?? "").toLowerCase() !== "websocket") return c.json({ error: "Connect with a WebSocket." }, 426);
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    return rooms.connect(c.req.raw, id, { userId: user.id, name: user.name }, a.role);
+  });
+
   app.get("/api/plans/:id/export", async (c) => {
     const user = c.get("user");
     const id = c.req.param("id");

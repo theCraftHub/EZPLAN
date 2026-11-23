@@ -2,7 +2,7 @@
  * Cloud connectors (plan section 7b): Cloudflare D1 (SQLite), R2 files, and live rooms in
  * Durable Objects running the same room code as the self-hosted server.
  */
-import { PlanRoomCore, type ApplyResult, type Blobs, type Clock, type Db, type RoomHost, type SqlValue } from "@ezplan/server";
+import type { ApplyResult, Blobs, Db, LiveRole, RoomHost, SqlValue } from "@ezplan/server";
 import type { Actor, OpEnvelope } from "@ezplan/shared";
 
 export class D1Db implements Db {
@@ -65,39 +65,30 @@ interface RoomRequest {
   actor: Actor;
 }
 
-/** Sends each edit to the plan's Durable Object (one object per plan, worldwide). */
+/** Who a live connection belongs to; stored on the socket so it survives hibernation. */
+export interface LiveTicket {
+  planId: string;
+  actor: Actor;
+  role: LiveRole;
+}
+
+/** Sends edits and live connections to the plan's Durable Object (one object per plan, worldwide). */
 export class DurableRoomHost implements RoomHost {
   constructor(private readonly ns: DurableObjectNamespace) {}
 
+  private stub(planId: string) {
+    return this.ns.get(this.ns.idFromName(planId));
+  }
+
   async apply(planId: string, envelope: OpEnvelope, actor: Actor): Promise<ApplyResult> {
-    const stub = this.ns.get(this.ns.idFromName(planId));
     const body: RoomRequest = { planId, envelope, actor };
-    const res = await stub.fetch("https://room/apply", { method: "POST", body: JSON.stringify(body) });
+    const res = await this.stub(planId).fetch("https://room/apply", { method: "POST", body: JSON.stringify(body) });
     if (!res.ok) throw new Error(`Room failed: ${res.status}`);
     return (await res.json()) as ApplyResult;
   }
-}
 
-/**
- * Body of the PlanRoom Durable Object. Requests can interleave while the room waits on the
- * database, so edits go through a queue and apply one at a time, in order.
- */
-export class RoomObjectCore {
-  private core: PlanRoomCore | null = null;
-  private queue: Promise<unknown> = Promise.resolve();
-
-  constructor(
-    private readonly db: Db,
-    private readonly clock: Clock,
-  ) {}
-
-  handle(request: Request): Promise<Response> {
-    const run = this.queue.then(async () => {
-      const { planId, envelope, actor } = (await request.json()) as RoomRequest;
-      this.core ??= new PlanRoomCore(this.db, planId, this.clock);
-      return Response.json(await this.core.apply(envelope, actor));
-    });
-    this.queue = run.catch(() => undefined);
-    return run;
+  async connect(request: Request, planId: string, actor: Actor, role: LiveRole): Promise<Response> {
+    const headers = new Headers({ upgrade: "websocket", "x-live": JSON.stringify({ planId, actor, role } satisfies LiveTicket) });
+    return this.stub(planId).fetch("https://room/live", { headers });
   }
 }

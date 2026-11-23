@@ -2,8 +2,9 @@
  * Cloud entry point (Cloudflare Workers): the shared API (server/) on the Cloudflare connectors,
  * plus the PlanRoom Durable Object for live editing.
  */
-import { configFromEnv, createApp, systemClock, testAuthEnabled, type Clock } from "@ezplan/server";
-import { D1Db, DurableRoomHost, R2Blobs, RoomObjectCore } from "./adapters";
+import { configFromEnv, createApp, LiveRoom, PlanRoomCore, systemClock, testAuthEnabled, type Clock, type Peer } from "@ezplan/server";
+import { LIVE_MAX_MESSAGE, type Actor, type OpEnvelope } from "@ezplan/shared";
+import { D1Db, DurableRoomHost, R2Blobs, type LiveTicket } from "./adapters";
 
 export interface Env {
   DB: D1Database;
@@ -50,14 +51,66 @@ export default {
   },
 } satisfies ExportedHandler<Env>;
 
+/**
+ * One plan's live room (one Durable Object per plan, worldwide). Live connections use the
+ * hibernation API, so an idle room with open connections costs nothing; the signed-in person and
+ * role are stored on each socket and survive hibernation.
+ */
 export class PlanRoom implements DurableObject {
-  private readonly core: RoomObjectCore;
+  private live: LiveRoom | null = null;
 
-  constructor(_state: DurableObjectState, env: Env) {
-    this.core = new RoomObjectCore(new D1Db(env.DB), clockFor(env));
+  constructor(
+    private readonly state: DurableObjectState,
+    private readonly env: Env,
+  ) {}
+
+  private room(planId: string): LiveRoom {
+    this.live ??= new LiveRoom(new PlanRoomCore(new D1Db(this.env.DB), planId, clockFor(this.env)), () =>
+      this.state
+        .getWebSockets()
+        .filter((ws) => ws.readyState === WebSocket.OPEN)
+        .map((ws) => this.peer(ws)),
+    );
+    return this.live;
   }
 
-  fetch(request: Request): Promise<Response> {
-    return this.core.handle(request);
+  private peer(ws: WebSocket): Peer {
+    const t = ws.deserializeAttachment() as LiveTicket;
+    return { actor: t.actor, role: t.role, send: (m) => ws.send(m) };
+  }
+
+  async fetch(request: Request): Promise<Response> {
+    const path = new URL(request.url).pathname;
+    if (path === "/apply") {
+      const { planId, envelope, actor } = (await request.json()) as { planId: string; envelope: OpEnvelope; actor: Actor };
+      return Response.json(await this.room(planId).applyFromApi(envelope, actor));
+    }
+    if (path === "/live") {
+      // Only the Worker reaches this object; it has already checked sign-in and access.
+      const ticket = JSON.parse(request.headers.get("x-live") ?? "null") as LiveTicket | null;
+      if (!ticket || request.headers.get("upgrade")?.toLowerCase() !== "websocket") return new Response("Bad request", { status: 400 });
+      const [client, server] = Object.values(new WebSocketPair()) as [WebSocket, WebSocket];
+      this.state.acceptWebSocket(server);
+      server.serializeAttachment(ticket);
+      this.room(ticket.planId).presence();
+      return new Response(null, { status: 101, webSocket: client });
+    }
+    return new Response("Not found", { status: 404 });
+  }
+
+  async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+    const t = ws.deserializeAttachment() as LiveTicket;
+    if (typeof message !== "string" && message.byteLength > LIVE_MAX_MESSAGE) return ws.close(1009, "Message too large");
+    await this.room(t.planId).message(this.peer(ws), message);
+  }
+
+  async webSocketClose(ws: WebSocket): Promise<void> {
+    const t = ws.deserializeAttachment() as LiveTicket;
+    try {
+      ws.close();
+    } catch {
+      // already closed
+    }
+    this.room(t.planId).presence();
   }
 }

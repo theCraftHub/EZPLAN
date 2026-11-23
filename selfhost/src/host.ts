@@ -21,14 +21,15 @@ export function createSelfHost(opts: SelfHostOptions) {
   mkdirSync(opts.dataDir, { recursive: true });
   const db = new NodeSqliteDb(join(opts.dataDir, "data.sqlite"));
   const clock = opts.clock ?? systemClock;
+  const rooms = new MemoryRoomHost(db, clock);
   const app = createApp({
     db,
     blobs: new FolderBlobs(join(opts.dataDir, "files")),
-    rooms: new MemoryRoomHost(db, clock),
+    rooms,
     clock,
     config: opts.config,
     http: opts.http ?? ((req) => fetch(req)),
     ...(opts.testAuth ? { testAuth: true } : {}),
   });
-  return { app, close: () => db.close() };
+  return { app, rooms, close: () => db.close() };
 }

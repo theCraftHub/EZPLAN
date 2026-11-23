@@ -38,7 +38,13 @@ export type ApplyResult = { status: "applied"; applied: Applied; version: number
 
 /** Live editing: one room per plan; a room applies edits in order and saves the plan. */
 export interface RoomHost {
+  /** An edit sent through the HTTP API (also broadcast to the plan's live connections). */
   apply(planId: string, envelope: OpEnvelope, actor: Actor): Promise<ApplyResult>;
+  /**
+   * Opens a live connection (WebSocket) for a signed-in person already checked for access.
+   * Returns the upgrade response; hosts that upgrade elsewhere return a ticket response.
+   */
+  connect(request: Request, planId: string, actor: Actor, role: "manager" | "editor" | "viewer"): Promise<Response>;
 }
 
 export interface Clock {
