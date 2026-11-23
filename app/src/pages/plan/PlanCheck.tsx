@@ -9,6 +9,7 @@ import { isSuppressed, nextTaskId, type Op, type Plan, type SuggestionKind, type
 import { api, type AiState } from "../../lib/api";
 import { plural } from "../../lib/format";
 import { Button, Card, Notice } from "../../ui/kit";
+import { AskForMore } from "../AskCredits";
 import type { usePlanMath } from "./math";
 
 type Math = NonNullable<ReturnType<typeof usePlanMath>>;
@@ -98,7 +99,8 @@ export function PlanCheck({ planId, plan, math, canEdit, edit }: { planId: strin
         {ai && !ai.enabled && <p className="m-0 text-sm text-muted">AI checks are off on this server. The free checks above still run.</p>}
         {ai?.held && <Notice tone="warn"><span className="flex items-start gap-2"><ShieldAlert aria-hidden size={18} className="mt-0.5 shrink-0" />This plan is waiting for a safety review. AI features, sharing and exports are paused until then; everything else works.</span></Notice>}
         {error && <Notice tone="bad">{error}</Notice>}
-        {ai?.enabled && <span className="text-xs text-muted">{left > 0 ? `${left} of ${ai.usage.checks.limit} AI checks left this month` : `No AI checks left this month (resets ${ai.usage.resets}). You can ask a manager for more in Settings.`}</span>}
+        {ai?.enabled && <span className="text-xs text-muted">{left > 0 ? `${left} of ${ai.usage.checks.limit} AI checks left this month${left <= Math.ceil(ai.usage.checks.limit * 0.2) ? " (running low)" : ""}` : `No AI checks left this month (resets ${ai.usage.resets}).`}</span>}
+        {ai?.enabled && canEdit && <AskForMore workspaceId={ai.workspaceId} offer={left <= Math.ceil(ai.usage.checks.limit * 0.2)} />}
         {ai?.review?.changedSince && <span className="text-xs font-semibold text-warn">The plan changed since this AI check.</span>}
         {r && (
           <>

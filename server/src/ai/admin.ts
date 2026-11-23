@@ -154,13 +154,27 @@ export function registerAiAdminRoutes(app: Hono<{ Variables: { user: User } }>, 
 
   // ---------------------------------------------------------------- spending
 
+  type Q = { from?: string; to?: string; period?: string };
+  const query = (c: { req: { query: (k: string) => string | undefined } }): Q => ({ from: c.req.query("from"), to: c.req.query("to"), period: c.req.query("period") });
+
   interface Row { user_id: string; plan_id: string | null; feature: string; model: string; input_tokens: number; output_tokens: number; cost_usd: number; status: string; created_at: number }
 
   /** Usage rows for a period (and the same length of time just before, for comparison). */
-  async function period(ws: string, q: { from?: string; to?: string }) {
-    const today = clock.today();
-    const to = q.to && ISO.test(q.to) ? q.to : today;
-    const from = q.from && ISO.test(q.from) ? q.from : `${today.slice(0, 8)}01`;
+  async function period(ws: string, q: Q) {
+    // Periods follow the clock the usage log is stamped with (the same one monthly limits use).
+    const iso = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+    const today = iso(clock.now());
+    const monthStart = `${today.slice(0, 8)}01`;
+    let from = q.from && ISO.test(q.from) ? q.from : monthStart;
+    let to = q.to && ISO.test(q.to) ? q.to : today;
+    if (q.period === "last-month") {
+      to = iso(dayStart(monthStart) - 86_400_000);
+      from = `${to.slice(0, 8)}01`;
+    } else if (q.period === "90d") {
+      from = iso(dayStart(today) - 89 * 86_400_000);
+      to = today;
+    }
+    if (from > to) [from, to] = [to, from];
     const start = dayStart(from);
     const end = dayStart(to) + 86_400_000;
     const span = end - start;
@@ -181,7 +195,7 @@ export function registerAiAdminRoutes(app: Hono<{ Variables: { user: User } }>, 
     runs: rs.length,
   });
 
-  async function breakdown(ws: string, q: { from?: string; to?: string }) {
+  async function breakdown(ws: string, q: Q) {
     const p = await period(ws, q);
     const users = await db.all<{ id: string; name: string; department: string | null; member: number }>(
       `SELECT u.id, u.name, m.department, CASE WHEN m.user_id IS NULL THEN 0 ELSE 1 END AS member FROM users u LEFT JOIN members m ON m.user_id = u.id AND m.workspace_id = ?
@@ -220,7 +234,7 @@ export function registerAiAdminRoutes(app: Hono<{ Variables: { user: User } }>, 
     const user = c.get("user");
     const ws = c.req.param("ws");
     if (!canViewAiSpending(await roleIn(ws, user.id))) return c.json({ error: "Only people allowed to see AI spending for this workspace can open this." }, 403);
-    const b = await breakdown(ws, { from: c.req.query("from"), to: c.req.query("to") });
+    const b = await breakdown(ws, query(c));
     const days = Math.round(b.p.span / 86_400_000);
     const pool = await svc.pool(ws);
     return c.json({
@@ -245,7 +259,7 @@ export function registerAiAdminRoutes(app: Hono<{ Variables: { user: User } }>, 
     if (!canViewAiSpending(await roleIn(ws, user.id))) return c.json({ error: "Only people allowed to see AI spending for this workspace can open this." }, 403);
     const type = c.req.param("type");
     const key = decodeURIComponent(c.req.param("key"));
-    const b = await breakdown(ws, { from: c.req.query("from"), to: c.req.query("to") });
+    const b = await breakdown(ws, query(c));
     const pick = (r: Row) => (type === "person" ? r.user_id === key : type === "project" ? (r.plan_id ?? NO_PROJECT) === key : type === "department" ? b.deptOf(r.user_id) === key : false);
     const item = (type === "person" ? b.people : type === "project" ? b.projects : type === "department" ? b.departments : []).find((x) => x.key === key);
     if (!item) return c.json({ error: "Not found." }, 404);
@@ -257,7 +271,7 @@ export function registerAiAdminRoutes(app: Hono<{ Variables: { user: User } }>, 
         : type === "project"
           ? b.people.filter((pe) => rs.some((r) => r.user_id === pe.key)).map((pe) => ({ type: "person", key: pe.key, name: pe.name }))
           : [...b.people.filter((pe) => pe.department === key).map((pe) => ({ type: "person", key: pe.key, name: pe.name })), ...b.projects.filter((pr) => rs.some((r) => r.plan_id === pr.key)).map((pr) => ({ type: "project", key: pr.key, name: pr.name }))];
-    return c.json({ type, item, byFeature: group((r) => r.feature), byModel: group((r) => r.model), daily: daily(rs, b.p.start, Math.round(b.p.span / 86_400_000)), related });
+    return c.json({ type, from: b.p.from, to: b.p.to, item, byFeature: group((r) => r.feature), byModel: group((r) => r.model), daily: daily(rs, b.p.start, Math.round(b.p.span / 86_400_000)), related });
   });
 
   app.get("/api/workspaces/:ws/ai/spending.csv", async (c) => {
@@ -265,7 +279,7 @@ export function registerAiAdminRoutes(app: Hono<{ Variables: { user: User } }>, 
     const ws = c.req.param("ws");
     if (!canViewAiSpending(await roleIn(ws, user.id))) return c.json({ error: "Only people allowed to see AI spending for this workspace can open this." }, 403);
     const view = c.req.query("view") ?? "people";
-    const b = await breakdown(ws, { from: c.req.query("from"), to: c.req.query("to") });
+    const b = await breakdown(ws, query(c));
     const list = view === "projects" ? b.projects : view === "departments" ? b.departments : b.people;
     const head = ["name", "cost_usd", "input_tokens", "output_tokens", "checks", "reports", "screenings", "declined", "previous_period_cost_usd"];
     const lines = [head.join(","), ...list.map((x) => [x.name, x.cost.toFixed(4), x.inputTokens, x.outputTokens, x.checks, x.reports, x.screenings, x.declined, x.previous.toFixed(4)].map(csvCell).join(","))];

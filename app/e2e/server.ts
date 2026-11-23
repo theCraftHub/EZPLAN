@@ -21,12 +21,14 @@ const today = process.env.E2E_TODAY ?? "2027-01-04";
 export const PEOPLE: Record<string, { sub: string; name: string; email: string }> = {
   alex: { sub: "alex", name: "Alex Rivera", email: "alex@example.com" },
   sam: { sub: "sam", name: "Sam Okoye", email: "sam@example.com" },
+  kim: { sub: "kim", name: "Kim Park", email: "kim@example.com" },
+  pat: { sub: "pat", name: "Pat Lee", email: "pat@example.com" }, // on the safety review team
 };
 
 const fake = await FakeOidc.create(() => Date.now(), `http://127.0.0.1:${idPort}`);
 const { app, rooms } = createSelfHost({
   dataDir: mkdtempSync(join(tmpdir(), "e2e-")),
-  config: { defaultWorkWeek: DEFAULT_WORK_WEEK, publicUrl, providers: [fake.provider({ label: "Test ID" })], secureCookies: false },
+  config: { defaultWorkWeek: DEFAULT_WORK_WEEK, publicUrl, providers: [fake.provider({ label: "Test ID" })], secureCookies: false, platformAdmins: ["pat@example.com"] },
   // A fixed "today" keeps dates in screenshots and assertions stable; real time for sign-in tokens.
   clock: { today: () => today, now: () => Date.now() },
   http: async (req) => (new URL(req.url).origin === fake.issuer ? fake.handle(req) : new Response("Tests don't reach the internet.", { status: 599 })),

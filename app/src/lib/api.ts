@@ -17,7 +17,46 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
 export interface Me {
   user: { id: string; name: string; email: string };
   workspaces: { id: string; name: string; role: "manager" | "editor" | "viewer"; work_week: WorkWeek }[];
+  /** On the owner's team (PLATFORM_ADMINS): sees the safety review queue. */
+  platformAdmin?: boolean;
+  safetyOpen?: number;
 }
+
+export interface CreditRequest { id: string; userId: string; name: string; checks: number; reports: number; note: string | null; status: "pending" | "approved" | "declined"; decidedBy: string | null; createdAt: number; decidedAt: number | null }
+export interface Counts { checks: number; reports: number }
+export interface AiAdmin {
+  pool: { total: Counts; used: Counts; left: Counts; max: number };
+  defaultAllowance: Counts;
+  people: ({ userId: string; name: string; email: string; department: string | null; override: boolean } & AiUsage)[];
+}
+export interface SpendTotals { cost: number; inputTokens: number; outputTokens: number; checks: number; reports: number; screenings: number; declined: number; runs: number }
+export type SpendRow = SpendTotals & { key: string; name: string; previous: number; department?: string; projects?: number; people?: number; active?: number };
+export interface Spending {
+  from: string;
+  to: string;
+  totals: SpendTotals;
+  previousTotals: SpendTotals;
+  daily: number[];
+  previousDaily: number[];
+  pool: { total: Counts; used: Counts };
+  people: SpendRow[];
+  projects: SpendRow[];
+  departments: SpendRow[];
+  idle: { people: string[]; projects: string[]; departments: string[] };
+}
+export type SpendType = "person" | "project" | "department";
+export type SpendPeriod = "month" | "last-month" | "90d";
+export interface SpendDetail {
+  type: SpendType;
+  from: string;
+  to: string;
+  item: SpendRow;
+  byFeature: (SpendTotals & { key: string })[];
+  byModel: (SpendTotals & { key: string })[];
+  daily: number[];
+  related: { type: SpendType; key: string; name: string }[];
+}
+export interface SafetyItem { id: string; planId: string | null; planTitle: string | null; feature: string; category: string | null; excerpt: string; status: "held" | "released" | "kept" | "suspended"; note: string | null; person: string; email: string; decidedBy: string | null; createdAt: number; decidedAt: number | null }
 
 export interface PlanSummary {
   id: string;
@@ -63,6 +102,7 @@ export interface AiUsage {
 
 export interface AiState {
   enabled: boolean;
+  workspaceId: string;
   held: boolean;
   review: { result: AiReview; planVersion: number; hidden: number; createdAt: number; by: string; changedSince: boolean } | null;
   suppressions: { id: string; kind: SuggestionKind; text: string; taskIds: string[]; by: string; createdAt: number }[];
@@ -101,5 +141,17 @@ export const api = {
   unsuppress: (planId: string, id: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/ai/suppressions/${encodeURIComponent(id)}`, { method: "DELETE" }),
   report: (planId: string, ai: boolean, since?: string) => call<{ facts: StatusFacts; text: ReportText; source: "ai" | "template"; note?: string }>(`/api/plans/${encodeURIComponent(planId)}/report`, { method: "POST", body: JSON.stringify({ ai, ...(since ? { since } : {}) }) }),
   myAi: () => call<{ enabled: boolean; workspaces: ({ workspaceId: string; name: string } & AiUsage)[] }>("/api/me/ai"),
+  creditRequests: (ws: string) => call<{ canManage: boolean; approvers: string[]; requests: CreditRequest[] }>(`/api/workspaces/${encodeURIComponent(ws)}/ai/requests`),
+  askCredits: (ws: string, checks: number, reports: number, note: string) => call<{ id: string }>(`/api/workspaces/${encodeURIComponent(ws)}/ai/requests`, { method: "POST", body: JSON.stringify({ checks, reports, note }) }),
+  decideCredits: (ws: string, id: string, decision: "approve" | "decline", amounts?: Counts) => call<{ ok: true }>(`/api/workspaces/${encodeURIComponent(ws)}/ai/requests/${encodeURIComponent(id)}`, { method: "POST", body: JSON.stringify({ decision, ...amounts }) }),
+  aiAdmin: (ws: string) => call<AiAdmin>(`/api/workspaces/${encodeURIComponent(ws)}/ai/admin`),
+  setAllowance: (ws: string, userId: string, a: Counts) => call<{ ok: true }>(`/api/workspaces/${encodeURIComponent(ws)}/ai/allowances/${encodeURIComponent(userId)}`, { method: "PUT", body: JSON.stringify(a) }),
+  topUp: (ws: string, a: Counts, reason: string) => call<{ ok: true }>(`/api/workspaces/${encodeURIComponent(ws)}/ai/topup`, { method: "POST", body: JSON.stringify({ ...a, reason }) }),
+  setDepartment: (ws: string, userId: string, department: string) => call<{ ok: true }>(`/api/workspaces/${encodeURIComponent(ws)}/members/${encodeURIComponent(userId)}/department`, { method: "PUT", body: JSON.stringify({ department }) }),
+  spending: (ws: string, period: SpendPeriod) => call<Spending>(`/api/workspaces/${encodeURIComponent(ws)}/ai/spending?period=${period}`),
+  spendingDetail: (ws: string, type: SpendType, key: string, period: SpendPeriod) => call<SpendDetail>(`/api/workspaces/${encodeURIComponent(ws)}/ai/spending/${type}/${encodeURIComponent(key)}?period=${period}`),
+  spendingCsv: (ws: string, view: string, period: SpendPeriod) => `/api/workspaces/${encodeURIComponent(ws)}/ai/spending.csv?view=${view}&period=${period}`,
+  safety: () => call<{ open: number; items: SafetyItem[] }>("/api/admin/safety"),
+  safetyAction: (id: string, action: "release" | "keep" | "suspend", note: string) => call<{ ok: true; status: string }>(`/api/admin/safety/${encodeURIComponent(id)}`, { method: "POST", body: JSON.stringify({ action, note }) }),
   logout: () => call<{ ok: true }>("/auth/logout", { method: "POST", body: "{}" }),
 };

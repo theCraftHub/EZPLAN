@@ -8,6 +8,9 @@ import { PlanPage } from "./pages/plan/PlanPage";
 import { NotFound } from "./pages/Placeholder";
 import { SignIn } from "./pages/SignIn";
 import { Settings } from "./pages/Settings";
+import { AiAdminPage } from "./pages/AiAdmin";
+import { SafetyPage } from "./pages/Safety";
+import type { SpendType } from "./lib/api";
 import { Shell } from "./ui/Shell";
 import { Notice, Spinner } from "./ui/kit";
 
@@ -18,6 +21,11 @@ function Routes({ me, onSignOut, onMe }: { me: Me; onSignOut: () => void; onMe: 
   const inv = match("/invite/:token", path);
   if (inv) return <Invite token={inv.token!} />;
   if (match("/settings", path)) return <Settings me={me} onSignOut={onSignOut} onMe={onMe} />;
+  if (match("/admin/safety", path)) return <SafetyPage onCount={(n) => onMe({ ...me, safetyOpen: n })} />;
+  const det = match("/admin/ai/:ws/spending/:type/:key", path);
+  if (det && ["person", "project", "department"].includes(det.type!)) return <AiAdminPage me={me} ws={det.ws!} tab="spending" detail={{ type: det.type as SpendType, key: det.key! }} />;
+  const adm = match("/admin/ai/:ws", path) ?? match("/admin/ai/:ws/:tab", path);
+  if (adm && ["", "spending"].includes(adm.tab ?? "")) return <AiAdminPage key={adm.ws} me={me} ws={adm.ws!} tab={adm.tab ?? ""} />;
   const p = match("/p/:id", path) ?? match("/p/:id/:view", path);
   if (p && ["", "checklist", "timeline", "team", "update", "history", "print", "share", "report"].includes(p.view ?? "")) return <PlanPage key={p.id} me={me} id={p.id!} view={p.view ?? ""} />;
   return <NotFound />;

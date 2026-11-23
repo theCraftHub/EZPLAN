@@ -1,6 +1,9 @@
 /** Your AI allowance this month, per workspace. */
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
+import { AskForMore } from "./AskCredits";
+import { Link } from "../lib/router";
+import type { Me } from "../lib/api";
 import { api } from "../lib/api";
 import { Card } from "../ui/kit";
 
@@ -17,7 +20,7 @@ function Meter({ label, used, limit }: { label: string; used: number; limit: num
   );
 }
 
-export function AiUsageCard() {
+export function AiUsageCard({ me }: { me: Me }) {
   const [u, setU] = useState<Usage | null>(null);
   useEffect(() => void api.myAi().then(setU).catch(() => {}), []);
   if (!u) return null;
@@ -30,6 +33,11 @@ export function AiUsageCard() {
           {u.workspaces.length > 1 && <span className="text-sm font-bold">{w.name}</span>}
           <Meter label="AI checks this month" used={w.checks.used} limit={w.checks.limit} />
           <Meter label="AI reports this month" used={w.reports.used} limit={w.reports.limit} />
+          {me.workspaces.find((x) => x.id === w.workspaceId)?.role === "manager" ? (
+            <Link to={`/admin/ai/${w.workspaceId}`} className="self-start text-sm font-semibold text-primary underline">Manage AI credits and see spending</Link>
+          ) : (
+            <AskForMore workspaceId={w.workspaceId} defaultOpen={false} />
+          )}
           <span className="text-sm text-muted">Resets on {new Date(`${w.resets}T12:00:00Z`).toLocaleDateString(undefined, { month: "long", day: "numeric", timeZone: "UTC" })}.</span>
         </div>
       ))}

@@ -145,6 +145,7 @@ export function registerAiRoutes(app: Hono<{ Variables: { user: User } }>, d: Ai
     const room = await d.loadRoom(id);
     return c.json({
       enabled: !!d.ai,
+      workspaceId: a.workspace_id,
       held: (await stateOf(id)) === "review",
       review: row ? { result: JSON.parse(row.result), planVersion: Number(row.plan_version), hidden: Number(row.hidden), createdAt: Number(row.created_at), by: row.name ?? "Someone", changedSince: (room?.seq ?? 0) !== Number(row.plan_version) } : null,
       suppressions: await suppressionsOf(id),

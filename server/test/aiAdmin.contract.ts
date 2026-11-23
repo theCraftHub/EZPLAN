@@ -97,6 +97,12 @@ export function aiAdminContract(hostName: string, factory: HostFactory) {
       expect(s.idle.projects).toContain("Unused");
       expect(s.projects.find((p: { key: string }) => p.key === idle).runs).toBe(0);
 
+      const last = (await req("GET", `/api/workspaces/${ws}/ai/spending?period=last-month`, undefined, ALEX)).body;
+      expect(last).toMatchObject({ from: "2026-12-01", to: "2026-12-31", totals: { runs: 0 } });
+      expect(last.previousTotals.runs).toBe(0);
+      expect((await req("GET", `/api/workspaces/${ws}/ai/spending?period=90d`, undefined, ALEX)).body).toMatchObject({ to: "2027-01-04", totals: { checks: 2 } });
+      expect(s.previousTotals.cost).toBe(0);
+      expect(s.daily).toHaveLength(4); // Jan 1 to Jan 4
       const sam = (await req("GET", `/api/workspaces/${ws}/ai/spending/person/u-sam`, undefined, ALEX)).body;
       expect(sam.item).toMatchObject({ name: "Sam", checks: 1 });
       expect(sam.byFeature.map((f: { key: string }) => f.key)).toEqual(["check"]);
