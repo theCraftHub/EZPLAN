@@ -66,11 +66,15 @@ export function apiContract(hostName: string, factory: HostFactory) {
       planId = created.id;
       expect(created.state).toBe("active");
 
-      const list = (await (await host.fetch("/api/plans", {}, ALEX)).json()) as { plans: { id: string; title: string }[] };
-      expect(list.plans.map((p) => p.id)).toContain(planId);
+      const list = (await (await host.fetch("/api/plans", {}, ALEX)).json()) as { plans: { id: string; title: string; summary: { finish: string; percent: number; countedTasks: number; health: string } }[] };
+      const mine = list.plans.find((p) => p.id === planId)!;
+      const direct = levelPlan(parsePlan(kitchenText).plan, { today: TODAY, workWeek: { hoursPerWeek: 40, workdays: [1, 2, 3, 4, 5] } });
+      // Home's summary comes from the same engine as the plan page.
+      expect(mine.summary.finish).toBe(direct.finish);
+      expect(mine.summary.countedTasks).toBeGreaterThan(0);
+      expect(["On track", "At risk", "Off track", "Complete"]).toContain(mine.summary.health);
 
       const got = (await (await host.fetch(`/api/plans/${planId}`, {}, ALEX)).json()) as { schedule: { finish: string }; plan: { title: string }; check: { score: number } };
-      const direct = levelPlan(parsePlan(kitchenText).plan, { today: TODAY, workWeek: { hoursPerWeek: 40, workdays: [1, 2, 3, 4, 5] } });
       expect(got.plan.title).toBe("Kitchen Remodel by Spring 2027");
       expect(got.schedule.finish).toBe(direct.finish);
       expect(got.check.score).toBeGreaterThan(0);

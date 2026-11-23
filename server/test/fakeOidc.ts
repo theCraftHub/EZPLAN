@@ -32,7 +32,6 @@ interface CodeGrant {
 }
 
 export class FakeOidc {
-  readonly issuer = "https://id.test";
   readonly clientId = "client-1";
   readonly clientSecret = "secret-1";
   private readonly codes = new Map<string, CodeGrant>();
@@ -40,17 +39,19 @@ export class FakeOidc {
   readonly requests: string[] = [];
 
   private constructor(
+    readonly issuer: string,
     private readonly key: CryptoKey,
     private readonly jwk: JWK,
     private readonly foreignKey: CryptoKey,
     private readonly nowSeconds: () => number,
   ) {}
 
-  static async create(nowMs: () => number): Promise<FakeOidc> {
+  /** `issuer` is https://id.test in API tests; the browser tests serve it on a local port. */
+  static async create(nowMs: () => number, issuer = "https://id.test"): Promise<FakeOidc> {
     const { privateKey, publicKey } = await generateKeyPair("RS256", { extractable: true });
     const foreign = await generateKeyPair("RS256");
     const jwk = { ...(await exportJWK(publicKey)), kid: "k1", alg: "RS256", use: "sig" };
-    return new FakeOidc(privateKey, jwk, foreign.privateKey, () => Math.floor(nowMs() / 1000));
+    return new FakeOidc(issuer, privateKey, jwk, foreign.privateKey, () => Math.floor(nowMs() / 1000));
   }
 
   provider(extra: Partial<OidcProvider> = {}): OidcProvider {

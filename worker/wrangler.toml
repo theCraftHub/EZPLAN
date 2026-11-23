@@ -18,3 +18,11 @@ bindings = [{ name = "PLAN_ROOM", class_name = "PlanRoom" }]
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["PlanRoom"]
+
+# The website (app/dist, built with `npm run build -w app`). Pages that aren't files get index.html;
+# /api and /auth always reach the Worker. Security headers for pages are in app/public/_headers.
+[assets]
+directory = "../app/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*", "/auth/*"]

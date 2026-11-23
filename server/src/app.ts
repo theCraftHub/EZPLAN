@@ -11,6 +11,7 @@ import {
   hoursPerDay,
   importPlan,
   levelPlan,
+  progressOf,
   parseOp,
   type Actor,
   type OpEnvelope,
@@ -184,9 +185,33 @@ export function createApp(ports: Ports) {
 
   app.get("/api/plans", async (c) => {
     const user = c.get("user");
-    const plans = await db.all(
-      `SELECT p.id, p.title, p.state, p.version, p.workspace_id, p.updated_at FROM plans p JOIN members m ON m.workspace_id = p.workspace_id AND m.user_id = ? ORDER BY p.updated_at DESC`,
+    const rows = await db.all<{ id: string; title: string; state: string; version: number; workspace_id: string; updated_at: number; work_week: string }>(
+      `SELECT p.id, p.title, p.state, p.version, p.workspace_id, p.updated_at, w.work_week FROM plans p
+       JOIN members m ON m.workspace_id = p.workspace_id AND m.user_id = ?
+       JOIN workspaces w ON w.id = p.workspace_id
+       ORDER BY p.updated_at DESC`,
       [user.id],
+    );
+    const today = clock.today();
+    // Home shows each plan's progress, health, finish and next milestone, computed by the same engine.
+    const plans = await Promise.all(
+      rows.map(async ({ work_week, ...p }) => {
+        const room = await loadRoom(db, p.id);
+        if (!room) return { ...p, summary: null };
+        const workWeek = parseWorkWeek(work_week);
+        const schedule = levelPlan(room.plan, { workWeek, today });
+        const progress = progressOf(room.plan, schedule, { workWeek, today });
+        const next = room.plan.phases
+          .flatMap((ph) => ph.tasks)
+          .filter((t) => t.milestone && t.status !== "done" && t.status !== "skipped")
+          .map((t) => ({ title: t.title, date: schedule.tasks.get(t.id)?.end ?? schedule.finish }))
+          .sort((a, b) => (a.date < b.date ? -1 : 1))[0];
+        return {
+          ...p,
+          title: room.plan.title,
+          summary: { percent: progress.percent, doneCount: progress.doneCount, countedTasks: progress.countedTasks, overdueCount: progress.overdueCount, finish: schedule.finish, health: progress.suggestedHealth, nextMilestone: next ?? null },
+        };
+      }),
     );
     return c.json({ plans });
   });

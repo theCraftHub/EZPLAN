@@ -5,6 +5,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { createApp, systemClock, type Clock, type HttpFetch, type ServerConfig } from "@ezplan/server";
 import { FolderBlobs, MemoryRoomHost, NodeSqliteDb } from "./adapters";
+import { withStatic } from "./static";
 
 export interface SelfHostOptions {
   /** Folder for the database file and stored files (a Docker volume in production). */
@@ -15,6 +16,8 @@ export interface SelfHostOptions {
   clock?: Clock;
   /** Outbound HTTP (tests stand in for sign-in providers). */
   http?: HttpFetch;
+  /** The built website (app/dist) to serve next to the API. */
+  staticDir?: string;
 }
 
 export function createSelfHost(opts: SelfHostOptions) {
@@ -31,5 +34,5 @@ export function createSelfHost(opts: SelfHostOptions) {
     http: opts.http ?? ((req) => fetch(req)),
     ...(opts.testAuth ? { testAuth: true } : {}),
   });
-  return { app, rooms, close: () => db.close() };
+  return { app: withStatic(app, opts.staticDir), rooms, close: () => db.close() };
 }

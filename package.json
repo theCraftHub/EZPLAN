@@ -16,9 +16,12 @@
     "test:watch": "vitest",
     "bench": "vitest run --config vitest.bench.config.ts",
     "typecheck": "tsc -p shared && tsc -p server && tsc -p worker && tsc -p worker/tsconfig.test.json && tsc -p selfhost && tsc -p app",
-    "check": "npm run typecheck && npm test"
+    "check": "npm run typecheck && npm test",
+    "e2e": "cd app && playwright test",
+    "build": "npm run build -w app && npm run build -w selfhost"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@types/node": "22.20.5",
     "typescript": "5.9.3",
     "vitest": "4.1.12"

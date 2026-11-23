@@ -2,8 +2,11 @@
  * Self-hosted entry point. Settings come from environment variables:
  *   DATA_DIR  folder for the database and files (default ./data; a volume in Docker)
  *   PORT      HTTP port (default 8080)
+ *   STATIC_DIR the built website (default: app/dist next to this install)
  *   PUBLIC_URL, OIDC_PROVIDERS, ALLOWED_EMAILS, SECURE_COOKIES: see server/src/config.ts
  */
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { configFromEnv, testAuthEnabled } from "@ezplan/server";
 import { createSelfHost } from "./host";
 import { startServer } from "./server";
@@ -13,6 +16,7 @@ const { app, rooms, close } = createSelfHost({
   dataDir: process.env.DATA_DIR ?? "./data",
   config: configFromEnv(process.env),
   testAuth: testAuthEnabled(process.env.TEST_AUTH),
+  staticDir: process.env.STATIC_DIR ?? join(dirname(fileURLToPath(import.meta.url)), "..", "..", "app", "dist"),
 });
 const server = startServer({ app, rooms, port, onListen: (p) => console.log(`Listening on port ${p}`) });
 
