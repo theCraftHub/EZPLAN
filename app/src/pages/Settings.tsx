@@ -2,9 +2,10 @@ import { useState } from "react";
 import { LogOut, MonitorSmartphone } from "lucide-react";
 import { ApiError, type Me } from "../lib/api";
 import { Button, Card, Notice, PageTitle } from "../ui/kit";
+import { WorkWeekCard } from "./WorkWeek";
 
-/** Settings: your account and sign-out. Work week and availability are added in the next step. */
-export function Settings({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
+/** Settings: the workspace's standard week, your account and sign-out. */
+export function Settings({ me, onSignOut, onMe }: { me: Me; onSignOut: () => void; onMe: (m: Me) => void }) {
   const [msg, setMsg] = useState<{ tone: "good" | "bad"; text: string } | null>(null);
   const everywhere = async () => {
     const res = await fetch("/api/logout-everywhere", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
@@ -15,6 +16,7 @@ export function Settings({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
     <>
       <PageTitle title="Settings" />
       {msg && <Notice tone={msg.tone}>{msg.text}</Notice>}
+      <WorkWeekCard me={me} onSaved={(w) => onMe({ ...me, workspaces: me.workspaces.map((x, i) => (i === 0 ? { ...x, work_week: w } : x)) })} />
       <Card aria-label="Your account" className="flex flex-col gap-4">
         <h2 className="m-0 text-lg font-bold">Your account</h2>
         <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-[15px]">

@@ -254,6 +254,37 @@ export function createApp(ports: Ports) {
     return c.json({ name, availability });
   });
 
+  // The workspace's standard work week ("Full time"). Managers only. With dryRun, nothing is saved
+  // and the answer lists how each plan's finish date would move (the preview shown before saving).
+  app.put("/api/workspaces/:id/work-week", async (c) => {
+    const user = c.get("user");
+    const wsId = c.req.param("id");
+    const m = await db.first<{ role: Role; work_week: string }>(`SELECT m.role, w.work_week FROM members m JOIN workspaces w ON w.id = m.workspace_id WHERE m.user_id = ? AND m.workspace_id = ?`, [user.id, wsId]);
+    if (!m) return c.json({ error: "That workspace doesn't exist or you aren't in it." }, 404);
+    if (m.role !== "manager") return c.json({ error: "Only workspace managers can change the work week." }, 403);
+    const body = await c.req.json<{ hoursPerWeek?: unknown; workdays?: unknown; dryRun?: unknown }>().catch(() => null);
+    const hours = Number(body?.hoursPerWeek);
+    const days = Array.isArray(body?.workdays) ? [...new Set((body!.workdays as unknown[]).map(Number))].sort() : [];
+    if (!(hours >= 1 && hours <= 60) || Math.round(hours * 2) !== hours * 2 || days.length < 1 || days.some((d) => !Number.isInteger(d) || d < 0 || d > 6)) {
+      return c.json({ error: "Use 1 to 60 hours a week (whole or half hours) and at least one working day." }, 400);
+    }
+    const next: WorkWeek = { hoursPerWeek: hours, workdays: days };
+    const before = parseWorkWeek(m.work_week);
+    const today = clock.today();
+    const plans = await db.all<{ id: string }>(`SELECT id FROM plans WHERE workspace_id = ? AND state != 'archived' ORDER BY updated_at DESC LIMIT 200`, [wsId]);
+    const impact = [];
+    for (const p of plans) {
+      const room = await loadRoom(db, p.id);
+      if (!room) continue;
+      const people = await loadPeople(p.id);
+      const was = levelPlan(room.plan, { workWeek: before, today, people }).finish;
+      const will = levelPlan(room.plan, { workWeek: next, today, people }).finish;
+      impact.push({ planId: p.id, title: room.plan.title, before: was, after: will });
+    }
+    if (body?.dryRun !== true) await db.run(`UPDATE workspaces SET work_week = ? WHERE id = ?`, [JSON.stringify(next), wsId]);
+    return c.json({ workWeek: next, saved: body?.dryRun !== true, impact });
+  });
+
   app.get("/api/plans", async (c) => {
     const user = c.get("user");
     const rows = await db.all<{ id: string; title: string; state: string; version: number; workspace_id: string; updated_at: number; work_week: string }>(

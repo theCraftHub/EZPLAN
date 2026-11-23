@@ -7,7 +7,8 @@ import { HealthChip, Notice, Spinner } from "../../ui/kit";
 import { Checklist } from "./Checklist";
 import { usePlanMath } from "./math";
 import { Overview } from "./Overview";
-import { Placeholder } from "../Placeholder";
+import { Timeline } from "./Timeline";
+import { Team } from "./Team";
 
 const TABS = [
   { view: "", label: "Overview" },
@@ -58,7 +59,8 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
       {room.notice && <Notice tone="warn"><span className="flex items-center justify-between gap-3">{room.notice}<button onClick={room.clearNotice} className="min-h-9 rounded-lg px-2 font-semibold">OK</button></span></Notice>}
       {view === "" && <Overview plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} planId={id} />}
       {view === "checklist" && <Checklist plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} />}
-      {(view === "timeline" || view === "team") && <Placeholder title={view === "timeline" ? "Timeline" : "Team schedule"} />}
+      {view === "timeline" && <Timeline plan={room.plan} math={math} today={room.detail.today} />}
+      {view === "team" && <Team me={me} planId={id} plan={room.plan} math={math} people={room.detail.people} workWeek={room.detail.workWeek} today={room.detail.today} canEdit={canEdit} edit={room.edit} onPeople={(people) => room.setDetail({ ...room.detail!, people })} />}
     </>
   );
 }

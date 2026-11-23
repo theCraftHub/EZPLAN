@@ -21,6 +21,31 @@ Turn any project description into a clear, good-looking, AI-checked plan your te
 | `docs/PLAN.md` | The full approved build plan |
 | `design/mockups/` | Clickable UI mockups for review |
 
+## Run it on your computer
+
+Needs Node 22 or newer.
+
+```bash
+npm ci
+npm run build          # builds the website (app/dist) and the self-hosted server (selfhost/dist)
+```
+
+Start the self-hosted server (it serves the website and the API on one port). It needs the site's address and at least one sign-in service (any OpenID Connect provider, for example Google or Microsoft):
+
+```bash
+PUBLIC_URL=http://localhost:8080 SECURE_COOKIES=0 \
+OIDC_PROVIDERS='[{"id":"google","label":"Google","issuer":"https://accounts.google.com","clientId":"...","clientSecret":"..."}]' \
+npm start -w selfhost
+```
+
+Checks:
+
+```bash
+npm run check          # type checks + unit and API tests (both hosts: Node and Cloudflare in Miniflare)
+npm run e2e            # browser tests on a phone and a desktop screen, against the real self-hosted build
+npm run shots -w app   # saves screenshots of every screen to app/e2e/.results/shots
+```
+
 ## Roadmap
 | Phase | Contents |
 |---|---|

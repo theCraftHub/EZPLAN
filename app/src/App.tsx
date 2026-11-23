@@ -10,11 +10,11 @@ import { Settings } from "./pages/Settings";
 import { Shell } from "./ui/Shell";
 import { Notice, Spinner } from "./ui/kit";
 
-function Routes({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
+function Routes({ me, onSignOut, onMe }: { me: Me; onSignOut: () => void; onMe: (m: Me) => void }) {
   const { path } = useRouter();
   if (match("/", path)) return <Home me={me} />;
   if (match("/new", path)) return <NewPlan me={me} />;
-  if (match("/settings", path)) return <Settings me={me} onSignOut={onSignOut} />;
+  if (match("/settings", path)) return <Settings me={me} onSignOut={onSignOut} onMe={onMe} />;
   const p = match("/p/:id", path) ?? match("/p/:id/:view", path);
   if (p && ["", "checklist", "timeline", "team"].includes(p.view ?? "")) return <PlanPage key={p.id} me={me} id={p.id!} view={p.view ?? ""} />;
   return <NotFound />;
@@ -33,7 +33,7 @@ function Root() {
   const signOut = () => void api.logout().finally(() => location.assign("/"));
   return (
     <Shell me={me} onSignOut={signOut}>
-      <Routes me={me} onSignOut={signOut} />
+      <Routes me={me} onSignOut={signOut} onMe={setMe} />
     </Shell>
   );
 }

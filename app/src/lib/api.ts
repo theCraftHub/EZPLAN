@@ -60,5 +60,6 @@ export const api = {
   preview: (text: string, people: People = {}, fileName?: string) => call<ImportPreview>("/api/plans/preview", { method: "POST", body: JSON.stringify({ text, people, ...(fileName ? { fileName } : {}) }) }),
   createPlan: (text: string, people: People = {}, fileName?: string) => call<{ id: string; notices: string[] }>("/api/plans", { method: "POST", body: JSON.stringify({ text, people, ...(fileName ? { fileName } : {}) }) }),
   setPerson: (planId: string, name: string, a: PersonAvailability) => call<{ name: string }>(`/api/plans/${encodeURIComponent(planId)}/people/${encodeURIComponent(name)}`, { method: "PUT", body: JSON.stringify(a) }),
+  workWeek: (workspaceId: string, w: WorkWeek, dryRun: boolean) => call<{ workWeek: WorkWeek; saved: boolean; impact: { planId: string; title: string; before: string; after: string }[] }>(`/api/workspaces/${encodeURIComponent(workspaceId)}/work-week`, { method: "PUT", body: JSON.stringify({ ...w, dryRun }) }),
   logout: () => call<{ ok: true }>("/auth/logout", { method: "POST", body: "{}" }),
 };

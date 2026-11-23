@@ -47,4 +47,19 @@ test("screens", async ({ page }, info) => {
   await page.keyboard.press("Escape");
   await page.emulateMedia({ colorScheme: "dark" });
   await page.screenshot({ path: out("plan-checklist-dark", info.project.name), fullPage: true });
+  await page.emulateMedia({ colorScheme: "light" });
+
+  await page.request.put(`/api/plans/${id}/people/Priya`, { data: { hoursPerWeek: 20, timeOff: [{ start: "2027-01-07", end: "2027-01-08", label: "Vacation" }] } });
+  await page.request.put(`/api/plans/${id}/people/Jordan`, { data: { hoursPerWeek: 30 } });
+  await page.goto(`/p/${id}/timeline`);
+  await page.getByRole("status").filter({ hasText: "Live" }).waitFor();
+  await page.screenshot({ path: out("plan-timeline", info.project.name), fullPage: true });
+  await page.goto(`/p/${id}/team`);
+  await page.getByRole("status").filter({ hasText: "Live" }).waitFor();
+  await page.screenshot({ path: out("plan-team", info.project.name), fullPage: true });
+  await page.getByRole("button", { name: "Add person" }).click();
+  await page.screenshot({ path: out("plan-addperson", info.project.name) });
+  await page.keyboard.press("Escape");
+  await page.goto("/settings");
+  await page.screenshot({ path: out("settings-week", info.project.name), fullPage: true });
 });

@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { levelPlan, parsePlan } from "@ezplan/shared";
+import { levelPlan, parsePlan, type PersonAvailability, type Plan } from "@ezplan/shared";
 
 export const TODAY = "2027-01-04";
 
@@ -168,6 +168,29 @@ export function apiContract(hostName: string, factory: HostFactory) {
       expect((await put("Priya", { hoursPerWeek: 10, password: "x" })).status).toBe(400);
       expect((await put("Priya", { hoursPerWeek: 10 }, SAM)).status).toBe(404);
       expect((await host.fetch("/api/plans", json({ text: kitchenText, people: { Priya: { hoursPerWeek: 99 } } }), ALEX)).status).toBe(400);
+    });
+
+    it("previews and saves the workspace work week; only managers can, with valid values", async () => {
+      const me = (await (await host.fetch("/api/me", {}, ALEX)).json()) as { workspaces: { id: string }[] };
+      const ws = me.workspaces[0]!.id;
+      const put = (body: unknown, user = ALEX) => host.fetch(`/api/workspaces/${ws}/work-week`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }, user);
+      const next = { hoursPerWeek: 30, workdays: [1, 2, 3, 4] };
+      const dry = (await (await put({ ...next, dryRun: true })).json()) as { saved: boolean; impact: { planId: string; before: string; after: string }[] };
+      expect(dry.saved).toBe(false);
+      const kitchen = dry.impact.find((i) => i.planId === planId)!;
+      const plan = (await (await host.fetch(`/api/plans/${planId}`, {}, ALEX)).json()) as { plan: Plan; people: Record<string, PersonAvailability>; schedule: { finish: string }; workWeek: { hoursPerWeek: number } };
+      expect(kitchen.before).toBe(plan.schedule.finish);
+      expect(kitchen.after).toBe(levelPlan(plan.plan, { today: TODAY, workWeek: next, people: plan.people }).finish);
+      expect(kitchen.after).not.toBe(kitchen.before);
+      expect(plan.workWeek.hoursPerWeek).toBe(40); // nothing saved by the preview
+
+      expect((await put({ hoursPerWeek: 37.5, workdays: [1, 2, 3, 4, 5] })).status).toBe(200);
+      expect(((await (await host.fetch("/api/me", {}, ALEX)).json()) as { workspaces: { work_week: unknown }[] }).workspaces[0]!.work_week).toEqual({ hoursPerWeek: 37.5, workdays: [1, 2, 3, 4, 5] });
+      expect((await put({ hoursPerWeek: 37.4, workdays: [1] })).status).toBe(400);
+      expect((await put({ hoursPerWeek: 40, workdays: [] })).status).toBe(400);
+      expect((await put({ hoursPerWeek: 40, workdays: [7] })).status).toBe(400);
+      expect((await put({ hoursPerWeek: 40, workdays: [1, 2, 3, 4, 5] }, SAM)).status).toBe(404);
+      expect((await put({ hoursPerWeek: 40, workdays: [1, 2, 3, 4, 5] })).status).toBe(200);
     });
 
     it("keeps everything across a restart, and migrations run once", async () => {
