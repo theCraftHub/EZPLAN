@@ -2,22 +2,27 @@
  * Cloud entry point (Cloudflare Workers): the shared API (server/) on the Cloudflare connectors,
  * plus the PlanRoom Durable Object for live editing.
  */
-import { authFor, createApp, systemClock, type Clock } from "@ezplan/server";
-import { DEFAULT_WORK_WEEK } from "@ezplan/shared";
+import { configFromEnv, createApp, systemClock, testAuthEnabled, type Clock } from "@ezplan/server";
 import { D1Db, DurableRoomHost, R2Blobs, RoomObjectCore } from "./adapters";
 
 export interface Env {
   DB: D1Database;
   FILES: R2Bucket;
   PLAN_ROOM: DurableObjectNamespace;
+  /** The site's address and sign-in settings (secrets): see server/src/config.ts. */
+  PUBLIC_URL: string;
+  OIDC_PROVIDERS?: string;
+  ALLOWED_EMAILS?: string;
+  SECURE_COOKIES?: string;
   /** "1" only in tests: trusts the x-test-user header. Never set in production. */
   TEST_AUTH?: string;
-  /** Tests only (with TEST_AUTH=1): a fixed "today", so dates in tests don't drift. */
+  /** Tests only: with TEST_CLOCK=1, a fixed "today", so dates in tests don't drift. Never set in production. */
+  TEST_CLOCK?: string;
   TEST_TODAY?: string;
 }
 
 function clockFor(env: Env): Clock {
-  if (env.TEST_AUTH === "1" && env.TEST_TODAY) return { today: () => env.TEST_TODAY!, now: () => Date.parse(`${env.TEST_TODAY}T12:00:00Z`) };
+  if (env.TEST_CLOCK === "1" && env.TEST_TODAY) return { today: () => env.TEST_TODAY!, now: () => Date.parse(`${env.TEST_TODAY}T12:00:00Z`) };
   return systemClock;
 }
 
@@ -34,9 +39,10 @@ export default {
           db,
           blobs: new R2Blobs(env.FILES),
           rooms: new DurableRoomHost(env.PLAN_ROOM),
-          auth: authFor(env.TEST_AUTH),
           clock: clockFor(env),
-          config: { defaultWorkWeek: DEFAULT_WORK_WEEK },
+          config: configFromEnv(env as unknown as Record<string, string | undefined>),
+          http: (req) => fetch(req),
+          ...(testAuthEnabled(env.TEST_AUTH) ? { testAuth: true } : {}),
         }),
       };
     }

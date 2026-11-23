@@ -517,6 +517,30 @@ Goal: a company goes from "Start EZPLAN for my business" to employees working in
 9. **One contract test suite, two hosts:** `server/test/contract.ts` defines the API and room tests once; `selfhost` runs them in-process; `worker` runs them against Miniflare with the bundled worker (real D1 + Durable Objects). Covers: health, 401, create from the kitchen fixture, list, schedule/finish dates equal `levelPlan` directly, ops apply with "Done by" from the authenticated user and duplicate op ignored, export round-trips, other-workspace 404, test auth off by default, migrations idempotent on restart (self-hosted: reopen the same database file; cloud: persisted Miniflare storage).
 10. **CI:** typecheck all five packages, run all tests (both hosts). Commit and push.
 
+**Next four steps (Nov 23, owner: "do all 4"), in this order:**
+
+**A. Sign-in + sessions (both hosts): done (Nov 23).** `server/src/oidc.ts`, `sessions.ts`, `config.ts`; migration 2; fake provider + 9 sign-in tests pass on both hosts (with the 11 API tests). Sign-out everywhere is `POST /api/logout-everywhere`. Test-only switches: `TEST_AUTH` (header sign-in) and `TEST_CLOCK` + `TEST_TODAY` (fixed date), all off by default. Known for phase 4: Microsoft's multi-tenant sign-in uses a per-company issuer, so the issuer check needs a tenant-aware rule when company sign-in is built.
+
+**A. Sign-in + sessions (both hosts).** One OpenID Connect sign-in covers Cloudflare Access (private build), Microsoft, Google and any company OIDC provider (self-hosted).
+- New ports: `Http` (outbound fetch; tests inject a fake provider) and provider config `{ id, label, issuer, clientId, clientSecret }` (endpoints found through the issuer's `.well-known/openid-configuration`). Cloud: Worker secrets; self-hosted: environment variables (setup page later). Optional `ALLOWED_EMAILS` list for the private build (defense in depth behind Cloudflare Access).
+- Routes: `GET /auth/providers`; `GET /auth/login?provider=&returnTo=` (redirect with `state`, `nonce` and PKCE S256, attempt saved in a `login_attempts` table for 10 minutes); `GET /auth/callback` (code exchange, ID token checked with `jose`: signature against the provider's keys, issuer, audience, expiry, nonce; verified email required); `POST /auth/logout`; `POST /auth/logout-everywhere`.
+- People keep an immutable user id; sign-ins link through an `identities` table (provider + subject), so email changes don't split accounts. First sign-in creates the person and their private workspace (existing logic).
+- Sessions: 32 random bytes in an HttpOnly, Secure, SameSite=Lax cookie; only a SHA-256 hash is stored (`sessions`); 30-day expiry, sliding; sign-out everywhere deletes all of a person's sessions at once.
+- CSRF: every non-GET API request must come from our own origin (Origin header check) or carry a JSON content type from the app; `returnTo` only accepts same-site relative paths.
+- Migration 2 (new, migration 1 untouched): `identities`, `login_attempts`, session columns (`token_hash`, `last_seen_at`, `user_agent`).
+- Deps: `jose` (pinned, at least two weeks old when added).
+- Tests (contract, both hosts; cloud through Miniflare's outbound service hook): full login flow against a fake OIDC provider; wrong state, reused state, wrong nonce, wrong audience, expired or badly signed token, unverified email, email not on the allow list all refused; open-redirect attempts refused; logout and logout-everywhere end sessions immediately; cross-site POST refused; the test-only header sign-in still off by default.
+
+**B. Live editing over WebSockets (both hosts, pulled forward from 1b).**
+- `GET /api/plans/:id/live` upgrades to a WebSocket after the session and workspace checks (viewers receive edits but can't send them).
+- Cloud: the PlanRoom Durable Object accepts the sockets (hibernation API) and broadcasts each applied edit; self-hosted: the in-memory room keeps its sockets (`ws` package) and does the same. Shared message format in `shared/` (hello with last seen version → missed edits replayed; edit → applied/duplicate/rejected; presence join/leave).
+- The app side uses `ClientReplica` from `shared/src/ops.ts` (already tested for convergence).
+- Tests on both hosts: two clients converge; a client that reconnects gets missed edits and its queued edits apply once; presence; viewer can't edit; signed-out or other-workspace sockets refused; 2,000-edit burst stays ordered.
+
+**C. Gate B mockups** (needed before 1b): full IT admin prototype (Overview with security checklist, setup wizard, People with bulk select + dry-run + undo, offboarding wizard, groups mapping, audit log with filters + SIEM setup, policies with impact preview incl. the company default work week, licenses with seat reclaim and chargeback, phone view of urgent admin actions) and business onboarding (company, domain, the short sign-in questions with "Send to my IT person", the specialized-pricing screen, seats/checkout, bring your people, first project). Same canvas, screenshot pass, owner approval.
+
+**D. Website screens (React + Vite + Tailwind + Radix, installable).** Sign-in page; Home (all projects); import (existing-chat prompt, plan wizard, paste/upload, preview with Plan Check and the availability step); project dashboard; checklist with quick-add and live editing; timeline; Team schedule (phone + desktop) with add person and custom hours; My availability; workspace work week setting. Served by the Worker (static assets) in the cloud and by the Node server self-hosted. Playwright end-to-end on phone and desktop against the self-hosted build, screenshots checked.
+
 **Verification:** the same API/room test suite passes on both hosts in CI; two clients editing one plan converge on both; Docker smoke test passes; a self-hosted install sends no network traffic to our domains with telemetry off (checked with a network capture in CI); upgrade from the previous image version migrates data without loss.
 
 ## 8. Business model and finances (revisitable)

@@ -7,6 +7,7 @@
   "types": "src/index.ts",
   "dependencies": {
     "@ezplan/shared": "0.0.0",
-    "hono": "4.13.17"
+    "hono": "4.13.17",
+    "jose": "6.2.17"
   }
 }

@@ -1,7 +1,8 @@
 /**
  * The HTTP API, written once against the ports. Hono runs unchanged on Cloudflare Workers and Node.
  */
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import {
   BRAND,
   checkPlan,
@@ -15,8 +16,11 @@ import {
   type OpEnvelope,
   type WorkWeek,
 } from "@ezplan/shared";
+import { userFromTestHeader } from "./auth";
 import { migrate } from "./migrations";
+import { finishLogin, SignInError, startLogin, userForSignIn } from "./oidc";
 import { loadRoom, newRoomJson } from "./room";
+import { createSession, endAllSessions, endSession, SESSION_COOKIE, SESSION_DAYS, userForSession } from "./sessions";
 import type { Ports, User } from "./ports";
 
 type Role = "manager" | "editor" | "viewer";
@@ -32,32 +36,101 @@ export function createApp(ports: Ports) {
 
   const app = new Hono<Vars>();
 
+  const { config } = ports;
+  const siteOrigin = new URL(config.publicUrl).origin;
+
   app.get("/api/health", async (c) => {
     await ensureReady();
     return c.json({ ok: true });
   });
 
-  // Everything else needs a signed-in person.
+  /**
+   * Changes must come from our own site (blocks cross-site request forgery): a different Origin is
+   * refused; with no Origin, only JSON requests are accepted (a plain form on another site can't send JSON).
+   */
+  const sameSite = (c: Context) => {
+    if (c.req.method === "GET" || c.req.method === "HEAD") return true;
+    const origin = c.req.header("origin");
+    if (origin) return origin === siteOrigin;
+    return (c.req.header("content-type") ?? "").startsWith("application/json");
+  };
+
+  const setSessionCookie = (c: Context, token: string) =>
+    setCookie(c, SESSION_COOKIE, token, { path: "/", httpOnly: true, secure: config.secureCookies, sameSite: "Lax", maxAge: SESSION_DAYS * 86_400 });
+
+  // ---------------------------------------------------------------- sign-in
+
+  app.get("/auth/providers", async (c) => c.json({ providers: config.providers.map((p) => ({ id: p.id, label: p.label })) }));
+
+  app.get("/auth/login", async (c) => {
+    await ensureReady();
+    try {
+      return c.redirect(await startLogin(db, ports.http, clock, config, c.req.query("provider") ?? "", c.req.query("returnTo")), 302);
+    } catch (e) {
+      if (e instanceof SignInError) return c.json({ error: e.message }, 400);
+      throw e;
+    }
+  });
+
+  app.get("/auth/callback", async (c) => {
+    await ensureReady();
+    try {
+      const signedIn = await finishLogin(db, ports.http, clock, config, new URL(c.req.url).searchParams);
+      const user = await userForSignIn(db, clock, signedIn);
+      await ensureWorkspace(user);
+      setSessionCookie(c, await createSession(db, clock, user.id, c.req.header("user-agent") ?? null));
+      return c.redirect(signedIn.returnTo, 302);
+    } catch (e) {
+      if (e instanceof SignInError) return c.json({ error: e.message }, 400);
+      throw e;
+    }
+  });
+
+  app.post("/auth/logout", async (c) => {
+    if (!sameSite(c)) return c.json({ error: "This request didn't come from this site." }, 403);
+    await endSession(db, getCookie(c, SESSION_COOKIE));
+    deleteCookie(c, SESSION_COOKIE, { path: "/", secure: config.secureCookies });
+    return c.json({ ok: true });
+  });
+
+  // ---------------------------------------------------------------- the API needs a signed-in person
+
   app.use("/api/*", async (c, next) => {
     await ensureReady();
-    const user = await ports.auth.getUser(c.req.raw);
+    if (!sameSite(c)) return c.json({ error: "This request didn't come from this site." }, 403);
+    let user = await userForSession(db, clock, getCookie(c, SESSION_COOKIE));
+    if (!user && ports.testAuth) {
+      user = userFromTestHeader(c.req.raw);
+      if (user) await ensureTestUser(user);
+    }
     if (!user) return c.json({ error: "Sign in to continue." }, 401);
-    await ensureUser(user);
     c.set("user", user);
     await next();
   });
 
-  /** First visit: save the person and give them a private workspace (every account has one). */
-  async function ensureUser(user: User) {
-    const known = await db.first(`SELECT id FROM users WHERE id = ?`, [user.id]);
-    if (known) return;
-    const now = clock.now();
+  app.post("/api/logout-everywhere", async (c) => {
+    const ended = await endAllSessions(db, c.get("user").id);
+    deleteCookie(c, SESSION_COOKIE, { path: "/", secure: config.secureCookies });
+    return c.json({ ok: true, ended });
+  });
+
+  /** Every account has a private workspace; the first sign-in creates it. */
+  async function ensureWorkspace(user: { id: string; name: string }) {
+    const has = await db.first(`SELECT 1 AS x FROM members WHERE user_id = ? LIMIT 1`, [user.id]);
+    if (has) return;
     const workspaceId = crypto.randomUUID();
     await db.batch([
-      { sql: `INSERT INTO users (id, name, email, created_at) VALUES (?, ?, ?, ?)`, params: [user.id, user.name, user.email, now] },
-      { sql: `INSERT INTO workspaces (id, name, work_week, created_at) VALUES (?, ?, ?, ?)`, params: [workspaceId, `${user.name}'s workspace`, JSON.stringify(ports.config.defaultWorkWeek), now] },
+      { sql: `INSERT INTO workspaces (id, name, work_week, created_at) VALUES (?, ?, ?, ?)`, params: [workspaceId, `${user.name}'s workspace`, JSON.stringify(config.defaultWorkWeek), clock.now()] },
       { sql: `INSERT INTO members (workspace_id, user_id, role) VALUES (?, ?, 'manager')`, params: [workspaceId, user.id] },
     ]);
+  }
+
+  /** TESTS ONLY: people from the x-test-user header are saved on first sight. */
+  async function ensureTestUser(user: User) {
+    if (!(await db.first(`SELECT id FROM users WHERE id = ?`, [user.id]))) {
+      await db.run(`INSERT INTO users (id, name, email, created_at) VALUES (?, ?, ?, ?)`, [user.id, user.name, user.email, clock.now()]);
+    }
+    await ensureWorkspace(user);
   }
 
   /** The plan and the person's role in its workspace, or null when they can't see it. */

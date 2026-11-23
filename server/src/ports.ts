@@ -34,11 +34,6 @@ export interface User {
   email: string;
 }
 
-/** Who is making the request. Real sign-in plugs in here; nothing else changes. */
-export interface Auth {
-  getUser(request: Request): Promise<User | null>;
-}
-
 export type ApplyResult = { status: "applied"; applied: Applied; version: number } | { status: "duplicate"; version: number } | { status: "missing" };
 
 /** Live editing: one room per plan; a room applies edits in order and saves the plan. */
@@ -53,18 +48,50 @@ export interface Clock {
   now(): number;
 }
 
+/**
+ * A sign-in provider that speaks OpenID Connect: Cloudflare Access (private build), Microsoft,
+ * Google, or a company's own (Okta, JumpCloud, Keycloak...) when self-hosted. Endpoints come from
+ * the issuer's /.well-known/openid-configuration.
+ */
+export interface OidcProvider {
+  /** Short id used in URLs, e.g. "microsoft". */
+  id: string;
+  /** Button label, e.g. "Microsoft". */
+  label: string;
+  issuer: string;
+  clientId: string;
+  clientSecret: string;
+  /**
+   * Whether this provider's email addresses can be trusted without an email_verified claim.
+   * Microsoft work accounts don't send that claim; most others do. Default false.
+   */
+  trustEmail?: boolean;
+}
+
 export interface ServerConfig {
   /** Work week for new workspaces (a workspace setting afterwards). */
   defaultWorkWeek: WorkWeek;
+  /** The site's public address, e.g. "https://plans.example.com" (used for sign-in redirects). */
+  publicUrl: string;
+  providers: OidcProvider[];
+  /** If set, only these email addresses may sign in (the private build: the owner only). */
+  allowedEmails?: string[];
+  /** Mark cookies Secure (always in production; only plain-http local testing turns it off). */
+  secureCookies: boolean;
 }
+
+/** Outbound HTTP, so tests can stand in for sign-in providers. */
+export type HttpFetch = (request: Request) => Promise<Response>;
 
 export interface Ports {
   db: Db;
   blobs: Blobs;
   rooms: RoomHost;
-  auth: Auth;
   clock: Clock;
   config: ServerConfig;
+  http: HttpFetch;
+  /** TESTS ONLY: also accept the x-test-user header (see auth.ts). Never true in production. */
+  testAuth?: boolean;
 }
 
 export const systemClock: Clock = {

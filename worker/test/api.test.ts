@@ -8,7 +8,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { build } from "esbuild";
 import { Miniflare } from "miniflare";
-import { apiContract, TODAY, type TestHost } from "../../server/test/contract";
+import { apiContract, TODAY, type HostFactory, type TestHost } from "../../server/test/contract";
+import { testEnv, testHttp } from "../../server/test/hostConfig";
+import { signInContract } from "../../server/test/signin.contract";
 
 let bundled: Promise<string> | null = null;
 function bundle(): Promise<string> {
@@ -25,8 +27,8 @@ function bundle(): Promise<string> {
   return bundled;
 }
 
-apiContract("cloud (Workers + D1 + Durable Objects)", {
-  async start({ testAuth }): Promise<TestHost> {
+const factory: HostFactory = {
+  async start({ testAuth, fake }): Promise<TestHost> {
     const script = await bundle();
     const dir = mkdtempSync(join(tmpdir(), "worker-"));
     const make = () =>
@@ -37,7 +39,9 @@ apiContract("cloud (Workers + D1 + Durable Objects)", {
         d1Databases: { DB: "plans" },
         r2Buckets: ["FILES"],
         durableObjects: { PLAN_ROOM: { className: "PlanRoom", useSQLite: true } },
-        bindings: testAuth ? { TEST_AUTH: "1", TEST_TODAY: TODAY } : { TEST_TODAY: TODAY },
+        bindings: { ...testEnv(fake), TEST_CLOCK: "1", TEST_TODAY: TODAY, ...(testAuth ? { TEST_AUTH: "1" } : {}) },
+        // Outbound requests (sign-in provider) go to the stand-in provider, never the internet.
+        outboundService: (req: unknown) => testHttp(fake)(req as Request) as never,
         d1Persist: join(dir, "d1"),
         r2Persist: join(dir, "r2"),
         durableObjectsPersist: join(dir, "do"),
@@ -45,10 +49,11 @@ apiContract("cloud (Workers + D1 + Durable Objects)", {
     let mf = make();
     await mf.ready;
     return {
-      async fetch(path, init = {}, user) {
+      async fetch(path, init = {}, user, cookie) {
         const headers = new Headers(init.headers);
         if (user) headers.set("x-test-user", user);
-        const res = await mf.dispatchFetch(`http://local${path}`, { ...init, headers } as Parameters<Miniflare["dispatchFetch"]>[1]);
+        if (cookie) headers.set("cookie", cookie);
+        const res = await mf.dispatchFetch(`https://plans.test${path}`, { ...init, headers, redirect: "manual" } as Parameters<Miniflare["dispatchFetch"]>[1]);
         return res as unknown as Response;
       },
       async restart() {
@@ -62,4 +67,7 @@ apiContract("cloud (Workers + D1 + Durable Objects)", {
       },
     };
   },
-});
+};
+
+apiContract("cloud (Workers + D1 + Durable Objects)", factory);
+signInContract("cloud (Workers + D1 + Durable Objects)", factory);

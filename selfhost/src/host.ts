@@ -3,17 +3,18 @@
  */
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { authFor, createApp, systemClock, type Clock } from "@ezplan/server";
-import { DEFAULT_WORK_WEEK, type WorkWeek } from "@ezplan/shared";
+import { createApp, systemClock, type Clock, type HttpFetch, type ServerConfig } from "@ezplan/server";
 import { FolderBlobs, MemoryRoomHost, NodeSqliteDb } from "./adapters";
 
 export interface SelfHostOptions {
   /** Folder for the database file and stored files (a Docker volume in production). */
   dataDir: string;
-  /** "1" only in tests: trusts the x-test-user header. Never set in production. */
-  testAuth?: string;
+  config: ServerConfig;
+  /** TESTS ONLY: also trust the x-test-user header. Never set in production. */
+  testAuth?: boolean;
   clock?: Clock;
-  defaultWorkWeek?: WorkWeek;
+  /** Outbound HTTP (tests stand in for sign-in providers). */
+  http?: HttpFetch;
 }
 
 export function createSelfHost(opts: SelfHostOptions) {
@@ -24,9 +25,10 @@ export function createSelfHost(opts: SelfHostOptions) {
     db,
     blobs: new FolderBlobs(join(opts.dataDir, "files")),
     rooms: new MemoryRoomHost(db, clock),
-    auth: authFor(opts.testAuth),
     clock,
-    config: { defaultWorkWeek: opts.defaultWorkWeek ?? DEFAULT_WORK_WEEK },
+    config: opts.config,
+    http: opts.http ?? ((req) => fetch(req)),
+    ...(opts.testAuth ? { testAuth: true } : {}),
   });
   return { app, close: () => db.close() };
 }

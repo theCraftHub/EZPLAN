@@ -10,15 +10,16 @@ import { levelPlan, parsePlan } from "@ezplan/shared";
 export const TODAY = "2027-01-04";
 
 export interface TestHost {
-  /** Sends a request as `user` ("id|Name|email") or anonymously. */
-  fetch(path: string, init?: RequestInit, user?: string): Promise<Response>;
+  /** Sends a request (redirects not followed) as test `user` ("id|Name|email"), with a cookie, or anonymously. */
+  fetch(path: string, init?: RequestInit, user?: string, cookie?: string): Promise<Response>;
   /** Stops and starts the host on the same stored data (a restart or redeploy). */
   restart(): Promise<void>;
   stop(): Promise<void>;
 }
 
 export interface HostFactory {
-  start(opts: { testAuth: boolean }): Promise<TestHost>;
+  /** `fake`: the stand-in sign-in provider to configure (sign-in tests). */
+  start(opts: { testAuth: boolean; fake?: import("./fakeOidc").FakeOidc }): Promise<TestHost>;
 }
 
 const ALEX = "u-alex|Alex|alex@example.com";

@@ -26,6 +26,19 @@ export const MIGRATIONS: Migration[] = [
       `CREATE TABLE plan_versions (plan_id TEXT NOT NULL REFERENCES plans(id), version INTEGER NOT NULL, reason TEXT NOT NULL, snapshot TEXT NOT NULL, created_by TEXT NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (plan_id, version))`,
     ],
   },
+  {
+    id: 2,
+    name: "sign-in identities, login attempts, hashed sessions",
+    statements: [
+      `CREATE TABLE identities (provider TEXT NOT NULL, subject TEXT NOT NULL, user_id TEXT NOT NULL REFERENCES users(id), email TEXT NOT NULL, created_at INTEGER NOT NULL, last_login_at INTEGER NOT NULL, PRIMARY KEY (provider, subject))`,
+      `CREATE INDEX identities_user ON identities(user_id)`,
+      `CREATE TABLE login_attempts (state TEXT PRIMARY KEY, provider TEXT NOT NULL, nonce TEXT NOT NULL, verifier TEXT NOT NULL, return_to TEXT NOT NULL, expires_at INTEGER NOT NULL)`,
+      // The first sessions table was never used; sessions now store only a hash of the token.
+      `DROP TABLE sessions`,
+      `CREATE TABLE sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), created_at INTEGER NOT NULL, last_seen_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, user_agent TEXT)`,
+      `CREATE INDEX sessions_user ON sessions(user_id)`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

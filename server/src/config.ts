@@ -1,0 +1,39 @@
+/**
+ * Reads server settings from environment variables (self-hosted) or Worker variables and secrets
+ * (cloud), the same way on both:
+ *   PUBLIC_URL       the site's address, e.g. https://plans.example.com (required)
+ *   OIDC_PROVIDERS   JSON list of sign-in providers: [{ id, label, issuer, clientId, clientSecret, trustEmail? }]
+ *   ALLOWED_EMAILS   optional comma-separated list; only these people may sign in
+ *   SECURE_COOKIES   "0" only for plain-http local testing; anything else keeps cookies Secure
+ */
+import { DEFAULT_WORK_WEEK } from "@ezplan/shared";
+import type { OidcProvider, ServerConfig } from "./ports";
+
+export function configFromEnv(env: Record<string, string | undefined>): ServerConfig {
+  const publicUrl = env.PUBLIC_URL?.trim();
+  if (!publicUrl || !/^https?:\/\/[^/]+/.test(publicUrl)) throw new Error("Set PUBLIC_URL to the site's address, for example https://plans.example.com.");
+  let providers: OidcProvider[] = [];
+  if (env.OIDC_PROVIDERS) {
+    let raw: unknown;
+    try {
+      raw = JSON.parse(env.OIDC_PROVIDERS);
+    } catch {
+      throw new Error("OIDC_PROVIDERS must be a JSON list of sign-in providers.");
+    }
+    if (!Array.isArray(raw)) throw new Error("OIDC_PROVIDERS must be a JSON list of sign-in providers.");
+    providers = raw.map((p: Record<string, unknown>, i) => {
+      for (const k of ["id", "label", "issuer", "clientId", "clientSecret"]) if (typeof p[k] !== "string" || !p[k]) throw new Error(`Sign-in provider ${i + 1} is missing "${k}".`);
+      if (!/^[a-z0-9-]{1,32}$/.test(String(p.id))) throw new Error(`Sign-in provider id "${String(p.id)}" must be lowercase letters, digits or dashes.`);
+      if (!String(p.issuer).startsWith("https://")) throw new Error(`Sign-in provider "${String(p.id)}" must use an https:// issuer.`);
+      return { id: String(p.id), label: String(p.label), issuer: String(p.issuer), clientId: String(p.clientId), clientSecret: String(p.clientSecret), trustEmail: p.trustEmail === true };
+    });
+  }
+  const allowed = env.ALLOWED_EMAILS?.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+  return {
+    defaultWorkWeek: DEFAULT_WORK_WEEK,
+    publicUrl: publicUrl.replace(/\/$/, ""),
+    providers,
+    ...(allowed && allowed.length ? { allowedEmails: allowed } : {}),
+    secureCookies: env.SECURE_COOKIES !== "0",
+  };
+}
