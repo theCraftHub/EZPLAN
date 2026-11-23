@@ -80,6 +80,11 @@ export const MIGRATIONS: Migration[] = [
       `ALTER TABLE members ADD COLUMN department TEXT`,
     ],
   },
+  {
+    id: 6,
+    name: "account suspension (safety review)",
+    statements: [`ALTER TABLE users ADD COLUMN suspended_at INTEGER`],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

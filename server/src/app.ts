@@ -30,8 +30,11 @@ import { EMAIL_RE, INVITE_DAYS, inviteProblem, maskEmail, PLAN_ROLES, strongest,
 import { createSession, endAllSessions, endSession, randomToken, sha256, SESSION_COOKIE, SESSION_DAYS, userForSession } from "./sessions";
 import type { Ports, User } from "./ports";
 import { aiService, registerAiRoutes } from "./ai/routes";
+import { registerAiAdminRoutes } from "./ai/admin";
+import { isPlatformAdmin, registerSafetyRoutes } from "./safety";
 
 type Role = "manager" | "editor" | "viewer";
+const suspendedMessage = "This account is suspended after a safety review. Contact support if you think this is a mistake.";
 type Vars = { Variables: { user: User } };
 
 const MAX_BODY_CHARS = 1_000_000;
@@ -85,6 +88,7 @@ export function createApp(ports: Ports) {
     try {
       const signedIn = await finishLogin(db, ports.http, clock, config, new URL(c.req.url).searchParams);
       const user = await userForSignIn(db, clock, signedIn);
+      if (await db.first(`SELECT 1 AS x FROM users WHERE id = ? AND suspended_at IS NOT NULL`, [user.id])) return c.json({ error: suspendedMessage }, 403);
       await ensureWorkspace(user);
       setSessionCookie(c, await createSession(db, clock, user.id, c.req.header("user-agent") ?? null));
       return c.redirect(signedIn.returnTo, 302);
@@ -110,6 +114,7 @@ export function createApp(ports: Ports) {
     if (!user && ports.testAuth) {
       user = userFromTestHeader(c.req.raw);
       if (user) await ensureTestUser(user);
+      if (user && (await db.first(`SELECT 1 AS x FROM users WHERE id = ? AND suspended_at IS NOT NULL`, [user.id]))) return c.json({ error: suspendedMessage }, 403);
     }
     if (!user) return c.json({ error: "Sign in to continue." }, 401);
     c.set("user", user);
@@ -176,11 +181,15 @@ export function createApp(ports: Ports) {
   };
   const ai = aiService(aiDeps);
   registerAiRoutes(app, aiDeps, ai);
+  registerAiAdminRoutes(app, { db, clock, config }, ai);
+  registerSafetyRoutes(app, { db, clock, config });
 
   app.get("/api/me", async (c) => {
     const user = c.get("user");
     const workspaces = await db.all(`SELECT w.id, w.name, m.role, w.work_week FROM workspaces w JOIN members m ON m.workspace_id = w.id WHERE m.user_id = ? ORDER BY w.created_at`, [user.id]);
-    return c.json({ user, workspaces: workspaces.map((w) => ({ ...w, work_week: JSON.parse(String(w.work_week)) })) });
+    const platformAdmin = isPlatformAdmin(config, user);
+    const safetyOpen = platformAdmin ? Number((await db.first<{ n: number }>(`SELECT COUNT(*) AS n FROM safety_holds WHERE status = 'held'`))?.n ?? 0) : 0;
+    return c.json({ user, platformAdmin, safetyOpen, workspaces: workspaces.map((w) => ({ ...w, work_week: JSON.parse(String(w.work_week)) })) });
   });
 
   /** Availability saved for a plan, by name (what the scheduler and Plan Check use). */

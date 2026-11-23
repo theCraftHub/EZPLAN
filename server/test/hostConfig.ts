@@ -6,7 +6,7 @@ import { ALLOWED, PUBLIC_URL } from "./signin.contract";
 
 /** The owner's team in tests, and small AI limits so running out is easy to test. */
 export const PLATFORM_ADMIN = "owner@example.com";
-export const TEST_AI_LIMITS = { checksPerPerson: 4, reportsPerPerson: 3, poolChecks: 6, poolReports: 50, poolMax: 20 };
+export const TEST_AI_LIMITS = { checksPerPerson: 4, reportsPerPerson: 3, poolChecks: 6, poolReports: 50, poolMax: 60 };
 
 export function testConfig(fake?: FakeOidc): ServerConfig {
   return { defaultWorkWeek: DEFAULT_WORK_WEEK, publicUrl: PUBLIC_URL, providers: fake ? [fake.provider()] : [], allowedEmails: ALLOWED, secureCookies: true, platformAdmins: [PLATFORM_ADMIN], aiLimits: TEST_AI_LIMITS };

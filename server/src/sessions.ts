@@ -47,7 +47,7 @@ export async function userForSession(db: Db, clock: Clock, token: string | undef
   if (!token || token.length > 100) return null;
   const hash = await sha256(token);
   const row = await db.first<{ id: string; name: string; email: string; expires_at: number; last_seen_at: number }>(
-    `SELECT u.id, u.name, u.email, s.expires_at, s.last_seen_at FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ?`,
+    `SELECT u.id, u.name, u.email, s.expires_at, s.last_seen_at FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND u.suspended_at IS NULL`,
     [hash],
   );
   if (!row) return null;
