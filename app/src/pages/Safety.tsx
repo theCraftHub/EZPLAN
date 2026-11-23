@@ -5,7 +5,7 @@ import { api, ApiError, type SafetyItem } from "../lib/api";
 import { Link } from "../lib/router";
 import { Button, Card, Notice, PageTitle, Spinner } from "../ui/kit";
 
-const FEATURE: Record<string, string> = { check: "AI Plan Check", report: "Status report", moderation: "Screening a new plan" };
+const FEATURE: Record<string, string> = { check: "AI Plan Check", report: "Status report", abuse: "Report from a person", moderation: "Screening a new plan" };
 const OUTCOME: Record<string, string> = { released: "Released", kept: "Kept held", suspended: "Account suspended" };
 const when = (ms: number) => new Date(ms).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
@@ -79,7 +79,7 @@ function Held({ item, onDone }: { item: SafetyItem; onDone: () => void }) {
 }
 
 /** Links to admin pages, for Settings (phones have no side panel). */
-export function AdminLinks({ manages, platformAdmin, safetyOpen }: { manages: { id: string; name: string }[]; platformAdmin: boolean; safetyOpen: number }) {
+export function AdminLinks({ manages, platformAdmin, safetyOpen, supportOpen }: { manages: { id: string; name: string }[]; platformAdmin: boolean; safetyOpen: number; supportOpen: number }) {
   if (!manages.length && !platformAdmin) return null;
   return (
     <Card aria-label="Admin" className="flex flex-col gap-2">
@@ -90,6 +90,7 @@ export function AdminLinks({ manages, platformAdmin, safetyOpen }: { manages: { 
           <Link to={`/admin/ai/${w.id}/spending`} className="flex min-h-11 items-center font-semibold text-primary underline">AI spending{manages.length > 1 ? ` (${w.name})` : ""}</Link>
         </div>
       ))}
+      {platformAdmin && <Link to="/admin/support" className="flex min-h-11 items-center font-semibold text-primary underline">Support inbox{supportOpen ? ` (${supportOpen} open)` : ""}</Link>}
       {platformAdmin && <Link to="/admin/safety" className="flex min-h-11 items-center font-semibold text-primary underline">Safety review{safetyOpen ? ` (${safetyOpen} waiting)` : ""}</Link>}
     </Card>
   );

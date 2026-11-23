@@ -114,6 +114,20 @@ export const MIGRATIONS: Migration[] = [
       `CREATE INDEX notifications_user ON notifications(user_id, read_at, created_at)`,
     ],
   },
+  {
+    id: 9,
+    name: "help: company support contacts, support requests, time-limited plan access",
+    statements: [
+      `CREATE TABLE support_contacts (workspace_id TEXT PRIMARY KEY REFERENCES workspaces(id), team TEXT NOT NULL, email TEXT, phone TEXT, url TEXT, hours TEXT, note TEXT, route TEXT NOT NULL, updated_by TEXT NOT NULL, updated_at INTEGER NOT NULL)`,
+      `CREATE TABLE support_tickets (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), workspace_id TEXT, topic TEXT NOT NULL, subject TEXT NOT NULL, status TEXT NOT NULL, via TEXT NOT NULL, context TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
+      `CREATE INDEX support_tickets_user ON support_tickets(user_id, updated_at)`,
+      `CREATE INDEX support_tickets_via ON support_tickets(via, status, updated_at)`,
+      `CREATE TABLE support_messages (id TEXT PRIMARY KEY, ticket_id TEXT NOT NULL REFERENCES support_tickets(id), author_id TEXT NOT NULL, from_staff INTEGER NOT NULL, body TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+      `CREATE INDEX support_messages_ticket ON support_messages(ticket_id, created_at)`,
+      `CREATE TABLE support_access_grants (id TEXT PRIMARY KEY, ticket_id TEXT NOT NULL REFERENCES support_tickets(id), plan_id TEXT NOT NULL, granted_by TEXT NOT NULL, expires_at INTEGER NOT NULL, revoked_at INTEGER)`,
+      `CREATE TABLE support_access_log (id TEXT PRIMARY KEY, grant_id TEXT NOT NULL REFERENCES support_access_grants(id), staff_id TEXT NOT NULL, viewed_at INTEGER NOT NULL)`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

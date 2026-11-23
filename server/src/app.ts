@@ -37,6 +37,7 @@ import { canEdit, type Role } from "./roles";
 import { recordActivity } from "./activity";
 import { registerCollabRoutes } from "./comments";
 import { notify, registerNotificationRoutes, unreadCount, userForName } from "./notify";
+import { registerSupportRoutes, supportOpen } from "./support";
 
 const ROLE_WORD: Record<string, string> = { editor: "an Editor", commenter: "a Commenter", viewer: "a Viewer" };
 const suspendedMessage = "This account is suspended after a safety review. Contact support if you think this is a mistake.";
@@ -189,6 +190,7 @@ export function createApp(ports: Ports) {
   registerAiAdminRoutes(app, { db, clock, config }, ai);
   registerSafetyRoutes(app, { db, clock, config });
   registerNotificationRoutes(app, { db, clock });
+  registerSupportRoutes(app, { db, clock, config, access });
   registerCollabRoutes(app, {
     db, clock, rooms, access, notFound,
     // Mentions first; then the task's owner (when their name is linked to an account) hears about it once.
@@ -206,7 +208,7 @@ export function createApp(ports: Ports) {
     const workspaces = await db.all(`SELECT w.id, w.name, m.role, w.work_week FROM workspaces w JOIN members m ON m.workspace_id = w.id WHERE m.user_id = ? ORDER BY w.created_at`, [user.id]);
     const platformAdmin = isPlatformAdmin(config, user);
     const safetyOpen = platformAdmin ? Number((await db.first<{ n: number }>(`SELECT COUNT(*) AS n FROM safety_holds WHERE status = 'held'`))?.n ?? 0) : 0;
-    return c.json({ user, platformAdmin, safetyOpen, unread: await unreadCount(db, user.id), workspaces: workspaces.map((w) => ({ ...w, work_week: JSON.parse(String(w.work_week)) })) });
+    return c.json({ user, platformAdmin, safetyOpen, supportOpen: platformAdmin ? await supportOpen(db) : 0, unread: await unreadCount(db, user.id), workspaces: workspaces.map((w) => ({ ...w, work_week: JSON.parse(String(w.work_week)) })) });
   });
 
   /** Availability saved for a plan, by name (what the scheduler and Plan Check use). */

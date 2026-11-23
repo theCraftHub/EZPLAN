@@ -21,6 +21,19 @@ export interface Me {
   platformAdmin?: boolean;
   safetyOpen?: number;
   unread?: number;
+  supportOpen?: number;
+}
+
+export interface SupportContact { team: string; email: string | null; phone: string | null; url: string | null; hours: string | null; note: string | null; route: "direct" | "it_only" }
+export interface HelpInfo { staff: boolean; workspaces: { workspaceId: string; name: string; canManage: boolean; contact: SupportContact | null }[] }
+export type TicketTopic = "problem" | "question" | "billing" | "account" | "safety";
+export interface TicketRow { id: string; topic: TicketTopic; subject: string; status: "open" | "waiting" | "solved"; via: "direct" | "it"; from: string | null; updatedAt: number }
+export interface TicketThread {
+  as: "author" | "staff" | "it";
+  ticket: { id: string; topic: TicketTopic; subject: string; status: "open" | "waiting" | "solved"; via: "direct" | "it"; from: string; createdAt: number; context: { page: string; browser: string; version: string; errors: string[] } | null };
+  messages: { id: string; author: string; fromStaff: boolean; body: string; createdAt: number }[];
+  grants: { id: string; planId: string; planTitle: string | null; expiresAt: number; active: boolean }[];
+  views: { by: string; at: number }[];
 }
 
 export interface Notifications {
@@ -182,5 +195,16 @@ export const api = {
   deleteComment: (planId: string, taskId: string, id: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/tasks/${encodeURIComponent(taskId)}/comments/${encodeURIComponent(id)}`, { method: "DELETE" }),
   commentCounts: (planId: string) => call<{ counts: Record<string, number> }>(`/api/plans/${encodeURIComponent(planId)}/comment-counts`),
   activity: (planId: string, before?: number) => call<{ items: ActivityItem[] }>(`/api/plans/${encodeURIComponent(planId)}/activity${before ? `?before=${before}` : ""}`),
+  help: () => call<HelpInfo>("/api/help"),
+  setSupportContact: (ws: string, c: Omit<SupportContact, "route"> & { route: SupportContact["route"] } | { clear: true }) => call<{ ok: true }>(`/api/workspaces/${encodeURIComponent(ws)}/support-contact`, { method: "PUT", body: JSON.stringify(c) }),
+  newTicket: (t: { topic: TicketTopic; subject: string; body: string; planId?: string; sharePlan?: boolean; context: { page: string; browser: string; version: string; errors: string[] } }) => call<{ id: string; via: "direct" | "it" }>("/api/support/tickets", { method: "POST", body: JSON.stringify(t) }),
+  tickets: () => call<{ mine: TicketRow[]; company: TicketRow[] }>("/api/support/tickets"),
+  ticket: (id: string) => call<TicketThread>(`/api/support/tickets/${encodeURIComponent(id)}`),
+  replyTicket: (id: string, body: string) => call<{ ok: true }>(`/api/support/tickets/${encodeURIComponent(id)}/messages`, { method: "POST", body: JSON.stringify({ body }) }),
+  ticketStatus: (id: string, status: "open" | "waiting" | "solved") => call<{ ok: true }>(`/api/support/tickets/${encodeURIComponent(id)}/status`, { method: "POST", body: JSON.stringify({ status }) }),
+  forwardTicket: (id: string) => call<{ ok: true }>(`/api/support/tickets/${encodeURIComponent(id)}/forward`, { method: "POST", body: "{}" }),
+  revokeGrant: (id: string) => call<{ ok: true }>(`/api/support/grants/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  supportInbox: () => call<{ open: number; items: (TicketRow & { email: string })[] }>("/api/admin/support"),
+  supportPlan: (ticketId: string) => call<{ planId: string; title: string; until: number; text: string }>(`/api/admin/support/tickets/${encodeURIComponent(ticketId)}/plan`),
   logout: () => call<{ ok: true }>("/auth/logout", { method: "POST", body: "{}" }),
 };

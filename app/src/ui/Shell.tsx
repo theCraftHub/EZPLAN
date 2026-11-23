@@ -1,7 +1,7 @@
 /** Page frame: a side panel on desktop, a top bar and bottom tabs on phones. Same destinations on both. */
 import type { ReactNode } from "react";
 import { useEffect } from "react";
-import { Bell, FolderKanban, Home, LogOut, Plus, Settings, ShieldAlert, Sparkles, ChartLine } from "lucide-react";
+import { Bell, CircleHelp, Inbox, FolderKanban, Home, LogOut, Plus, Settings, ShieldAlert, Sparkles, ChartLine } from "lucide-react";
 import { api } from "../lib/api";
 import { BRAND } from "@ezplan/shared";
 import { Link, useRouter } from "../lib/router";
@@ -62,6 +62,12 @@ export function Shell({ me, onSignOut, onUnread, children }: { me: Me; onSignOut
               ));
             })}
             {me.platformAdmin && (
+              <Link to="/admin/support" aria-current={path.startsWith("/admin/support") ? "page" : undefined} className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium ${path.startsWith("/admin/support") ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5"}`}>
+                <Inbox aria-hidden size={18} /> Support inbox
+                {(me.supportOpen ?? 0) > 0 && <span className="ml-auto rounded-full bg-amber-300 px-2 text-xs font-bold text-slate-900" aria-label={`${me.supportOpen} open`}>{me.supportOpen}</span>}
+              </Link>
+            )}
+            {me.platformAdmin && (
               <Link to="/admin/safety" aria-current={path.startsWith("/admin/safety") ? "page" : undefined} className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium ${path.startsWith("/admin/safety") ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5"}`}>
                 <ShieldAlert aria-hidden size={18} /> Safety review
                 {(me.safetyOpen ?? 0) > 0 && <span className="ml-auto rounded-full bg-amber-300 px-2 text-xs font-bold text-slate-900" aria-label={`${me.safetyOpen} waiting`}>{me.safetyOpen}</span>}
@@ -70,6 +76,7 @@ export function Shell({ me, onSignOut, onUnread, children }: { me: Me; onSignOut
           </nav>
         )}
         <div className="mt-auto flex flex-col gap-2 border-t border-white/10 px-3 pt-4">
+          <Link to="/help" aria-current={path.startsWith("/help") ? "page" : undefined} className="flex min-h-11 items-center gap-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white"><CircleHelp aria-hidden size={16} /> Help</Link>
           <span className="truncate text-sm text-slate-300">{me.user.name}</span>
           <button onClick={onSignOut} className="flex min-h-11 items-center gap-2 rounded-lg text-left text-sm font-medium text-slate-300 hover:text-white">
             <LogOut aria-hidden size={16} /> Sign out
@@ -81,7 +88,8 @@ export function Shell({ me, onSignOut, onUnread, children }: { me: Me; onSignOut
         <header className="sticky top-0 z-10 flex items-center gap-2 bg-nav px-4 py-3 text-white lg:hidden print:hidden">
           <FolderKanban aria-hidden size={20} className="text-indigo-300" />
           <span className="font-bold">{BRAND.name}</span>
-          <Link to="/notifications" aria-label={bellLabel} className="relative ml-auto flex h-11 w-11 items-center justify-center rounded-xl">
+          <Link to="/help" aria-label="Help" className="ml-auto flex h-11 w-11 items-center justify-center rounded-xl"><CircleHelp aria-hidden size={22} /></Link>
+          <Link to="/notifications" aria-label={bellLabel} className="relative flex h-11 w-11 items-center justify-center rounded-xl">
             <Bell aria-hidden size={22} />
             {unread > 0 && <span aria-hidden className="absolute top-1 right-0.5 min-w-5 rounded-full bg-amber-300 px-1 text-center text-[11px] font-bold text-slate-900">{unread > 99 ? "99+" : unread}</span>}
           </Link>

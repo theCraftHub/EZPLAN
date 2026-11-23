@@ -5,6 +5,7 @@ import { Button, Card, Notice, PageTitle } from "../ui/kit";
 import { WorkWeekCard } from "./WorkWeek";
 import { AiUsageCard } from "./AiUsage";
 import { AdminLinks } from "./Safety";
+import { CompanySupportCard } from "./Help";
 
 /** Settings: the workspace's standard week, your account and sign-out. */
 export function Settings({ me, onSignOut, onMe }: { me: Me; onSignOut: () => void; onMe: (m: Me) => void }) {
@@ -19,7 +20,8 @@ export function Settings({ me, onSignOut, onMe }: { me: Me; onSignOut: () => voi
       <PageTitle title="Settings" />
       {msg && <Notice tone={msg.tone}>{msg.text}</Notice>}
       <AiUsageCard me={me} />
-      <AdminLinks manages={me.workspaces.filter((w) => w.role === "manager")} platformAdmin={!!me.platformAdmin} safetyOpen={me.safetyOpen ?? 0} />
+      <AdminLinks manages={me.workspaces.filter((w) => w.role === "manager")} platformAdmin={!!me.platformAdmin} safetyOpen={me.safetyOpen ?? 0} supportOpen={me.supportOpen ?? 0} />
+      <CompanySupportCard me={me} />
       <WorkWeekCard me={me} onSaved={(w) => onMe({ ...me, workspaces: me.workspaces.map((x, i) => (i === 0 ? { ...x, work_week: w } : x)) })} />
       <Card aria-label="Your account" className="flex flex-col gap-4">
         <h2 className="m-0 text-lg font-bold">Your account</h2>
