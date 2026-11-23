@@ -1,5 +1,5 @@
 /** Calls to our own server. Every change is JSON, which the server requires (blocks cross-site forms). */
-import type { Plan, PlanCheckResult, WorkWeek } from "@ezplan/shared";
+import type { PersonAvailability, Plan, PlanCheckResult, WorkWeek } from "@ezplan/shared";
 
 export class ApiError extends Error {
   constructor(readonly status: number, message: string, readonly body: unknown) {
@@ -33,14 +33,31 @@ export interface PlanDetail {
   version: number;
   role: "manager" | "editor" | "viewer";
   plan: Plan;
+  people: People;
+  workWeek: WorkWeek;
   check: PlanCheckResult;
 }
+
+export interface ImportPreview {
+  plan: Plan;
+  people: string[];
+  workWeek: WorkWeek;
+  finish: string;
+  check: PlanCheckResult;
+  notices: string[];
+  moderation: "allow" | "review" | "block";
+  suggestedPeople: string[];
+}
+
+export type People = Record<string, PersonAvailability>;
 
 export const api = {
   me: () => call<Me>("/api/me"),
   providers: () => call<{ providers: { id: string; label: string }[] }>("/auth/providers"),
   plans: () => call<{ plans: PlanSummary[] }>("/api/plans"),
   plan: (id: string) => call<PlanDetail>(`/api/plans/${encodeURIComponent(id)}`),
-  createPlan: (text: string, fileName?: string) => call<{ id: string; notices: string[] }>("/api/plans", { method: "POST", body: JSON.stringify({ text, ...(fileName ? { fileName } : {}) }) }),
+  preview: (text: string, people: People = {}, fileName?: string) => call<ImportPreview>("/api/plans/preview", { method: "POST", body: JSON.stringify({ text, people, ...(fileName ? { fileName } : {}) }) }),
+  createPlan: (text: string, people: People = {}, fileName?: string) => call<{ id: string; notices: string[] }>("/api/plans", { method: "POST", body: JSON.stringify({ text, people, ...(fileName ? { fileName } : {}) }) }),
+  setPerson: (planId: string, name: string, a: PersonAvailability) => call<{ name: string }>(`/api/plans/${encodeURIComponent(planId)}/people/${encodeURIComponent(name)}`, { method: "PUT", body: JSON.stringify(a) }),
   logout: () => call<{ ok: true }>("/auth/logout", { method: "POST", body: "{}" }),
 };

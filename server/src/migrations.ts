@@ -39,6 +39,14 @@ export const MIGRATIONS: Migration[] = [
       `CREATE INDEX sessions_user ON sessions(user_id)`,
     ],
   },
+  {
+    id: 3,
+    name: "availability people give each plan",
+    statements: [
+      // name_key is the lowercased name, so "Priya" and "priya" are one person on a plan.
+      `CREATE TABLE plan_people (plan_id TEXT NOT NULL REFERENCES plans(id), name_key TEXT NOT NULL, name TEXT NOT NULL, availability TEXT NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY (plan_id, name_key))`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

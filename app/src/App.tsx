@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, type Me } from "./lib/api";
 import { match, RouterProvider, useRouter } from "./lib/router";
 import { Home } from "./pages/Home";
+import { NewPlan } from "./pages/NewPlan";
 import { NotFound, Placeholder } from "./pages/Placeholder";
 import { SignIn } from "./pages/SignIn";
 import { Settings } from "./pages/Settings";
@@ -11,7 +12,7 @@ import { Notice, Spinner } from "./ui/kit";
 function Routes({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
   const { path } = useRouter();
   if (match("/", path)) return <Home me={me} />;
-  if (match("/new", path)) return <Placeholder title="New plan" />;
+  if (match("/new", path)) return <NewPlan me={me} />;
   if (match("/settings", path)) return <Settings me={me} onSignOut={onSignOut} />;
   const p = match("/p/:id", path) ?? match("/p/:id/:view", path);
   if (p) return <Placeholder title="Plan" />;

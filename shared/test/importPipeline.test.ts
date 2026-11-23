@@ -92,3 +92,13 @@ describe("injection, sensitive data and moderation", () => {
     expect(called).toBe(false); // free block short-circuits; nothing is sent to an AI
   });
 });
+
+describe("text without a plan", () => {
+  it("is refused with a plain explanation, whatever the assistant said instead", async () => {
+    for (const text of ["Sorry, I can't help with that.", "Before I make the plan, what's your budget?", "---\nezplan: 1\ntitle: Only a header\n---"]) {
+      const r = await importPlan({ source: "paste", text }, { importerName: "Alex", editablePlanIds: new Set(), memberNames: [], today: "2027-01-04" });
+      expect(r.ok).toBe(false);
+      expect(r.notices[0]).toMatch(/couldn't find a plan/);
+    }
+  });
+});

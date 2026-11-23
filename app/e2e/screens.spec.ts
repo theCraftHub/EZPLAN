@@ -19,4 +19,18 @@ test("screens", async ({ page }, info) => {
   await page.emulateMedia({ colorScheme: "light" });
   await page.goto("/settings");
   await page.screenshot({ path: out("settings", info.project.name), fullPage: true });
+
+  await page.goto("/new");
+  await page.screenshot({ path: out("new-start", info.project.name), fullPage: true });
+  await page.getByRole("button", { name: /I've been talking it through/ }).click();
+  await page.screenshot({ path: out("new-prompt", info.project.name), fullPage: true });
+  await page.getByRole("button", { name: "I have the reply" }).click();
+  await page.getByLabel(/Paste your assistant's whole reply/).fill(KITCHEN);
+  await page.getByRole("button", { name: "Check my plan" }).click();
+  await page.getByRole("radiogroup", { name: "Hours a week for Priya" }).getByRole("radio", { name: "Custom" }).click();
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: out("new-preview", info.project.name), fullPage: true });
+  await page.goto("/new");
+  await page.getByRole("button", { name: /I'm starting fresh/ }).click();
+  await page.screenshot({ path: out("new-wizard", info.project.name), fullPage: true });
 });

@@ -135,6 +135,40 @@ export function apiContract(hostName: string, factory: HostFactory) {
       expect(parsePlan(text).plan).toEqual(live.plan);
     });
 
+    it("previews a plan with typed availability without saving it, then saves the availability with the plan", async () => {
+      const before = ((await (await host.fetch("/api/plans", {}, ALEX)).json()) as { plans: unknown[] }).plans.length;
+      const plain = (await (await host.fetch("/api/plans/preview", json({ text: kitchenText }), ALEX)).json()) as { finish: string; people: string[]; check: { findings: { code: string }[] } };
+      const people = { Priya: { hoursPerWeek: 10 }, Jordan: { hoursPerWeek: 40, timeOff: [{ start: "2027-01-11", end: "2027-01-15", label: "Vacation" }] } };
+      const slower = (await (await host.fetch("/api/plans/preview", json({ text: kitchenText, people }), ALEX)).json()) as { finish: string };
+      const parsed = parsePlan(kitchenText).plan;
+      const week = { hoursPerWeek: 40, workdays: [1, 2, 3, 4, 5] };
+      expect(plain.people.length).toBeGreaterThan(0);
+      expect(plain.finish).toBe(levelPlan(parsed, { today: TODAY, workWeek: week }).finish);
+      expect(slower.finish).toBe(levelPlan(parsed, { today: TODAY, workWeek: week, people }).finish);
+      expect(slower.finish > plain.finish).toBe(true);
+      expect(((await (await host.fetch("/api/plans", {}, ALEX)).json()) as { plans: unknown[] }).plans.length).toBe(before);
+
+      const saved = (await (await host.fetch("/api/plans", json({ text: kitchenText, people }), ALEX)).json()) as { id: string };
+      const got = (await (await host.fetch(`/api/plans/${saved.id}`, {}, ALEX)).json()) as { people: Record<string, unknown>; schedule: { finish: string } };
+      expect(got.people).toEqual(people);
+      expect(got.schedule.finish).toBe(slower.finish);
+    });
+
+    it("updates one person's availability, and refuses bad values, viewers' changes and other workspaces", async () => {
+      const put = (name: string, body: unknown, user = ALEX) => host.fetch(`/api/plans/${planId}/people/${encodeURIComponent(name)}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }, user);
+      const ok = await put("Priya", { hoursPerWeek: 20.5, workdays: [1, 2, 3] });
+      expect(ok.status).toBe(200);
+      expect(((await (await host.fetch(`/api/plans/${planId}`, {}, ALEX)).json()) as { people: Record<string, unknown> }).people).toEqual({ Priya: { hoursPerWeek: 20.5, workdays: [1, 2, 3] } });
+      await put("priya", { hoursPerWeek: 30 }); // same person, any capitalization
+      expect(((await (await host.fetch(`/api/plans/${planId}`, {}, ALEX)).json()) as { people: Record<string, unknown> }).people).toEqual({ priya: { hoursPerWeek: 30 } });
+      expect((await put("Priya", { hoursPerWeek: 0 })).status).toBe(400);
+      expect((await put("Priya", { hoursPerWeek: 61 })).status).toBe(400);
+      expect((await put("Priya", { timeOff: [{ start: "2027-02-10", end: "2027-02-01" }] })).status).toBe(400);
+      expect((await put("Priya", { hoursPerWeek: 10, password: "x" })).status).toBe(400);
+      expect((await put("Priya", { hoursPerWeek: 10 }, SAM)).status).toBe(404);
+      expect((await host.fetch("/api/plans", json({ text: kitchenText, people: { Priya: { hoursPerWeek: 99 } } }), ALEX)).status).toBe(400);
+    });
+
     it("keeps everything across a restart, and migrations run once", async () => {
       await host.restart();
       expect((await host.fetch("/api/health")).status).toBe(200);

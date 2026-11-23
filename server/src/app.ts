@@ -11,7 +11,11 @@ import {
   hoursPerDay,
   importPlan,
   levelPlan,
+  MAX_PLAN_PEOPLE,
+  parseAvailability,
+  planPeople,
   progressOf,
+  type PersonAvailability,
   parseOp,
   type Actor,
   type OpEnvelope,
@@ -153,34 +157,101 @@ export function createApp(ports: Ports) {
     return c.json({ user, workspaces: workspaces.map((w) => ({ ...w, work_week: JSON.parse(String(w.work_week)) })) });
   });
 
-  app.post("/api/plans", async (c) => {
-    const user = c.get("user");
-    const body = await c.req.json<{ text?: unknown; fileName?: unknown; workspaceId?: unknown }>().catch(() => null);
-    if (!body || typeof body.text !== "string") return c.json({ error: "Send the plan as text." }, 400);
-    if (body.text.length > MAX_BODY_CHARS) return c.json({ error: "This text is too long (over 1,000,000 characters)." }, 413);
-    const workspace = await db.first<{ workspace_id: string; role: Role }>(
+  /** Availability saved for a plan, by name (what the scheduler and Plan Check use). */
+  async function loadPeople(planId: string): Promise<Record<string, PersonAvailability>> {
+    const rows = await db.all<{ name: string; availability: string }>(`SELECT name, availability FROM plan_people WHERE plan_id = ?`, [planId]);
+    return Object.fromEntries(rows.map((r) => [r.name, JSON.parse(r.availability) as PersonAvailability]));
+  }
+
+  /** Reads and checks a pasted or uploaded plan (shared by preview and save). Nothing is stored. */
+  async function readImport(c: Context, user: User) {
+    const body = await c.req.json<{ text?: unknown; fileName?: unknown; workspaceId?: unknown; people?: unknown }>().catch(() => null);
+    if (!body || typeof body.text !== "string") return { error: c.json({ error: "Send the plan as text." }, 400) };
+    if (body.text.length > MAX_BODY_CHARS) return { error: c.json({ error: "This text is too long (over 1,000,000 characters)." }, 413) };
+    const workspace = await db.first<{ workspace_id: string; role: Role; work_week: string }>(
       typeof body.workspaceId === "string"
-        ? `SELECT workspace_id, role FROM members WHERE user_id = ? AND workspace_id = ?`
-        : `SELECT m.workspace_id, m.role FROM members m JOIN workspaces w ON w.id = m.workspace_id WHERE m.user_id = ? ORDER BY w.created_at LIMIT 1`,
+        ? `SELECT m.workspace_id, m.role, w.work_week FROM members m JOIN workspaces w ON w.id = m.workspace_id WHERE m.user_id = ? AND m.workspace_id = ?`
+        : `SELECT m.workspace_id, m.role, w.work_week FROM members m JOIN workspaces w ON w.id = m.workspace_id WHERE m.user_id = ? ORDER BY w.created_at LIMIT 1`,
       typeof body.workspaceId === "string" ? [user.id, body.workspaceId] : [user.id],
     );
-    if (!workspace) return c.json({ error: "That workspace doesn't exist or you aren't in it." }, 404);
-    if (workspace.role === "viewer") return c.json({ error: "Viewers can't add plans to this workspace." }, 403);
+    if (!workspace) return { error: c.json({ error: "That workspace doesn't exist or you aren't in it." }, 404) };
+    if (workspace.role === "viewer") return { error: c.json({ error: "Viewers can't add plans to this workspace." }, 403) };
+    // Availability typed on the preview screen: names to { hours a week, working days, days off }.
+    let people: Record<string, PersonAvailability> = {};
+    if (body.people !== undefined) {
+      const entries = body.people && typeof body.people === "object" ? Object.entries(body.people as Record<string, unknown>) : null;
+      if (!entries || entries.length > MAX_PLAN_PEOPLE) return { error: c.json({ error: "The availability list isn't valid." }, 400) };
+      for (const [name, value] of entries) {
+        const a = parseAvailability(value);
+        if (!a || !name.trim() || name.length > 80) return { error: c.json({ error: `The availability for "${name.slice(0, 80)}" isn't valid. Hours a week must be 1 to 60.` }, 400) };
+        people[name.trim()] = a;
+      }
+    }
     const members = await db.all<{ name: string }>(`SELECT u.name FROM members m JOIN users u ON u.id = m.user_id WHERE m.workspace_id = ?`, [workspace.workspace_id]);
     const preview = await importPlan(
       { source: typeof body.fileName === "string" ? "upload" : "paste", text: body.text, ...(typeof body.fileName === "string" ? { fileName: body.fileName } : {}) },
       { importerName: user.name, editablePlanIds: new Set(), memberNames: members.map((m) => m.name), today: clock.today() },
     );
-    if (!preview.ok || !preview.plan) return c.json({ error: preview.notices[0] ?? "This plan couldn't be read.", notices: preview.notices, moderation: preview.moderation }, 422);
+    if (!preview.ok || !preview.plan) return { error: c.json({ error: preview.notices[0] ?? "This plan couldn't be read.", notices: preview.notices, parseIssues: preview.parseIssues, moderation: preview.moderation }, 422) };
+    const workWeek = parseWorkWeek(workspace.work_week);
+    return { workspace, preview, plan: preview.plan, people, workWeek };
+  }
+
+  // The preview screen: the plan as it would be saved, its Plan Check and finish date with the
+  // availability typed so far. Nothing is stored.
+  app.post("/api/plans/preview", async (c) => {
+    const r = await readImport(c, c.get("user"));
+    if ("error" in r) return r.error;
+    const today = clock.today();
+    const schedule = levelPlan(r.plan, { workWeek: r.workWeek, today, people: r.people });
+    return c.json({
+      plan: r.plan,
+      people: planPeople(r.plan),
+      workWeek: r.workWeek,
+      finish: schedule.finish,
+      check: checkPlan(r.plan, { schedule, workWeek: r.workWeek, today, people: r.people, level: true }),
+      notices: r.preview.notices,
+      parseIssues: r.preview.parseIssues,
+      moderation: r.preview.moderation.verdict,
+      suggestedPeople: r.preview.suggestedPeople,
+      sensitiveFlags: r.preview.sensitiveFlags,
+    });
+  });
+
+  app.post("/api/plans", async (c) => {
+    const user = c.get("user");
+    const r = await readImport(c, user);
+    if ("error" in r) return r.error;
     const id = crypto.randomUUID();
     const now = clock.now();
-    const plan = { ...preview.plan, id };
-    const state = preview.moderation.verdict === "review" ? "review" : "active";
+    const plan = { ...r.plan, id };
+    const state = r.preview.moderation.verdict === "review" ? "review" : "active";
     await db.batch([
-      { sql: `INSERT INTO plans (id, workspace_id, title, state, room, version, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)`, params: [id, workspace.workspace_id, plan.title, state, newRoomJson(plan), user.id, now, now] },
+      { sql: `INSERT INTO plans (id, workspace_id, title, state, room, version, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)`, params: [id, r.workspace.workspace_id, plan.title, state, newRoomJson(plan), user.id, now, now] },
       { sql: `INSERT INTO plan_versions (plan_id, version, reason, snapshot, created_by, created_at) VALUES (?, 0, 'import', ?, ?, ?)`, params: [id, JSON.stringify(plan), user.id, now] },
+      ...Object.entries(r.people).map(([name, a]) => ({ sql: `INSERT INTO plan_people (plan_id, name_key, name, availability, updated_at) VALUES (?, ?, ?, ?, ?)`, params: [id, name.toLowerCase(), name, JSON.stringify(a), now] })),
     ]);
-    return c.json({ id, state, notices: preview.notices, parseIssues: preview.parseIssues, check: preview.check }, 201);
+    return c.json({ id, state, notices: r.preview.notices, parseIssues: r.preview.parseIssues, check: r.preview.check }, 201);
+  });
+
+  // One person's availability on a plan (hours a week, working days, days off). Editors and managers.
+  app.put("/api/plans/:id/people/:name", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const name = decodeURIComponent(c.req.param("name")).trim();
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    if (a.role === "viewer") return c.json({ error: "Viewers can't change this plan." }, 403);
+    const availability = parseAvailability(await c.req.json().catch(() => null));
+    if (!availability || !name || name.length > 80) return c.json({ error: "This availability isn't valid. Hours a week must be 1 to 60." }, 400);
+    const count = await db.first<{ n: number }>(`SELECT COUNT(*) AS n FROM plan_people WHERE plan_id = ? AND name_key != ?`, [id, name.toLowerCase()]);
+    if (Number(count?.n ?? 0) >= MAX_PLAN_PEOPLE) return c.json({ error: `A plan can list up to ${MAX_PLAN_PEOPLE} people.` }, 400);
+    await db.run(
+      `INSERT INTO plan_people (plan_id, name_key, name, availability, updated_at) VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT (plan_id, name_key) DO UPDATE SET name = excluded.name, availability = excluded.availability, updated_at = excluded.updated_at`,
+      [id, name.toLowerCase(), name, JSON.stringify(availability), clock.now()],
+    );
+    return c.json({ name, availability });
   });
 
   app.get("/api/plans", async (c) => {
@@ -199,7 +270,7 @@ export function createApp(ports: Ports) {
         const room = await loadRoom(db, p.id);
         if (!room) return { ...p, summary: null };
         const workWeek = parseWorkWeek(work_week);
-        const schedule = levelPlan(room.plan, { workWeek, today });
+        const schedule = levelPlan(room.plan, { workWeek, today, people: await loadPeople(p.id) });
         const progress = progressOf(room.plan, schedule, { workWeek, today });
         const next = room.plan.phases
           .flatMap((ph) => ph.tasks)
@@ -225,13 +296,16 @@ export function createApp(ports: Ports) {
     if (!room) return c.json(notFound, 404);
     const workWeek = parseWorkWeek(a.work_week);
     const today = clock.today();
-    const schedule = levelPlan(room.plan, { workWeek, today });
-    const check = checkPlan(room.plan, { schedule, workWeek, today, level: true });
+    const people = await loadPeople(id);
+    const schedule = levelPlan(room.plan, { workWeek, today, people });
+    const check = checkPlan(room.plan, { schedule, workWeek, today, people, level: true });
     return c.json({
       id,
       version: room.seq,
       role: a.role,
       plan: room.plan,
+      people,
+      workWeek,
       restoredForReview: room.restoredForReview,
       schedule: {
         projectStart: schedule.projectStart,

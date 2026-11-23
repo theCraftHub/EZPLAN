@@ -101,6 +101,10 @@ export async function importPlan(input: ImportInput, ctx: ImportContext): Promis
 
   // ---- sanitize + parse (parse.ts strips HTML, unsafe links and hidden characters)
   const { plan, issues, mode } = parsePlan(text);
+  // Nothing that looks like a task: usually a refusal, a question back, or only part of the reply.
+  if (allTasks(plan).length === 0) {
+    return { ...fail("We couldn't find a plan in this text. Paste the assistant's whole reply, including the task lines that start with \"- [ ]\"."), parseIssues: issues, mode };
+  }
 
   // ---- free checks: injection and sensitive data
   const injectionFlags = detectInjection(text);
