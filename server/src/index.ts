@@ -11,3 +11,4 @@ export { createApp } from "./app";
 export * from "./ai/engine";
 export { AnthropicEngine } from "./ai/anthropic";
 export { FakeEngine } from "./ai/fake";
+export { MIGRATIONS, migrate } from "./migrations";

@@ -33,7 +33,11 @@ import { aiService, registerAiRoutes } from "./ai/routes";
 import { registerAiAdminRoutes } from "./ai/admin";
 import { isPlatformAdmin, registerSafetyRoutes } from "./safety";
 
-type Role = "manager" | "editor" | "viewer";
+import { canEdit, type Role } from "./roles";
+import { recordActivity } from "./activity";
+import { registerCollabRoutes } from "./comments";
+
+const ROLE_WORD: Record<string, string> = { editor: "an Editor", commenter: "a Commenter", viewer: "a Viewer" };
 const suspendedMessage = "This account is suspended after a safety review. Contact support if you think this is a mistake.";
 type Vars = { Variables: { user: User } };
 
@@ -183,6 +187,7 @@ export function createApp(ports: Ports) {
   registerAiRoutes(app, aiDeps, ai);
   registerAiAdminRoutes(app, { db, clock, config }, ai);
   registerSafetyRoutes(app, { db, clock, config });
+  registerCollabRoutes(app, { db, clock, rooms, access, notFound });
 
   app.get("/api/me", async (c) => {
     const user = c.get("user");
@@ -277,7 +282,7 @@ export function createApp(ports: Ports) {
     const name = decodeURIComponent(c.req.param("name")).trim();
     const a = await access(id, user.id);
     if (!a) return c.json(notFound, 404);
-    if (a.role === "viewer") return c.json({ error: "Viewers can't change this plan." }, 403);
+    if (!canEdit(a.role)) return c.json({ error: "You can view this plan but not change it." }, 403);
     const availability = parseAvailability(await c.req.json().catch(() => null));
     if (!availability || !name || name.length > 80) return c.json({ error: "This availability isn't valid. Hours a week must be 1 to 60." }, 400);
     const count = await db.first<{ n: number }>(`SELECT COUNT(*) AS n FROM plan_people WHERE plan_id = ? AND name_key != ?`, [id, name.toLowerCase()]);
@@ -397,7 +402,7 @@ export function createApp(ports: Ports) {
     const id = c.req.param("id");
     const a = await access(id, user.id);
     if (!a) return c.json(notFound, 404);
-    if (a.role === "viewer") return c.json({ error: "Viewers can't change this plan." }, 403);
+    if (!canEdit(a.role)) return c.json({ error: "You can view this plan but not change it." }, 403);
     const body = await c.req.json<{ opId?: unknown; clientId?: unknown; op?: unknown }>().catch(() => null);
     const op = body ? parseOp(body.op) : null;
     const idOk = (v: unknown): v is string => typeof v === "string" && v.length > 0 && v.length <= 64;
@@ -427,7 +432,7 @@ export function createApp(ports: Ports) {
     const id = c.req.param("id");
     const a = await access(id, user.id);
     if (!a) return c.json(notFound, 404);
-    if (a.role === "viewer") return c.json({ error: "Viewers can't change this plan." }, 403);
+    if (!canEdit(a.role)) return c.json({ error: "You can view this plan but not change it." }, 403);
     const body = await c.req.json<{ ops?: unknown }>().catch(() => null);
     const raw = Array.isArray(body?.ops) ? body!.ops : null;
     if (!raw || raw.length === 0 || raw.length > 1000) return c.json({ error: "Send the accepted changes as a list (1 to 1,000)." }, 400);
@@ -442,6 +447,7 @@ export function createApp(ports: Ports) {
       if (r.status === "missing") return c.json(notFound, 404);
       version = r.version;
     }
+    await recordActivity(db, id, user, { kind: "update", summary: `${user.name} applied ${ops.length === 1 ? "1 change" : `${ops.length} changes`} from an AI assistant` }, clock.now());
     return c.json({ version, applied: ops.length, savedVersion: saved });
   });
 
@@ -468,7 +474,7 @@ export function createApp(ports: Ports) {
     const id = c.req.param("id");
     const a = await access(id, user.id);
     if (!a) return c.json(notFound, 404);
-    if (a.role === "viewer") return c.json({ error: "Viewers can't change this plan." }, 403);
+    if (!canEdit(a.role)) return c.json({ error: "You can view this plan but not change it." }, 403);
     const v = Number(c.req.param("v"));
     const row = await db.first<{ snapshot: string }>(`SELECT snapshot FROM plan_versions WHERE plan_id = ? AND version = ?`, [id, Number.isInteger(v) ? v : -1]);
     if (!row) return c.json({ error: "That version doesn't exist." }, 404);
@@ -476,6 +482,7 @@ export function createApp(ports: Ports) {
     const plan = { ...(JSON.parse(row.snapshot) as Plan), id };
     const r = await rooms.apply(id, { opId: `restore-${crypto.randomUUID().slice(0, 8)}`, clientId: "restore", op: { kind: "replacePlan", plan } }, { userId: user.id, name: user.name });
     if (r.status === "missing") return c.json(notFound, 404);
+    await recordActivity(db, id, user, { kind: "replace", summary: `${user.name} restored version ${v} of the plan` }, clock.now());
     return c.json({ version: r.version, savedVersion: saved });
   });
 
@@ -507,7 +514,7 @@ export function createApp(ports: Ports) {
     const role = body?.role as PlanRole;
     const personName = typeof body?.personName === "string" && body.personName.trim() ? body.personName.trim().slice(0, 80) : null;
     if (!EMAIL_RE.test(email) || email.length > 254) return c.json({ error: "Enter a full email address, like name@example.com." }, 400);
-    if (!PLAN_ROLES.includes(role)) return c.json({ error: "Choose Editor or Viewer." }, 400);
+    if (!PLAN_ROLES.includes(role)) return c.json({ error: "Choose Editor, Commenter or Viewer." }, 400);
     const already = await db.first(
       `SELECT 1 AS x FROM users u WHERE lower(u.email) = ? AND (EXISTS (SELECT 1 FROM members m WHERE m.user_id = u.id AND m.workspace_id = ?) OR EXISTS (SELECT 1 FROM plan_members pm WHERE pm.user_id = u.id AND pm.plan_id = ?))`,
       [email, a.workspace_id, id],
@@ -538,10 +545,11 @@ export function createApp(ports: Ports) {
     if (!a) return c.json(notFound, 404);
     if (!a.canShare) return c.json({ error: "Only people in this plan's workspace can change roles." }, 403);
     const role = ((await c.req.json<{ role?: unknown }>().catch(() => null))?.role ?? "") as PlanRole;
-    if (!PLAN_ROLES.includes(role)) return c.json({ error: "Choose Editor or Viewer." }, 400);
+    if (!PLAN_ROLES.includes(role)) return c.json({ error: "Choose Editor, Commenter or Viewer." }, 400);
     const target = c.req.param("userId");
     const r = await db.run(`UPDATE plan_members SET role = ? WHERE plan_id = ? AND user_id = ?`, [role, id, target]);
     if (!r.changes) return c.json({ error: "Only people invited to this plan can be changed here." }, 404);
+    await recordActivity(db, id, user, { kind: "sharing", summary: `${user.name} made ${await nameOf(target)} ${ROLE_WORD[role]}` }, clock.now());
     await rooms.kick(id, target); // they reconnect with the new role
     return c.json({ ok: true });
   });
@@ -556,9 +564,12 @@ export function createApp(ports: Ports) {
     const r = await db.run(`DELETE FROM plan_members WHERE plan_id = ? AND user_id = ?`, [id, target]);
     if (!r.changes) return c.json({ error: "Only people invited to this plan can be removed here." }, 404);
     await db.run(`UPDATE plan_people SET user_id = NULL WHERE plan_id = ? AND user_id = ?`, [id, target]);
+    await recordActivity(db, id, user, { kind: "sharing", summary: `${user.name} removed ${await nameOf(target)} from the plan` }, clock.now());
     await rooms.kick(id, target); // open connections end at once
     return c.json({ ok: true });
   });
+
+  const nameOf = async (userId: string) => (await db.first<{ name: string }>(`SELECT name FROM users WHERE id = ?`, [userId]))?.name ?? "someone";
 
   /** An invite by its link secret (the signed-in person is checked against it). */
   async function inviteFor(token: string) {
@@ -591,6 +602,7 @@ export function createApp(ports: Ports) {
         // The name the inviter used on the plan (e.g. "Sam") now means this account.
         ...(inv.person_name ? [{ sql: `UPDATE plan_people SET user_id = ? WHERE plan_id = ? AND name_key = ?`, params: [user.id, inv.plan_id, inv.person_name.toLowerCase()] }] : []),
       ]);
+      await recordActivity(db, inv.plan_id, user, { kind: "sharing", summary: `${user.name} joined the plan as ${ROLE_WORD[inv.role]}` }, clock.now());
     }
     return c.json({ planId: inv.plan_id });
   });

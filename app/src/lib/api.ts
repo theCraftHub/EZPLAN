@@ -58,6 +58,19 @@ export interface SpendDetail {
 }
 export interface SafetyItem { id: string; planId: string | null; planTitle: string | null; feature: string; category: string | null; excerpt: string; status: "held" | "released" | "kept" | "suspended"; note: string | null; person: string; email: string; decidedBy: string | null; createdAt: number; decidedAt: number | null }
 
+export type PlanRole = "editor" | "commenter" | "viewer";
+export type Role = "manager" | PlanRole;
+export const canEditRole = (r: Role | undefined) => r === "editor" || r === "manager";
+export const canCommentRole = (r: Role | undefined) => r === "commenter" || canEditRole(r);
+export const ROLE_NAME: Record<Role, string> = { manager: "Owner", editor: "Editor", commenter: "Commenter", viewer: "Viewer" };
+
+export interface TaskComments {
+  canComment: boolean;
+  people: string[];
+  comments: { id: string; author: string; mine: boolean; body: string | null; deleted: boolean; createdAt: number; editedAt: number | null; canEdit: boolean; canDelete: boolean }[];
+}
+export interface ActivityItem { id: string; actorId: string; actor: string; kind: string; taskId: string | null; summary: string; at: number }
+
 export interface PlanSummary {
   id: string;
   title: string;
@@ -71,7 +84,7 @@ export interface PlanSummary {
 export interface PlanDetail {
   id: string;
   version: number;
-  role: "manager" | "editor" | "viewer";
+  role: Role;
   state: string;
   plan: Plan;
   people: People;
@@ -111,8 +124,8 @@ export interface AiState {
 
 export interface Sharing {
   canShare: boolean;
-  members: { userId: string; name: string; email: string; role: "manager" | "editor" | "viewer"; via: "workspace" | "invite" }[];
-  invites: { id: string; email: string; role: "editor" | "viewer"; personName: string | null; expiresAt: number }[];
+  members: { userId: string; name: string; email: string; role: Role; via: "workspace" | "invite" }[];
+  invites: { id: string; email: string; role: PlanRole; personName: string | null; expiresAt: number }[];
 }
 
 export const api = {
@@ -129,11 +142,11 @@ export const api = {
   restoreVersion: (planId: string, v: number) => call<{ version: number }>(`/api/plans/${encodeURIComponent(planId)}/versions/${v}/restore`, { method: "POST", body: "{}" }),
   trash: (planId: string) => call<{ items: { taskId: string; title: string; deletedAt: string; by: string }[] }>(`/api/plans/${encodeURIComponent(planId)}/trash`),
   sharing: (planId: string) => call<Sharing>(`/api/plans/${encodeURIComponent(planId)}/sharing`),
-  invite: (planId: string, email: string, role: "editor" | "viewer", personName?: string) => call<{ id: string; link: string; expiresAt: number }>(`/api/plans/${encodeURIComponent(planId)}/invites`, { method: "POST", body: JSON.stringify({ email, role, ...(personName ? { personName } : {}) }) }),
+  invite: (planId: string, email: string, role: PlanRole, personName?: string) => call<{ id: string; link: string; expiresAt: number }>(`/api/plans/${encodeURIComponent(planId)}/invites`, { method: "POST", body: JSON.stringify({ email, role, ...(personName ? { personName } : {}) }) }),
   cancelInvite: (planId: string, inviteId: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/invites/${encodeURIComponent(inviteId)}`, { method: "DELETE" }),
-  setRole: (planId: string, userId: string, role: "editor" | "viewer") => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/members/${encodeURIComponent(userId)}`, { method: "PUT", body: JSON.stringify({ role }) }),
+  setRole: (planId: string, userId: string, role: PlanRole) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/members/${encodeURIComponent(userId)}`, { method: "PUT", body: JSON.stringify({ role }) }),
   removeMember: (planId: string, userId: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/members/${encodeURIComponent(userId)}`, { method: "DELETE" }),
-  inviteInfo: (token: string) => call<{ planTitle: string | null; inviter: string; role: "editor" | "viewer"; email: string; problem: string | null; accepted: boolean; planId: string | null }>(`/api/invites/${encodeURIComponent(token)}`),
+  inviteInfo: (token: string) => call<{ planTitle: string | null; inviter: string; role: PlanRole; email: string; problem: string | null; accepted: boolean; planId: string | null }>(`/api/invites/${encodeURIComponent(token)}`),
   acceptInvite: (token: string) => call<{ planId: string }>(`/api/invites/${encodeURIComponent(token)}/accept`, { method: "POST", body: "{}" }),
   ai: (planId: string) => call<AiState>(`/api/plans/${encodeURIComponent(planId)}/ai`),
   aiCheck: (planId: string) => call<{ review: AiReview; hidden: number; usage: AiUsage }>(`/api/plans/${encodeURIComponent(planId)}/ai/check`, { method: "POST", body: "{}" }),
@@ -153,5 +166,11 @@ export const api = {
   spendingCsv: (ws: string, view: string, period: SpendPeriod) => `/api/workspaces/${encodeURIComponent(ws)}/ai/spending.csv?view=${view}&period=${period}`,
   safety: () => call<{ open: number; items: SafetyItem[] }>("/api/admin/safety"),
   safetyAction: (id: string, action: "release" | "keep" | "suspend", note: string) => call<{ ok: true; status: string }>(`/api/admin/safety/${encodeURIComponent(id)}`, { method: "POST", body: JSON.stringify({ action, note }) }),
+  comments: (planId: string, taskId: string) => call<TaskComments>(`/api/plans/${encodeURIComponent(planId)}/tasks/${encodeURIComponent(taskId)}/comments`),
+  addComment: (planId: string, taskId: string, body: string) => call<{ id: string; mentions: string[] }>(`/api/plans/${encodeURIComponent(planId)}/tasks/${encodeURIComponent(taskId)}/comments`, { method: "POST", body: JSON.stringify({ body }) }),
+  editComment: (planId: string, taskId: string, id: string, body: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/tasks/${encodeURIComponent(taskId)}/comments/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ body }) }),
+  deleteComment: (planId: string, taskId: string, id: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/tasks/${encodeURIComponent(taskId)}/comments/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  commentCounts: (planId: string) => call<{ counts: Record<string, number> }>(`/api/plans/${encodeURIComponent(planId)}/comment-counts`),
+  activity: (planId: string, before?: number) => call<{ items: ActivityItem[] }>(`/api/plans/${encodeURIComponent(planId)}/activity${before ? `?before=${before}` : ""}`),
   logout: () => call<{ ok: true }>("/auth/logout", { method: "POST", body: "{}" }),
 };

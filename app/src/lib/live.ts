@@ -13,6 +13,7 @@ export function usePlanRoom(planId: string, me: Me) {
   const [error, setError] = useState("");
   const [status, setStatus] = useState<LiveStatus>("connecting");
   const [presence, setPresence] = useState<PresencePerson[]>([]);
+  const [comments, setComments] = useState<{ counts: Record<string, number>; tick: number }>({ counts: {}, tick: 0 });
   const [notice, setNotice] = useState("");
   const [tick, setTick] = useState(0);
   // Bumped when the server says our access changed: load the plan again (new role, or no access).
@@ -51,6 +52,8 @@ export function usePlanRoom(planId: string, me: Me) {
           setNotice(m.error ?? "That change wasn't saved.");
         } else if (m.t === "presence") {
           setPresence(m.people);
+        } else if (m.t === "comments") {
+          setComments((c) => ({ counts: { ...c.counts, [m.taskId]: m.count }, tick: c.tick + 1 }));
         } else if (m.t === "people") {
           // Someone changed availability: dates update here too.
           setDetail((d) => (d ? { ...d, people: m.people } : d));
@@ -78,6 +81,7 @@ export function usePlanRoom(planId: string, me: Me) {
         replica.current = new ClientReplica(crypto.randomUUID().slice(0, 12), { userId: me.user.id, name: me.user.name }, d.plan, d.version);
         setDetail(d);
         connect();
+        api.commentCounts(planId).then((r) => !stopped && setComments((c) => ({ counts: r.counts, tick: c.tick + 1 }))).catch(() => {});
       })
       .catch((e: Error) => !stopped && setError(e.message));
     const online = () => {
@@ -112,5 +116,6 @@ export function usePlanRoom(planId: string, me: Me) {
 
   const plan = useMemo(() => (detail && replica.current ? replica.current.view(detail.today) : null), [detail, tick]); // eslint-disable-line react-hooks/exhaustive-deps
   const pending = replica.current?.pendingCount ?? 0;
-  return { detail, plan, error, status, presence, pending, edit, notice, clearNotice: () => setNotice(""), setDetail };
+  const version = replica.current?.version ?? 0;
+  return { detail, plan, error, status, presence, pending, edit, notice, clearNotice: () => setNotice(""), setDetail, comments, version };
 }

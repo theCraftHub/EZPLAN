@@ -2,17 +2,17 @@
 import { useEffect, useState } from "react";
 import { Check, ClipboardCopy, UserPlus } from "lucide-react";
 import { planPeople, type Plan } from "@ezplan/shared";
-import { api, type Me, type Sharing } from "../../lib/api";
+import { api, ROLE_NAME, type Me, type PlanRole, type Sharing } from "../../lib/api";
 import { longDate } from "../../lib/format";
 import { Button, Card, Notice, Spinner } from "../../ui/kit";
 
-const ROLE_HELP = { editor: "Editor: updates tasks and the plan", viewer: "Viewer: sees everything, changes nothing" };
+const ROLE_HELP = { editor: "Editor: updates tasks and the plan", commenter: "Commenter: sees everything and comments, changes nothing", viewer: "Viewer: sees everything, changes nothing" };
 
 export function Share({ planId, plan, me }: { planId: string; plan: Plan; me: Me }) {
   const [data, setData] = useState<Sharing | null>(null);
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"editor" | "viewer">("editor");
+  const [role, setRole] = useState<PlanRole>("editor");
   const [person, setPerson] = useState("");
   const [link, setLink] = useState<{ url: string; email: string } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -51,18 +51,19 @@ export function Share({ planId, plan, me }: { planId: string; plan: Plan; me: Me
             <li key={m.userId} className="flex flex-wrap items-center justify-between gap-2 border-t border-line py-3 first:border-t-0">
               <span className="flex min-w-0 flex-col"><span className="text-[15px] font-semibold">{m.name}{m.userId === me.user.id ? " (you)" : ""}</span><span className="truncate text-sm text-muted">{m.email}</span></span>
               {m.via === "workspace" ? (
-                <span className="text-sm text-ink-2">{m.role === "manager" ? "Owner" : m.role === "editor" ? "Editor" : "Viewer"} · workspace</span>
+                <span className="text-sm text-ink-2">{ROLE_NAME[m.role]} · workspace</span>
               ) : data.canShare ? (
                 <span className="flex items-center gap-2">
                   <label className="sr-only" htmlFor={`role-${m.userId}`}>Role for {m.name}</label>
-                  <select id={`role-${m.userId}`} value={m.role} onChange={(e) => void act(() => api.setRole(planId, m.userId, e.target.value as "editor" | "viewer"))} className="min-h-11 rounded-xl border border-line bg-surface px-2 text-sm">
+                  <select id={`role-${m.userId}`} value={m.role} onChange={(e) => void act(() => api.setRole(planId, m.userId, e.target.value as PlanRole))} className="min-h-11 rounded-xl border border-line bg-surface px-2 text-sm">
                     <option value="editor">Editor</option>
+                    <option value="commenter">Commenter</option>
                     <option value="viewer">Viewer</option>
                   </select>
                   <Button variant="ghost" onClick={() => void act(() => api.removeMember(planId, m.userId))}>Remove {m.name}</Button>
                 </span>
               ) : (
-                <span className="text-sm text-ink-2">{m.role === "editor" ? "Editor" : "Viewer"}</span>
+                <span className="text-sm text-ink-2">{ROLE_NAME[m.role]}</span>
               )}
             </li>
           ))}
@@ -73,7 +74,7 @@ export function Share({ planId, plan, me }: { planId: string; plan: Plan; me: Me
             <ul className="m-0 flex list-none flex-col p-0">
               {data.invites.map((i) => (
                 <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-line py-3 first:border-t-0">
-                  <span className="flex flex-col"><span className="text-[15px] font-semibold">{i.email}{i.personName ? ` (${i.personName})` : ""}</span><span className="text-sm text-muted">{i.role === "editor" ? "Editor" : "Viewer"} · link works until {longDate(new Date(i.expiresAt).toISOString().slice(0, 10))}</span></span>
+                  <span className="flex flex-col"><span className="text-[15px] font-semibold">{i.email}{i.personName ? ` (${i.personName})` : ""}</span><span className="text-sm text-muted">{ROLE_NAME[i.role]} · link works until {longDate(new Date(i.expiresAt).toISOString().slice(0, 10))}</span></span>
                   {data.canShare && <Button variant="ghost" onClick={() => void act(() => api.cancelInvite(planId, i.id))}>Cancel invite</Button>}
                 </li>
               ))}
@@ -87,7 +88,7 @@ export function Share({ planId, plan, me }: { planId: string; plan: Plan; me: Me
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Their email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="min-h-11 rounded-xl border border-line bg-surface px-3 text-base font-normal" /></label>
           <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
             <legend className="mb-1 p-0 text-sm font-semibold">Role</legend>
-            {(["editor", "viewer"] as const).map((r) => (
+            {(["editor", "commenter", "viewer"] as const).map((r) => (
               <label key={r} className="flex min-h-11 items-center gap-3 text-[15px]"><input type="radio" name="role" checked={role === r} onChange={() => setRole(r)} className="h-5 w-5" /> {ROLE_HELP[r]}</label>
             ))}
           </fieldset>

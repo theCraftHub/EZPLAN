@@ -8,7 +8,8 @@ import { LIVE_MAX_MESSAGE, parseOp, type Actor, type ClientMessage, type OpEnvel
 import { PlanRoomCore } from "./room";
 import type { ApplyResult } from "./ports";
 
-export type LiveRole = "manager" | "editor" | "viewer";
+import { canEdit, type Role } from "./roles";
+export type LiveRole = Role;
 
 export interface Peer {
   actor: Actor;
@@ -102,7 +103,7 @@ export class LiveRoom {
       }
       if (msg.t === "edit") {
         const opId = typeof msg.opId === "string" ? msg.opId : "";
-        if (peer.role === "viewer") return reply({ t: "ack", opId, status: "rejected", version: -1, error: "Viewers can't change this plan." });
+        if (!canEdit(peer.role)) return reply({ t: "ack", opId, status: "rejected", version: -1, error: "You can view this plan but not change it." });
         const op = parseOp(msg.op);
         const okId = (v: unknown) => typeof v === "string" && v.length > 0 && v.length <= 64;
         if (!op || !okId(msg.opId) || !okId(msg.clientId)) return reply({ t: "ack", opId, status: "rejected", version: -1, error: "This edit isn't valid." });

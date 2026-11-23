@@ -1,4 +1,5 @@
 import { CalendarClock, Flag, TriangleAlert } from "lucide-react";
+import { RecentActivity } from "./Activity";
 import type { Op, Plan } from "@ezplan/shared";
 import { plural, shortDate } from "../../lib/format";
 import { Link } from "../../lib/router";
@@ -10,7 +11,7 @@ import { PlanCheck } from "./PlanCheck";
 type Math = NonNullable<ReturnType<typeof usePlanMath>>;
 
 /** The plan's home: where are we, what's next, are we on track. */
-export function Overview({ plan, math, today, canEdit, edit, planId }: { plan: Plan; math: Math; today: string; canEdit: boolean; edit: (op: Op) => void; planId: string }) {
+export function Overview({ plan, math, today, canEdit, edit, planId, version }: { plan: Plan; math: Math; today: string; canEdit: boolean; edit: (op: Op) => void; planId: string; version: number }) {
   const { progress, schedule } = math;
   const late = progress.forecastFinish && progress.forecastFinish > schedule.finish;
   const kpi = "flex flex-col gap-1";
@@ -65,6 +66,7 @@ export function Overview({ plan, math, today, canEdit, edit, planId }: { plan: P
       </Card>
 
       <PlanCheck planId={planId} plan={plan} math={math} canEdit={canEdit} edit={edit} />
+      <RecentActivity version={version} />
     </div>
   );
 }

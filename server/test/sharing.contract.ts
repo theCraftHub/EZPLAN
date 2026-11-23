@@ -95,7 +95,7 @@ export function sharingContract(hostName: string, factory: HostFactory) {
       expect((await req("POST", `/api/plans/${planId}/invites`, { email: "x@example.com", role: "viewer" }, KIM)).status).toBe(403);
       const k = await connect(KIM);
       k.send({ t: "edit", opId: "k2", clientId: "k", op: { kind: "setStatus", taskId: "T1", status: "done" } });
-      expect(await k.next((m) => m.t === "ack" && m.opId === "k2")).toMatchObject({ status: "rejected", error: "Viewers can't change this plan." });
+      expect(await k.next((m) => m.t === "ack" && m.opId === "k2")).toMatchObject({ status: "rejected", error: "You can view this plan but not change it." });
     });
 
     it("availability changes reach everyone with the plan open", async () => {

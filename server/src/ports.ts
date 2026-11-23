@@ -44,7 +44,7 @@ export interface RoomHost {
    * Opens a live connection (WebSocket) for a signed-in person already checked for access.
    * Returns the upgrade response; hosts that upgrade elsewhere return a ticket response.
    */
-  connect(request: Request, planId: string, actor: Actor, role: "manager" | "editor" | "viewer"): Promise<Response>;
+  connect(request: Request, planId: string, actor: Actor, role: import("./roles").Role): Promise<Response>;
   /** Sends a message to everyone connected to the plan. */
   notify(planId: string, message: ServerMessage): Promise<void>;
   /** Ends one person's live connections to the plan (their access changed). */

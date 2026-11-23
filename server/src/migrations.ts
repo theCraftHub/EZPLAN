@@ -85,6 +85,27 @@ export const MIGRATIONS: Migration[] = [
     name: "account suspension (safety review)",
     statements: [`ALTER TABLE users ADD COLUMN suspended_at INTEGER`],
   },
+  {
+    id: 7,
+    name: "commenter role, comments, activity",
+    statements: [
+      // SQLite can't change a CHECK constraint in place: rebuild both tables with the new role, keeping every row.
+      `CREATE TABLE plan_members_new (plan_id TEXT NOT NULL REFERENCES plans(id), user_id TEXT NOT NULL REFERENCES users(id), role TEXT NOT NULL CHECK (role IN ('editor', 'commenter', 'viewer')), added_by TEXT NOT NULL, added_at INTEGER NOT NULL, PRIMARY KEY (plan_id, user_id))`,
+      `INSERT INTO plan_members_new SELECT plan_id, user_id, role, added_by, added_at FROM plan_members`,
+      `DROP TABLE plan_members`,
+      `ALTER TABLE plan_members_new RENAME TO plan_members`,
+      `CREATE INDEX plan_members_user ON plan_members(user_id)`,
+      `CREATE TABLE invites_new (id TEXT PRIMARY KEY, token_hash TEXT NOT NULL UNIQUE, plan_id TEXT NOT NULL REFERENCES plans(id), email TEXT NOT NULL, role TEXT NOT NULL CHECK (role IN ('editor', 'commenter', 'viewer')), person_name TEXT, created_by TEXT NOT NULL, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, accepted_by TEXT, accepted_at INTEGER, revoked_at INTEGER)`,
+      `INSERT INTO invites_new SELECT id, token_hash, plan_id, email, role, person_name, created_by, created_at, expires_at, accepted_by, accepted_at, revoked_at FROM invites`,
+      `DROP TABLE invites`,
+      `ALTER TABLE invites_new RENAME TO invites`,
+      `CREATE INDEX invites_plan ON invites(plan_id)`,
+      `CREATE TABLE comments (id TEXT PRIMARY KEY, plan_id TEXT NOT NULL REFERENCES plans(id), task_id TEXT NOT NULL, author_id TEXT NOT NULL REFERENCES users(id), body TEXT NOT NULL, mentions TEXT NOT NULL, created_at INTEGER NOT NULL, edited_at INTEGER, deleted_at INTEGER)`,
+      `CREATE INDEX comments_task ON comments(plan_id, task_id, created_at)`,
+      `CREATE TABLE activity (id TEXT PRIMARY KEY, plan_id TEXT NOT NULL REFERENCES plans(id), actor_id TEXT NOT NULL, actor_name TEXT NOT NULL, kind TEXT NOT NULL, task_id TEXT, summary TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+      `CREATE INDEX activity_plan ON activity(plan_id, created_at)`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

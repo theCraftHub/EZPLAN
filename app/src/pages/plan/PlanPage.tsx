@@ -1,6 +1,8 @@
 import { useDeferredValue, useMemo } from "react";
 import { ArrowLeft, Download, FileText, History as HistoryIcon, Printer, ShieldAlert, Sparkles, Users, Wifi, WifiOff } from "lucide-react";
-import type { Me } from "../../lib/api";
+import { canCommentRole, canEditRole, type Me } from "../../lib/api";
+import { PlanContext, type PlanCtx } from "./PlanContext";
+import { Activity } from "./Activity";
 import { usePlanRoom } from "../../lib/live";
 import { Link } from "../../lib/router";
 import { HealthChip, Notice, Spinner } from "../../ui/kit";
@@ -20,6 +22,7 @@ const TABS = [
   { view: "checklist", label: "Checklist" },
   { view: "timeline", label: "Timeline" },
   { view: "team", label: "Team" },
+  { view: "activity", label: "Activity" },
 ];
 
 export function PlanPage({ me, id, view }: { me: Me; id: string; view: string }) {
@@ -28,15 +31,17 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
   // Taps show at once; dates, progress and Plan Check catch up a moment later on big plans.
   const settled = useDeferredValue(room.plan);
   const math = usePlanMath(settled, ctx);
+  const role = room.detail?.role;
+  const planCtx = useMemo<PlanCtx>(() => ({ planId: id, canComment: canCommentRole(role), counts: room.comments.counts, tick: room.comments.tick }), [id, role, room.comments]);
   if (room.error) return <Notice tone="bad">{room.error}</Notice>;
   if (!room.plan || !room.detail || !math) return <Spinner label="Opening the plan" />;
-  const canEdit = room.detail.role !== "viewer";
+  const canEdit = canEditRole(room.detail.role);
   const others = room.presence.filter((p) => p.userId !== me.user.id);
   const updated = Number(new URLSearchParams(location.search).get("updated") ?? 0);
   const action = "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-sm font-semibold hover:bg-surface-2";
   if (view === "print") return <PrintSummary plan={room.plan} math={math} today={room.detail.today} />;
   return (
-    <>
+    <PlanContext.Provider value={planCtx}>
       <header className="flex flex-col gap-3 print:hidden">
         <Link to="/" className="inline-flex min-h-10 items-center gap-1 self-start text-sm font-semibold text-muted hover:text-ink"><ArrowLeft aria-hidden size={16} /> All plans</Link>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -56,7 +61,7 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
               <span>{others.length === 1 ? `${others[0]!.name} is here` : `${others.length} others here`}</span>
             </span>
           )}
-          {!canEdit && <span className="font-semibold">View only</span>}
+          {!canEdit && <span className="font-semibold">{room.detail.role === "commenter" ? "Can comment" : "View only"}</span>}
         </div>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Plan actions">
           {canEdit && <Link to={`/p/${id}/update`} className={`${action} border-primary/40 text-primary-ink`}><Sparkles aria-hidden size={16} /> Update with my AI</Link>}
@@ -81,10 +86,11 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
       {view === "report" && <Report planId={id} today={room.detail.today} canEdit={canEdit} />}
       {view === "share" && <Share planId={id} plan={room.plan} me={me} />}
       {view === "history" && <History planId={id} plan={room.plan} version={room.detail.version} canEdit={canEdit} edit={room.edit} />}
-      {view === "" && <Overview plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} planId={id} />}
+      {view === "" && <Overview plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} planId={id} version={room.version} />}
       {view === "checklist" && <Checklist plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} />}
       {view === "timeline" && <Timeline plan={room.plan} math={math} today={room.detail.today} />}
       {view === "team" && <Team me={me} planId={id} plan={room.plan} math={math} people={room.detail.people} workWeek={room.detail.workWeek} today={room.detail.today} canEdit={canEdit} edit={room.edit} onPeople={(people) => room.setDetail({ ...room.detail!, people })} />}
-    </>
+      {view === "activity" && <Activity version={room.version} />}
+    </PlanContext.Provider>
   );
 }

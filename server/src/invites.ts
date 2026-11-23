@@ -3,8 +3,10 @@
  * only a hash of its secret is stored, and it lasts 7 days.
  */
 export const INVITE_DAYS = 7;
-export type PlanRole = "editor" | "viewer";
-export const PLAN_ROLES: readonly PlanRole[] = ["editor", "viewer"];
+import { RANK } from "./roles";
+
+export type PlanRole = "editor" | "commenter" | "viewer";
+export const PLAN_ROLES: readonly PlanRole[] = ["editor", "commenter", "viewer"];
 
 export interface InviteRow {
   id: string;
@@ -35,7 +37,6 @@ export function maskEmail(email: string): string {
 
 export const EMAIL_RE = /^[^@\s]{1,64}@[^@\s]+\.[^@\s]{2,}$/;
 
-const RANK = { viewer: 1, editor: 2, manager: 3 } as const;
 /** The stronger of two roles (someone can be a workspace member and a plan member). */
 export function strongest<R extends keyof typeof RANK>(a: R | null | undefined, b: R | null | undefined): R | null {
   if (!a) return b ?? null;

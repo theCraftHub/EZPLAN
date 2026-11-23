@@ -30,6 +30,8 @@ export type ServerMessage =
   | { t: "presence"; people: PresencePerson[] }
   /** Availability changed (hours a week, days off): everyone's dates update without reloading. */
   | { t: "people"; people: Record<string, PersonAvailability> }
+  /** A task's comments changed: open task sheets reload them. */
+  | { t: "comments"; taskId: string; count: number }
   | { t: "error"; error: string };
 
 /** Largest message a client may send (bytes). */

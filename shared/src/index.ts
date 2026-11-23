@@ -18,3 +18,4 @@ export * from "./update";
 export * from "./templates";
 export * from "./ai";
 export * from "./report";
+export * from "./activity";

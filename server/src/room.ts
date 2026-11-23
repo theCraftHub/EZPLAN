@@ -3,7 +3,8 @@
  * saves the result. Both hosts use this unchanged: the cloud inside a Durable Object, the
  * self-hosted server in memory.
  */
-import { newRoom, serverApply, type Actor, type Applied, type OpEnvelope, type Plan, type RoomState } from "@ezplan/shared";
+import { describeOp, newRoom, serverApply, taskBefore, type Actor, type Applied, type OpEnvelope, type Plan, type RoomState } from "@ezplan/shared";
+import { recordActivity } from "./activity";
 import type { ApplyResult, Clock, Db } from "./ports";
 
 /** How many recent edit IDs a room remembers to ignore replays (sent again after a reconnect). */
@@ -65,11 +66,15 @@ export class PlanRoomCore {
   async apply(envelope: OpEnvelope, actor: Actor): Promise<ApplyResult> {
     const state = await this.loaded();
     if (!state) return { status: "missing" };
+    const before = taskBefore(envelope.op, state.plan);
     const applied = serverApply(state, envelope, actor, this.clock.today());
     if (!applied) return { status: "duplicate", version: state.seq };
     state.log.push(applied);
     if (state.log.length > CATCH_UP_EDITS) state.log.splice(0, state.log.length - CATCH_UP_EDITS);
     await saveRoom(this.db, this.planId, state, this.clock.now());
+    // Activity comes from the edit as applied and the signed-in person (never from the client).
+    // Bulk changes (AI update, version restore) write one summary line from their endpoint instead.
+    if (envelope.clientId !== "update" && envelope.clientId !== "restore") await recordActivity(this.db, this.planId, applied.actor, describeOp(applied.effective, before, state.plan, applied.actor.name), this.clock.now());
     return { status: "applied", applied, version: state.seq };
   }
 

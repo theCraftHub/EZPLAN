@@ -33,7 +33,7 @@ export function Invite({ token }: { token: string }) {
             <Notice tone="warn">{info.problem}</Notice>
           ) : (
             <>
-              <p className="m-0 text-[17px]"><strong>{info.inviter}</strong> invited you to <strong>{info.planTitle}</strong> as {info.role === "editor" ? "an Editor (you can update tasks)" : "a Viewer (you can see everything)"}.</p>
+              <p className="m-0 text-[17px]"><strong>{info.inviter}</strong> invited you to <strong>{info.planTitle}</strong> as {info.role === "editor" ? "an Editor (you can update tasks)" : info.role === "commenter" ? "a Commenter (you can see everything and comment)" : "a Viewer (you can see everything)"}.</p>
               <Button className="self-start" onClick={() => void accept()} disabled={busy}>{busy ? "Joining…" : "Accept and open the plan"}</Button>
             </>
           )}

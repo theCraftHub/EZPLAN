@@ -25,7 +25,7 @@ import { sha256 } from "../sessions";
 import { DEFAULT_AI_LIMITS, type Clock, type Db, type ServerConfig, type User } from "../ports";
 import { costUsd, withRefusalRule, type AiEngine, type AiResult } from "./engine";
 
-type Role = "manager" | "editor" | "viewer";
+import { canEdit, type Role } from "../roles";
 type Access = { workspace_id: string; role: Role } | null;
 export type Feature = "check" | "report" | "moderation";
 
@@ -158,7 +158,7 @@ export function registerAiRoutes(app: Hono<{ Variables: { user: User } }>, d: Ai
     const id = c.req.param("id");
     const a = await d.access(id, user.id);
     if (!a) return c.json(notFound, 404);
-    if (a.role === "viewer") return c.json({ error: "Viewers can't run AI checks." }, 403);
+    if (!canEdit(a.role)) return c.json({ error: "Only people who can edit this plan can run AI checks." }, 403);
     if (!d.ai) return c.json({ error: "AI checks are off on this server. The free Plan Check still works." }, 503);
     if ((await stateOf(id)) === "review") return c.json({ error: heldMessage }, 423);
     const limit = await svc.blockedBy(a.workspace_id, user.id, "check");
@@ -189,7 +189,7 @@ export function registerAiRoutes(app: Hono<{ Variables: { user: User } }>, d: Ai
     const id = c.req.param("id");
     const a = await d.access(id, user.id);
     if (!a) return c.json(notFound, 404);
-    if (a.role === "viewer") return c.json({ error: "Viewers can't change this plan's suggestions." }, 403);
+    if (!canEdit(a.role)) return c.json({ error: "Only people who can edit this plan can change its suggestions." }, 403);
     const b = await c.req.json<{ kind?: unknown; text?: unknown; taskIds?: unknown }>().catch(() => null);
     const kind = b?.kind as SuggestionKind;
     const text = typeof b?.text === "string" ? b.text.trim() : "";
@@ -205,7 +205,7 @@ export function registerAiRoutes(app: Hono<{ Variables: { user: User } }>, d: Ai
     const id = c.req.param("id");
     const a = await d.access(id, user.id);
     if (!a) return c.json(notFound, 404);
-    if (a.role === "viewer") return c.json({ error: "Viewers can't change this plan's suggestions." }, 403);
+    if (!canEdit(a.role)) return c.json({ error: "Only people who can edit this plan can change its suggestions." }, 403);
     const r = await db.run(`DELETE FROM ai_suppressions WHERE id = ? AND plan_id = ?`, [c.req.param("sid"), id]);
     return r.changes ? c.json({ ok: true }) : c.json({ error: "Not found." }, 404);
   });
@@ -227,7 +227,7 @@ export function registerAiRoutes(app: Hono<{ Variables: { user: User } }>, d: Ai
     const facts = statusFacts(room.plan, schedule, progressOf(room.plan, schedule, { workWeek, today }), { today, ...(since ? { since } : {}) });
     const template = templateReport(facts);
     if (b?.ai !== true) return c.json({ facts, text: template, source: "template" });
-    if (a.role === "viewer") return c.json({ error: "Viewers can't run AI reports." }, 403);
+    if (!canEdit(a.role)) return c.json({ error: "Only people who can edit this plan can run AI reports." }, 403);
     if (!d.ai) return c.json({ facts, text: template, source: "template", note: "AI wording is off on this server, so this is the plain version." });
     if ((await stateOf(id)) === "review") return c.json({ error: heldMessage }, 423);
     const limit = await svc.blockedBy(a.workspace_id, user.id, "report");

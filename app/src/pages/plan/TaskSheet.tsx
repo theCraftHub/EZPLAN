@@ -1,6 +1,7 @@
 /** Edit one task. A side panel on desktop, a sheet from the bottom on phones; same fields on both. */
 import { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { Comments } from "./Comments";
 import { Trash2, X } from "lucide-react";
 import { parseEstimate, type Op, type Plan, type Task } from "@ezplan/shared";
 import { longDate } from "../../lib/format";
@@ -93,6 +94,7 @@ export function TaskSheet({ task, plan, math, canEdit, edit, onClose, options, o
             </div>
           )}
           {confirmDelete && <p className="m-0 text-sm text-ink-2">It goes to the Trash and can be brought back for 30 days.</p>}
+          <Comments taskId={task.id} title={task.title} />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
