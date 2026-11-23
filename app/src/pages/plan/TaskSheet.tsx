@@ -10,7 +10,7 @@ import type { usePlanMath } from "./math";
 
 type Math = NonNullable<ReturnType<typeof usePlanMath>>;
 
-export function TaskSheet({ task, plan, math, canEdit, edit, onClose }: { task: Task; plan: Plan; math: Math; canEdit: boolean; edit: (op: Op) => void; onClose: () => void }) {
+export function TaskSheet({ task, plan, math, canEdit, edit, onClose, options, optionsLoading }: { task: Task; plan: Plan; math: Math; canEdit: boolean; edit: (op: Op) => void; onClose: () => void; options?: { person: string; finish: string; finishChange: number; moved: number; fits: boolean }[]; optionsLoading?: boolean }) {
   const [title, setTitle] = useState(task.title);
   const [owner, setOwner] = useState(task.owner ?? "");
   const [due, setDue] = useState(task.due ?? "");
@@ -63,6 +63,19 @@ export function TaskSheet({ task, plan, math, canEdit, edit, onClose }: { task: 
             )}
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Due by<input type="date" value={due} onChange={(e) => setDue(e.target.value)} disabled={!canEdit} className={field} /></label>
           </div>
+          {canEdit && !task.milestone && (options || optionsLoading) && (
+            <section aria-label="Best people for this task" className="flex flex-col gap-2">
+              <span className="text-sm font-semibold">Best people for this task</span>
+              {optionsLoading && <span className="text-sm text-muted">Working out options…</span>}
+              {options?.length === 0 && <span className="text-sm text-muted">Nobody else is on this plan yet.</span>}
+              {options?.map((o) => (
+                <button key={o.person} onClick={() => { edit({ kind: "setField", taskId: task.id, field: "owner", value: o.person }); onClose(); }} className={`flex min-h-12 items-center justify-between gap-2 rounded-xl px-3 text-left text-sm ring-1 ${o.fits ? "bg-good-soft text-good ring-good/30" : "bg-surface-2 text-ink-2 ring-line"}`}>
+                  <span className="font-semibold">Give to {o.person}</span>
+                  <span>{o.fits ? "Free then" : "Less free time then"} · finish {new Date(`${o.finish}T12:00:00Z`).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" })}{o.finishChange ? ` (${Math.abs(o.finishChange)}d ${o.finishChange < 0 ? "earlier" : "later"})` : ""}</span>
+                </button>
+              ))}
+            </section>
+          )}
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Notes<textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} disabled={!canEdit} className={`${field} py-2`} /></label>
           {canEdit && !task.milestone && task.status !== "skipped" && (
             <button onClick={() => { edit({ kind: "setStatus", taskId: task.id, status: "skipped" }); onClose(); }} className="min-h-11 self-start text-sm font-semibold text-ink-2 underline underline-offset-4">Skip this task</button>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Link2, MessageSquareText, Plus } from "lucide-react";
 import { parseQuickAdd, type Op, type Phase, type Plan, type Task } from "@ezplan/shared";
 import { shortDate } from "../../lib/format";
@@ -31,7 +31,7 @@ function PhaseCard({ phase, index, plan, math, today, canEdit, edit, onOpen }: {
   const done = counted.filter((t) => t.status === "done").length;
   const pct = counted.length ? Math.round((done / counted.length) * 100) : 0;
   return (
-    <Card aria-label={`Phase: ${phase.title}`} className="flex flex-col gap-2 p-0">
+    <Card aria-label={`Phase: ${phase.title}`} className="flex flex-col gap-2 p-0 [contain-intrinsic-size:auto_480px] [content-visibility:auto]">
       <div className="flex flex-col gap-2 px-4 pt-4">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="m-0 flex items-center gap-2 text-lg font-bold"><span aria-hidden className="h-3 w-3 shrink-0 rounded-sm" style={{ background: PHASE_COLORS[index % PHASE_COLORS.length] }} />{phase.title}</h2>
@@ -41,16 +41,21 @@ function PhaseCard({ phase, index, plan, math, today, canEdit, edit, onOpen }: {
         <div aria-hidden className="h-2 overflow-hidden rounded-full bg-line"><div className="h-full rounded-full" style={{ width: `${pct}%`, background: PHASE_COLORS[index % PHASE_COLORS.length] }} /></div>
       </div>
       <ul className="m-0 flex list-none flex-col p-0">
-        {phase.tasks.map((t) => <TaskRow key={t.id} t={t} math={math} canEdit={canEdit} edit={edit} onOpen={onOpen} />)}
+        {phase.tasks.map((t) => {
+          const s = math.schedule.tasks.get(t.id);
+          const waits = t.depends.filter((d) => !["done", "skipped"].includes(math.byId.get(d.id)?.status ?? "done")).map((d) => math.byId.get(d.id)?.title ?? d.id);
+          return <TaskRow key={t.id} t={t} when={s ? { start: s.start, end: s.end, overdue: s.overdue } : null} waits={waits} canEdit={canEdit} edit={edit} onOpen={onOpen} />;
+        })}
       </ul>
       {canEdit && <QuickAdd phaseId={phase.id} plan={plan} today={today} edit={edit} />}
     </Card>
   );
 }
 
-function TaskRow({ t, math, canEdit, edit, onOpen }: { t: Task; math: Math; canEdit: boolean; edit: (op: Op) => void; onOpen: (id: string) => void }) {
-  const s = math.schedule.tasks.get(t.id);
-  const waits = t.depends.filter((d) => !["done", "skipped"].includes(math.byId.get(d.id)?.status ?? "done"));
+type RowProps = { t: Task; when: { start: string; end: string; overdue: boolean } | null; waits: string[]; canEdit: boolean; edit: (op: Op) => void; onOpen: (id: string) => void };
+
+/** One task. Only re-renders when what it shows changed, so a tap stays instant on big plans. */
+const TaskRow = memo(function TaskRow({ t, when: s, waits, canEdit, edit, onOpen }: RowProps) {
   const finished = t.status === "done" || t.status === "skipped";
   const by = t.status === "done" ? t.done : t.status === "skipped" ? t.skipped : undefined;
   const chip = "inline-flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-xs font-semibold text-ink-2";
@@ -67,7 +72,7 @@ function TaskRow({ t, math, canEdit, edit, onOpen }: { t: Task; math: Math; canE
           {t.owner && <span className={chip}>{t.owner}</span>}
           {s && <span className="text-xs text-muted">{t.milestone ? shortDate(s.end) : `${shortDate(s.start)} to ${shortDate(s.end)}`}</span>}
           {est(t) && !t.milestone && <span className={chip}>{est(t)}</span>}
-          {waits.length > 0 && !finished && <span className={chip}><Link2 aria-hidden size={12} /> <span className="max-w-[14rem] truncate">waits on {math.byId.get(waits[0]!.id)?.title ?? waits[0]!.id}{waits.length > 1 ? ` +${waits.length - 1}` : ""}</span></span>}
+          {waits.length > 0 && !finished && <span className={chip}><Link2 aria-hidden size={12} /> <span className="max-w-[14rem] truncate">waits on {waits[0]}{waits.length > 1 ? ` +${waits.length - 1}` : ""}</span></span>}
           {s?.overdue && !finished && <span className="rounded-full bg-warn-soft px-2 py-0.5 text-xs font-bold text-warn">Overdue</span>}
           {t.notes.length > 0 && <MessageSquareText aria-label="Has notes" size={14} className="text-muted" />}
           {by && <span className="text-xs font-semibold text-good">{t.status === "done" ? "Done" : "Skipped"}{by.by ? ` by ${by.by}` : ""} · {shortDate(by.date)}</span>}
@@ -75,7 +80,7 @@ function TaskRow({ t, math, canEdit, edit, onOpen }: { t: Task; math: Math; canE
       </button>
     </li>
   );
-}
+}, (a, b) => a.canEdit === b.canEdit && a.edit === b.edit && a.onOpen === b.onOpen && JSON.stringify([a.t, a.when, a.waits]) === JSON.stringify([b.t, b.when, b.waits]));
 
 function QuickAdd({ phaseId, plan, today, edit }: { phaseId: string; plan: Plan; today: string; edit: (op: Op) => void }) {
   const [text, setText] = useState("");

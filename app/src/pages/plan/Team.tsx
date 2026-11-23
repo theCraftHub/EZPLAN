@@ -2,7 +2,9 @@
  * Team schedule: who does what, when, drawn on top of each person's availability.
  * Desktop: people x days grid. Phone: a week strip with a day list, or one person's week.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { fits, whatIfOwner, type WhatIf } from "./reassign";
+import { useIsDesktop, useVisibleColumns } from "../../lib/view";
 import { ChevronLeft, ChevronRight, UserPlus, UserRound } from "lucide-react";
 import { levelPlan, type Op, type PersonAvailability, type Plan, type WorkWeek } from "@ezplan/shared";
 import type { Me } from "../../lib/api";
@@ -22,8 +24,37 @@ interface Props { me: Me; planId: string; plan: Plan; math: Math; people: Record
 export function Team(props: Props) {
   const { plan, math, people, workWeek, today, canEdit, edit } = props;
   const data = useTeamData(plan, math, people, workWeek, today);
+  const desktop = useIsDesktop();
   const [sheet, setSheet] = useState<{ name: string; isNew?: boolean; mine?: boolean } | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
+  // Reassigning by drag (or keyboard): the task, the person it's over, and the what-if once dropped.
+  const [drag, setDrag] = useState<{ taskId: string; target: string | null; preview: WhatIf | null } | null>(null);
+  const ctx = useMemo(() => ({ workWeek, today, people }), [workWeek, today, people]);
+  const previewDrop = (id: string, person: string) => {
+    const owner = math.byId.get(id)?.owner ?? "";
+    if (person.toLowerCase() === owner.toLowerCase()) return setDrag(null);
+    setDrag({ taskId: id, target: person, preview: whatIfOwner(plan, id, person, ctx, math) });
+  };
+  // Best people for a task (shown in its sheet): the ones with room first, worked out a few at a time.
+  const [options, setOptions] = useState<(WhatIf & { fits: boolean })[] | null>(null);
+  useEffect(() => {
+    setOptions(null);
+    if (!taskId || !canEdit) return;
+    const owner = math.byId.get(taskId)?.owner?.toLowerCase();
+    const people = data.rows.map((r) => ({ name: r.name, fits: fits(data, math, taskId, r.name) })).filter((p) => p.name.toLowerCase() !== owner);
+    const queue = [...people.filter((p) => p.fits), ...people.filter((p) => !p.fits)].slice(0, 8);
+    const done: (WhatIf & { fits: boolean })[] = [];
+    let stop = false;
+    const step = () => {
+      const p = queue.shift();
+      if (stop) return;
+      if (!p) return setOptions([...done].sort((a, b) => a.finish.localeCompare(b.finish) || Number(b.fits) - Number(a.fits)));
+      done.push({ ...whatIfOwner(plan, taskId, p.name, ctx, math), fits: p.fits });
+      setTimeout(step, 0);
+    };
+    setTimeout(step, 0);
+    return () => { stop = true; };
+  }, [taskId]); // eslint-disable-line react-hooks/exhaustive-deps
   const [suggest, setSuggest] = useState<{ name: string; taskId?: string; finish?: string; days?: number } | null>(null);
   const finishTask = useMemo(() => [...math.schedule.tasks.values()].filter((t) => t.end === math.schedule.finish).map((t) => t.id)[0], [math]);
   const mine = data.rows.find((r) => r.name.toLowerCase() === props.me.user.name.toLowerCase() || r.name.toLowerCase() === props.me.user.name.split(" ")[0]!.toLowerCase());
@@ -88,11 +119,21 @@ export function Team(props: Props) {
         {math.schedule.assumedFullTime.length > 0 && <p className="m-0 text-sm text-ink-2">No hours set for {math.schedule.assumedFullTime.join(", ")}: counted as full time ({workWeek.hoursPerWeek} h/week). Tap a name to change it.</p>}
       </Card>
 
-      <div className="hidden lg:block"><Grid data={data} today={today} math={math} onPerson={(n) => setSheet({ name: n })} onTask={setTaskId} canEdit={canEdit} /></div>
-      <div className="lg:hidden"><PhoneView data={data} today={today} math={math} onPerson={(n) => setSheet({ name: n })} onTask={setTaskId} /></div>
+      {drag?.preview && (
+        <Notice tone={drag.preview.finishChange > 0 ? "warn" : "info"}>
+          <span className="flex flex-col gap-2" role="dialog" aria-label="Preview the change">
+            <span><strong>Give "{math.byId.get(drag.taskId)?.title}" to {drag.preview.person}?</strong> Finish {shortDate(math.schedule.finish)} → {shortDate(drag.preview.finish)}{drag.preview.finishChange ? ` (${Math.abs(drag.preview.finishChange)} day${Math.abs(drag.preview.finishChange) === 1 ? "" : "s"} ${drag.preview.finishChange < 0 ? "earlier" : "later"})` : " (no change)"}. {plural(drag.preview.moved, "task")} change dates.</span>
+            <span className="flex gap-2">
+              <Button onClick={() => { edit({ kind: "setField", taskId: drag.taskId, field: "owner", value: drag.preview!.person }); setDrag(null); }}>Apply</Button>
+              <Button variant="secondary" onClick={() => setDrag(null)}>Cancel</Button>
+            </span>
+          </span>
+        </Notice>
+      )}
+      {desktop ? <Grid data={data} today={today} math={math} onPerson={(n) => setSheet({ name: n })} onTask={setTaskId} canEdit={canEdit} drag={drag} setDrag={setDrag} onDrop={previewDrop} /> : <PhoneView data={data} today={today} math={math} onPerson={(n) => setSheet({ name: n })} onTask={setTaskId} />}
 
       {sheet && <PersonSheet planId={props.planId} name={sheet.name} initial={sheet.isNew ? undefined : findPerson(people, sheet.name)} workWeek={workWeek} {...(sheet.isNew ? { isNew: true } : {})} {...(sheet.mine ? { title: "My availability" } : {})} onSaved={(n, a) => saved(n, a, sheet.isNew && !sheet.mine)} onClose={() => setSheet(null)} />}
-      {taskId && math.byId.get(taskId) && <TaskSheet task={math.byId.get(taskId)!} plan={plan} math={math} canEdit={canEdit} edit={edit} onClose={() => setTaskId(null)} />}
+      {taskId && math.byId.get(taskId) && <TaskSheet task={math.byId.get(taskId)!} plan={plan} math={math} canEdit={canEdit} edit={edit} onClose={() => setTaskId(null)} options={options ?? undefined} optionsLoading={canEdit && !options} />}
     </div>
   );
 }
@@ -105,31 +146,68 @@ function cellStyle(c: DayCell): { cls: string; label: string } {
   return { cls: "bg-surface", label: `${h(c.booked)} booked of ${h(c.available)}` };
 }
 
-function Grid({ data, today, math, onPerson, onTask, canEdit }: { data: ReturnType<typeof useTeamData>; today: string; math: Math; onPerson: (n: string) => void; onTask: (id: string) => void; canEdit: boolean }) {
+type Drag = { taskId: string; target: string | null; preview: WhatIf | null } | null;
+
+function Grid({ data, today, math, onPerson, onTask, canEdit, drag, setDrag, onDrop }: { data: ReturnType<typeof useTeamData>; today: string; math: Math; onPerson: (n: string) => void; onTask: (id: string) => void; canEdit: boolean; drag: Drag; setDrag: (d: Drag) => void; onDrop: (taskId: string, person: string) => void }) {
+  const moving = drag && !drag.preview ? drag : null;
+  const fitMap = useMemo(() => (moving ? new Map(data.rows.map((r) => [r.name, fits(data, math, moving.taskId, r.name)])) : null), [moving?.taskId, data, math]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Keyboard: arrow up/down on a task picks a person, Enter previews, Escape cancels.
+  const onKey = (e: KeyboardEvent, taskId: string) => {
+    if (!canEdit) return;
+    const names = data.rows.map((r) => r.name);
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const from = moving?.taskId === taskId && moving.target ? names.indexOf(moving.target) : names.findIndex((n) => n.toLowerCase() === (math.byId.get(taskId)?.owner ?? "").toLowerCase());
+      const next = Math.max(0, Math.min(names.length - 1, from + (e.key === "ArrowDown" ? 1 : -1)));
+      setDrag({ taskId, target: names[next]!, preview: null });
+    } else if (e.key === "Enter" && moving?.taskId === taskId && moving.target) {
+      e.preventDefault();
+      onDrop(taskId, moving.target);
+    } else if (e.key === "Escape" && moving) {
+      setDrag(null);
+    }
+  };
   const W = 44;
+  const box = useRef<HTMLDivElement>(null);
+  // Only the days in view (plus a margin) are drawn; spacers keep the scroll width right.
+  const [c0, c1] = useVisibleColumns(box, data.dates.length, W, 200);
+  const shown = data.dates.slice(c0, c1);
+  const before = c0 * W;
+  const after = (data.dates.length - c1) * W;
+  const spacer = (w: number, key: string) => (w > 0 ? <td key={key} aria-hidden style={{ width: w, minWidth: w, padding: 0 }} /> : null);
   return (
-    <Card aria-label="Team schedule grid" className="overflow-x-auto p-0">
-      <table className="border-collapse text-xs" style={{ minWidth: 200 + data.dates.length * W }}>
+    <Card aria-label="Team schedule grid" className="p-0">
+      <div ref={box} className="overflow-x-auto">
+      <table className="border-collapse text-xs" style={{ width: 200 + data.dates.length * W, tableLayout: "fixed" }}>
         <thead>
           <tr>
             <th scope="col" className="sticky left-0 z-10 w-[200px] bg-surface px-4 py-2 text-left text-sm font-semibold">Person</th>
-            {data.dates.map((d) => (
+            {before > 0 && <th aria-hidden style={{ width: before, minWidth: before, padding: 0 }} />}
+            {shown.map((d) => (
               <th key={d} scope="col" className={`px-0 py-2 text-center font-semibold ${d === today ? "text-primary" : "text-muted"}`} style={{ width: W, minWidth: W }}>
                 <span className="block text-[10px] font-normal">{WEEKDAY(d)}</span>{new Date(`${d}T12:00:00Z`).getUTCDate()}
               </th>
             ))}
+            {after > 0 && <th aria-hidden style={{ width: after, minWidth: after, padding: 0 }} />}
           </tr>
         </thead>
         <tbody>
           {data.rows.map((r) => (
-            <tr key={r.name} className="border-t border-line">
+            <tr
+              key={r.name}
+              className={`border-t border-line ${moving ? (fitMap?.get(r.name) ? "bg-good-soft/60" : "bg-bad-soft/50") : ""} ${moving?.target === r.name ? "outline-2 -outline-offset-2 outline-primary" : ""}`}
+              onDragOver={(e) => { if (!moving) return; e.preventDefault(); if (moving.target !== r.name) setDrag({ ...moving, target: r.name }); }}
+              onDrop={(e) => { e.preventDefault(); if (moving) onDrop(moving.taskId, r.name); }}
+            >
               <th scope="row" className="sticky left-0 z-10 bg-surface px-2 text-left">
                 <button onClick={() => onPerson(r.name)} disabled={!canEdit} className="flex min-h-14 w-full flex-col items-start justify-center rounded-lg px-2 text-left hover:bg-surface-2">
                   <span className="text-sm font-bold">{r.name}</span>
                   <span className="text-xs font-normal text-muted">{r.set ? `${r.weekHours} h/week` : `${r.weekHours} h/week (assumed)`}</span>
+                  {moving && r.name.toLowerCase() !== (math.byId.get(moving.taskId)?.owner ?? "").toLowerCase() && <span className={`text-xs font-bold ${fitMap?.get(r.name) ? "text-good" : "text-warn"}`}>{fitMap?.get(r.name) ? "Fits" : "Less free time then"}</span>}
                 </button>
               </th>
-              {r.days.map((c) => {
+              {spacer(before, "b")}
+              {r.days.slice(c0, c1).map((c) => {
                 const s = cellStyle(c);
                 return (
                   <td key={c.date} className={`relative border-l border-line/60 p-0.5 align-top ${s.cls}`} style={{ height: 56 }} title={`${r.name}, ${longDate(c.date)}: ${s.label}`}>
@@ -139,7 +217,7 @@ function Grid({ data, today, math, onPerson, onTask, canEdit }: { data: ReturnTy
                       {c.tasks.map((t) => {
                         const task = math.byId.get(t.id);
                         return (
-                          <button key={t.id} onClick={() => onTask(t.id)} aria-label={`${task?.title ?? t.id}, ${h(t.hours)} on ${shortDate(c.date)}`} className={`block w-full truncate rounded px-0.5 text-left text-[9px] leading-tight font-semibold ${math.schedule.tasks.get(t.id)?.critical ? "bg-primary text-white dark:text-ground" : "bg-primary-soft text-primary-ink"}`} style={{ height: Math.max(12, Math.min(40, (t.hours / Math.max(1, c.available || 8)) * 40)) }}>
+                          <button key={t.id} onClick={() => onTask(t.id)} onKeyDown={(e) => onKey(e, t.id)} draggable={canEdit} onDragStart={(e) => { e.dataTransfer.setData("text/plain", t.id); e.dataTransfer.effectAllowed = "move"; setDrag({ taskId: t.id, target: null, preview: null }); }} onDragEnd={() => { if (drag && !drag.preview) setDrag(null); }} aria-label={`${task?.title ?? t.id}, ${h(t.hours)} on ${shortDate(c.date)}${canEdit ? ". Drag to another person, or use the up and down arrow keys" : ""}`} className={`block w-full truncate rounded px-0.5 text-left text-[9px] leading-tight font-semibold ${math.schedule.tasks.get(t.id)?.critical ? "bg-primary text-white dark:text-ground" : "bg-primary-soft text-primary-ink"}`} style={{ height: Math.max(12, Math.min(40, (t.hours / Math.max(1, c.available || 8)) * 40)) }}>
                             {t.id}
                           </button>
                         );
@@ -149,19 +227,21 @@ function Grid({ data, today, math, onPerson, onTask, canEdit }: { data: ReturnTy
                   </td>
                 );
               })}
+              {spacer(after, "a")}
             </tr>
           ))}
           {data.unassigned.length > 0 && (
             <tr className="border-t border-line">
               <th scope="row" className="sticky left-0 z-10 bg-surface px-4 py-2 text-left text-sm font-bold">Unassigned</th>
-              <td colSpan={data.dates.length} className="px-2 py-2">
+              <td colSpan={data.dates.length} className="px-2 py-2" style={{ position: "sticky", left: 200 }}>
                 <span className="flex flex-wrap gap-1.5">{data.unassigned.map((t) => <button key={t.id} onClick={() => onTask(t.id)} className="min-h-9 rounded-lg bg-warn-soft px-2 text-xs font-semibold text-warn">{t.title}</button>)}</span>
               </td>
             </tr>
           )}
         </tbody>
       </table>
-      <p className="m-0 border-t border-line px-4 py-3 text-xs text-muted">Blocks are hours booked that day. Striped = day off. Grey = not working. Red with +h = more booked than that person has.</p>
+      </div>
+      <p className="m-0 border-t border-line px-4 py-3 text-xs text-muted">Blocks are hours booked that day. Striped = day off. Grey = not working. Red with +h = more booked than that person has. {canEdit ? "Drag a block to another person (or select it and use the arrow keys) to see what changes before applying." : ""}</p>
     </Card>
   );
 }

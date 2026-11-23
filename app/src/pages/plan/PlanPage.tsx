@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useDeferredValue, useMemo } from "react";
 import { ArrowLeft, Download, History as HistoryIcon, Printer, Sparkles, Wifi, WifiOff } from "lucide-react";
 import type { Me } from "../../lib/api";
 import { usePlanRoom } from "../../lib/live";
@@ -23,7 +23,9 @@ const TABS = [
 export function PlanPage({ me, id, view }: { me: Me; id: string; view: string }) {
   const room = usePlanRoom(id, me);
   const ctx = useMemo(() => (room.detail ? { workWeek: room.detail.workWeek, today: room.detail.today, people: room.detail.people } : null), [room.detail]);
-  const math = usePlanMath(room.plan, ctx);
+  // Taps show at once; dates, progress and Plan Check catch up a moment later on big plans.
+  const settled = useDeferredValue(room.plan);
+  const math = usePlanMath(settled, ctx);
   if (room.error) return <Notice tone="bad">{room.error}</Notice>;
   if (!room.plan || !room.detail || !math) return <Spinner label="Opening the plan" />;
   const canEdit = room.detail.role !== "viewer";
