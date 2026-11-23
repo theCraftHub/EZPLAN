@@ -3,15 +3,15 @@
  * wizard), paste or upload the reply, check the preview, say who has how much time, save.
  */
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { ArrowLeft, Check, ClipboardCopy, FileUp, MessagesSquare, PencilLine, Sparkles } from "lucide-react";
-import { BRAND, FILE_EXTENSIONS, generatePrompt, WIZARD_QUESTIONS, wizardPrompt, type WizardAnswers } from "@ezplan/shared";
-import { api, ApiError, type ImportPreview, type Me, type People } from "../lib/api";
+import { ArrowLeft, Check, ClipboardCopy, Copy, FileUp, LayoutTemplate, MessagesSquare, PencilLine, Sparkles } from "lucide-react";
+import { BRAND, FILE_EXTENSIONS, generatePrompt, pastPlanText, TEMPLATES, templateText, WIZARD_QUESTIONS, wizardPrompt, type WizardAnswers } from "@ezplan/shared";
+import { api, ApiError, type ImportPreview, type Me, type People, type PlanSummary } from "../lib/api";
 import { longDate, plural } from "../lib/format";
 import { useRouter } from "../lib/router";
 import { HoursPicker } from "../ui/HoursPicker";
 import { Button, Card, Notice, PageTitle } from "../ui/kit";
 
-type Step = "start" | "conversation" | "wizard" | "paste" | "preview";
+type Step = "start" | "conversation" | "wizard" | "paste" | "template" | "past" | "preview";
 const MAX_FILE = 1_000_000;
 
 export function NewPlan({ me }: { me: Me }) {
@@ -27,11 +27,12 @@ export function NewPlan({ me }: { me: Me }) {
   const [busy, setBusy] = useState(false);
   const fullTime = me.workspaces[0]?.work_week.hoursPerWeek ?? 40;
 
-  const check = async () => {
+  const check = async (body = text) => {
     setError("");
     setBusy(true);
     try {
-      setPreview(await api.preview(text, {}, fileName));
+      setText(body);
+      setPreview(await api.preview(body, {}, fileName));
       setPeople({});
       setStep("preview");
     } catch (e) {
@@ -62,6 +63,8 @@ export function NewPlan({ me }: { me: Me }) {
       {step === "start" && <Start onPick={(s) => { setFromWizard(false); if (s === "conversation") setPrompt(generatePrompt({ source: "conversation" })); setStep(s); }} />}
       {step === "conversation" && <Conversation prompt={prompt} setPrompt={setPrompt} fromWizard={fromWizard} onBack={back("start")} onNext={() => setStep("paste")} />}
       {step === "wizard" && <Wizard onBack={back("start")} onDone={(p) => { setFromWizard(true); setPrompt(p); setStep("conversation"); }} />}
+      {step === "template" && <TemplatePicker busy={busy} onBack={back("start")} onPick={(body) => { setFileName(undefined); void check(body); }} />}
+      {step === "past" && <PastPicker busy={busy} onBack={back("start")} onPick={(body) => { setFileName(undefined); void check(body); }} setError={setError} />}
       {step === "paste" && <Paste text={text} setText={setText} fileName={fileName} setFileName={setFileName} busy={busy} onBack={back(prompt ? "conversation" : "start")} onCheck={() => void check()} setError={setError} />}
       {step === "preview" && preview && <Preview preview={preview} text={text} fileName={fileName} people={people} setPeople={setPeople} fullTime={fullTime} busy={busy} onBack={back("paste")} onSave={(p) => void save(p)} />}
     </>
@@ -73,9 +76,11 @@ function Start({ onPick }: { onPick: (s: Step) => void }) {
     { s: "conversation" as const, Icon: MessagesSquare, title: "I've been talking it through with my AI", body: "Copy our prompt into that same chat. Your assistant turns the conversation into a plan; you paste its reply here." },
     { s: "wizard" as const, Icon: PencilLine, title: "I'm starting fresh", body: "Answer a few short questions. We put your answers into a prompt for any AI assistant." },
     { s: "paste" as const, Icon: FileUp, title: "I already have a reply or a plan file", body: `Paste an assistant's reply, or open a ${FILE_EXTENSIONS[0]} file.` },
+    { s: "template" as const, Icon: LayoutTemplate, title: "Start from a template", body: "Event, renovation, launch, hiring, research, move, wedding, construction, marketing, or blank. No AI needed." },
+    { s: "past" as const, Icon: Copy, title: "Start from a past project", body: "Reuse one of your plans: same steps, fresh dates, no progress." },
   ];
   return (
-    <ul className="m-0 grid list-none gap-3 p-0 md:grid-cols-3" aria-label="How do you want to start?">
+    <ul className="m-0 grid list-none gap-3 p-0 md:grid-cols-2 xl:grid-cols-3" aria-label="How do you want to start?">
       {options.map((o) => (
         <li key={o.s}>
           <button onClick={() => onPick(o.s)} className="flex h-full w-full flex-col items-start gap-2 rounded-2xl bg-surface p-5 text-left ring-1 ring-line hover:ring-primary">
@@ -311,3 +316,71 @@ function PersonRow(props: { name: string; fullTime: number; hours: number | unde
 }
 
 
+
+const todayLocal = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+
+function StartFields({ title, setTitle, start, setStart }: { title: string; setTitle: (s: string) => void; start: string; setStart: (s: string) => void }) {
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      <label className="flex flex-col gap-1.5 text-sm font-semibold">Plan name<input value={title} onChange={(e) => setTitle(e.target.value)} className="min-h-11 rounded-xl border border-line bg-surface px-3 text-base font-normal" /></label>
+      <label className="flex flex-col gap-1.5 text-sm font-semibold">Start date<input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="min-h-11 rounded-xl border border-line bg-surface px-3 text-base font-normal" /></label>
+    </div>
+  );
+}
+
+function TemplatePicker({ busy, onBack, onPick }: { busy: boolean; onBack: () => void; onPick: (text: string) => void }) {
+  const [id, setId] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [start, setStart] = useState(todayLocal());
+  const chosen = TEMPLATES.find((t) => t.id === id);
+  return (
+    <Card className="flex flex-col gap-4">
+      <div role="radiogroup" aria-label="Templates" className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+        {TEMPLATES.map((t) => (
+          <button key={t.id} role="radio" aria-checked={id === t.id} onClick={() => { setId(t.id); setTitle(t.id === "blank" ? "" : t.name); }} className={`flex flex-col items-start gap-1 rounded-xl p-3 text-left ring-1 ${id === t.id ? "bg-primary-soft ring-2 ring-primary" : "bg-surface ring-line hover:bg-surface-2"}`}>
+            <span className="text-[15px] font-bold">{t.name}</span><span className="text-sm text-ink-2">{t.blurb}</span>
+          </button>
+        ))}
+      </div>
+      {chosen && <StartFields title={title} setTitle={setTitle} start={start} setStart={setStart} />}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="secondary" onClick={onBack}><ArrowLeft aria-hidden size={18} /> Back</Button>
+        <Button disabled={!chosen || !start || busy || (chosen.id === "blank" && !title.trim())} onClick={() => onPick(templateText(chosen!.id, start, title))}>{busy ? "Checking…" : "Preview"}</Button>
+      </div>
+    </Card>
+  );
+}
+
+function PastPicker({ busy, onBack, onPick, setError }: { busy: boolean; onBack: () => void; onPick: (text: string) => void; setError: (e: string) => void }) {
+  const [plans, setPlans] = useState<PlanSummary[] | null>(null);
+  const [id, setId] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [start, setStart] = useState(todayLocal());
+  useEffect(() => { api.plans().then((r) => setPlans(r.plans)).catch((e: Error) => setError(e.message)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const go = async () => {
+    try {
+      const d = await api.plan(id!);
+      onPick(pastPlanText(d.plan, { title, start }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't open that plan.");
+    }
+  };
+  return (
+    <Card className="flex flex-col gap-4">
+      {plans?.length === 0 && <p className="m-0 text-[15px] text-ink-2">You don't have any plans yet. Start another way first.</p>}
+      <div role="radiogroup" aria-label="Your plans" className="grid gap-2 md:grid-cols-2">
+        {plans?.map((p) => (
+          <button key={p.id} role="radio" aria-checked={id === p.id} onClick={() => { setId(p.id); setTitle(`${p.title} (copy)`); }} className={`flex flex-col items-start gap-1 rounded-xl p-3 text-left ring-1 ${id === p.id ? "bg-primary-soft ring-2 ring-primary" : "bg-surface ring-line hover:bg-surface-2"}`}>
+            <span className="text-[15px] font-bold">{p.title}</span>{p.summary && <span className="text-sm text-ink-2">{p.summary.countedTasks} tasks · {p.summary.health}</span>}
+          </button>
+        ))}
+      </div>
+      {id && <StartFields title={title} setTitle={setTitle} start={start} setStart={setStart} />}
+      <p className="m-0 text-sm text-muted">The copy keeps the phases, tasks, owners and time needed. Progress, dates and "Done by" start fresh; the original isn't changed.</p>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="secondary" onClick={onBack}><ArrowLeft aria-hidden size={18} /> Back</Button>
+        <Button disabled={!id || !start || busy} onClick={() => void go()}>{busy ? "Checking…" : "Preview"}</Button>
+      </div>
+    </Card>
+  );
+}

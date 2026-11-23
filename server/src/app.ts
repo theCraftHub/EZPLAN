@@ -16,6 +16,7 @@ import {
   planPeople,
   progressOf,
   type PersonAvailability,
+  type Plan,
   parseOp,
   type Actor,
   type OpEnvelope,
@@ -366,6 +367,85 @@ export function createApp(ports: Ports) {
     const result = await rooms.apply(id, envelope, actor);
     if (result.status === "missing") return c.json(notFound, 404);
     return c.json(result);
+  });
+
+  /** Saves the plan as it is now, so a bulk change can be undone from Version history. */
+  async function saveVersion(planId: string, reason: string, userId: string): Promise<number | null> {
+    const room = await loadRoom(db, planId);
+    if (!room) return null;
+    const last = await db.first<{ v: number | null }>(`SELECT MAX(version) AS v FROM plan_versions WHERE plan_id = ?`, [planId]);
+    const v = Number(last?.v ?? -1) + 1;
+    await db.run(`INSERT INTO plan_versions (plan_id, version, reason, snapshot, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?)`, [planId, v, reason, JSON.stringify(room.plan), userId, clock.now()]);
+    return v;
+  }
+
+  // "Update with my AI": the changes the person accepted in the preview, applied in one go after
+  // saving a version. Each one is an ordinary edit, checked like any other.
+  app.post("/api/plans/:id/update", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    if (a.role === "viewer") return c.json({ error: "Viewers can't change this plan." }, 403);
+    const body = await c.req.json<{ ops?: unknown }>().catch(() => null);
+    const raw = Array.isArray(body?.ops) ? body!.ops : null;
+    if (!raw || raw.length === 0 || raw.length > 1000) return c.json({ error: "Send the accepted changes as a list (1 to 1,000)." }, 400);
+    const ops = raw.map(parseOp);
+    const bad = ops.findIndex((op) => !op);
+    if (bad >= 0) return c.json({ error: `Change ${bad + 1} isn't a valid edit.` }, 400);
+    const saved = await saveVersion(id, "Before an update from an AI assistant", user.id);
+    const batch = crypto.randomUUID().slice(0, 8);
+    let version = 0;
+    for (const [i, op] of ops.entries()) {
+      const r = await rooms.apply(id, { opId: `update-${batch}-${i}`, clientId: "update", op: op! }, { userId: user.id, name: user.name });
+      if (r.status === "missing") return c.json(notFound, 404);
+      version = r.version;
+    }
+    return c.json({ version, applied: ops.length, savedVersion: saved });
+  });
+
+  app.get("/api/plans/:id/versions", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    if (!(await access(id, user.id))) return c.json(notFound, 404);
+    const rows = await db.all<{ version: number; reason: string; snapshot: string; created_at: number; name: string | null }>(
+      `SELECT v.version, v.reason, v.snapshot, v.created_at, u.name FROM plan_versions v LEFT JOIN users u ON u.id = v.created_by WHERE v.plan_id = ? ORDER BY v.version DESC LIMIT 100`,
+      [id],
+    );
+    return c.json({
+      versions: rows.map((r) => {
+        const plan = JSON.parse(r.snapshot) as { title: string; phases: { tasks: { status: string; milestone: boolean }[] }[] };
+        const tasks = plan.phases.flatMap((p) => p.tasks).filter((t) => !t.milestone);
+        return { version: Number(r.version), reason: r.reason, createdAt: Number(r.created_at), by: r.name ?? "Someone", title: plan.title, tasks: tasks.length, done: tasks.filter((t) => t.status === "done").length, plan };
+      }),
+    });
+  });
+
+  // Restoring brings back the exact earlier plan; the current one is saved first, so this can be undone too.
+  app.post("/api/plans/:id/versions/:v/restore", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    if (a.role === "viewer") return c.json({ error: "Viewers can't change this plan." }, 403);
+    const v = Number(c.req.param("v"));
+    const row = await db.first<{ snapshot: string }>(`SELECT snapshot FROM plan_versions WHERE plan_id = ? AND version = ?`, [id, Number.isInteger(v) ? v : -1]);
+    if (!row) return c.json({ error: "That version doesn't exist." }, 404);
+    const saved = await saveVersion(id, `Before restoring version ${v}`, user.id);
+    const plan = { ...(JSON.parse(row.snapshot) as Plan), id };
+    const r = await rooms.apply(id, { opId: `restore-${crypto.randomUUID().slice(0, 8)}`, clientId: "restore", op: { kind: "replacePlan", plan } }, { userId: user.id, name: user.name });
+    if (r.status === "missing") return c.json(notFound, 404);
+    return c.json({ version: r.version, savedVersion: saved });
+  });
+
+  app.get("/api/plans/:id/trash", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    if (!(await access(id, user.id))) return c.json(notFound, 404);
+    const room = await loadRoom(db, id);
+    if (!room) return c.json(notFound, 404);
+    const items = Object.entries(room.trash).map(([taskId, x]) => ({ taskId, title: x.task.title, phaseId: x.phaseId, deletedAt: x.deletedAt, by: x.by }));
+    return c.json({ items: items.sort((p, q) => q.deletedAt.localeCompare(p.deletedAt)) });
   });
 
   // Live editing. WebSockets are GET requests, so check the origin here too (blocks other sites

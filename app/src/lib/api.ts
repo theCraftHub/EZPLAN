@@ -1,5 +1,5 @@
 /** Calls to our own server. Every change is JSON, which the server requires (blocks cross-site forms). */
-import type { PersonAvailability, Plan, PlanCheckResult, WorkWeek } from "@ezplan/shared";
+import type { Op, PersonAvailability, Plan, PlanCheckResult, WorkWeek } from "@ezplan/shared";
 
 export class ApiError extends Error {
   constructor(readonly status: number, message: string, readonly body: unknown) {
@@ -61,5 +61,9 @@ export const api = {
   createPlan: (text: string, people: People = {}, fileName?: string) => call<{ id: string; notices: string[] }>("/api/plans", { method: "POST", body: JSON.stringify({ text, people, ...(fileName ? { fileName } : {}) }) }),
   setPerson: (planId: string, name: string, a: PersonAvailability) => call<{ name: string }>(`/api/plans/${encodeURIComponent(planId)}/people/${encodeURIComponent(name)}`, { method: "PUT", body: JSON.stringify(a) }),
   workWeek: (workspaceId: string, w: WorkWeek, dryRun: boolean) => call<{ workWeek: WorkWeek; saved: boolean; impact: { planId: string; title: string; before: string; after: string }[] }>(`/api/workspaces/${encodeURIComponent(workspaceId)}/work-week`, { method: "PUT", body: JSON.stringify({ ...w, dryRun }) }),
+  update: (planId: string, ops: Op[]) => call<{ version: number; applied: number }>(`/api/plans/${encodeURIComponent(planId)}/update`, { method: "POST", body: JSON.stringify({ ops }) }),
+  versions: (planId: string) => call<{ versions: { version: number; reason: string; createdAt: number; by: string; title: string; tasks: number; done: number; plan: Plan }[] }>(`/api/plans/${encodeURIComponent(planId)}/versions`),
+  restoreVersion: (planId: string, v: number) => call<{ version: number }>(`/api/plans/${encodeURIComponent(planId)}/versions/${v}/restore`, { method: "POST", body: "{}" }),
+  trash: (planId: string) => call<{ items: { taskId: string; title: string; deletedAt: string; by: string }[] }>(`/api/plans/${encodeURIComponent(planId)}/trash`),
   logout: () => call<{ ok: true }>("/auth/logout", { method: "POST", body: "{}" }),
 };

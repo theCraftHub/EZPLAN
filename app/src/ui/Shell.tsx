@@ -16,7 +16,7 @@ export function Shell({ me, onSignOut, children }: { me: Me; onSignOut: () => vo
   const current = (to: string) => (to === "/" ? path === "/" || path.startsWith("/p/") : path.startsWith(to));
   return (
     <div className="min-h-dvh lg:flex">
-      <aside className="hidden w-60 shrink-0 flex-col gap-1 bg-nav px-3 py-5 text-nav-ink lg:sticky lg:top-0 lg:flex lg:h-dvh">
+      <aside className="hidden print:!hidden w-60 shrink-0 flex-col gap-1 bg-nav px-3 py-5 text-nav-ink lg:sticky lg:top-0 lg:flex lg:h-dvh">
         <div className="flex items-center gap-2 px-3 pb-5">
           <FolderKanban aria-hidden className="text-indigo-300" />
           <span className="text-[17px] font-bold text-white">{BRAND.name}</span>
@@ -37,14 +37,14 @@ export function Shell({ me, onSignOut, children }: { me: Me; onSignOut: () => vo
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col pb-[calc(72px+env(safe-area-inset-bottom))] lg:pb-0">
-        <header className="sticky top-0 z-10 flex items-center gap-2 bg-nav px-4 py-3 text-white lg:hidden">
+        <header className="sticky top-0 z-10 flex items-center gap-2 bg-nav px-4 py-3 text-white lg:hidden print:hidden">
           <FolderKanban aria-hidden size={20} className="text-indigo-300" />
           <span className="font-bold">{BRAND.name}</span>
         </header>
         <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-5 lg:px-8 lg:py-7">{children}</main>
       </div>
 
-      <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-3 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden">
+      <nav aria-label="Main" className="fixed print:hidden inset-x-0 bottom-0 z-20 grid grid-cols-3 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden">
         {NAV.map((n) => (
           <Link key={n.to} to={n.to} aria-current={current(n.to) ? "page" : undefined} className={`flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-semibold ${current(n.to) ? "text-primary" : "text-muted"}`}>
             <n.Icon aria-hidden size={22} /> {n.label}

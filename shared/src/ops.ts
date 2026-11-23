@@ -21,9 +21,17 @@ export type EditableField = "title" | "owner" | "due" | "notes" | "priority" | "
 export type Op =
   | { kind: "setStatus"; taskId: string; status: TaskStatus }
   | { kind: "setField"; taskId: string; field: EditableField; value: unknown }
-  | { kind: "addTask"; phaseId: string; task: Task; afterId?: string }
-  | { kind: "moveTask"; taskId: string; phaseId: string; afterId?: string }
-  | { kind: "deleteTask"; taskId: string };
+  | { kind: "addTask"; phaseId: string; task: Task; afterId?: string; first?: true }
+  | { kind: "moveTask"; taskId: string; phaseId: string; afterId?: string; first?: true }
+  | { kind: "deleteTask"; taskId: string }
+  | { kind: "restoreTask"; taskId: string }
+  | { kind: "addPhase"; phase: { id: string; title: string; description?: string }; afterId?: string }
+  | { kind: "setPhaseField"; phaseId: string; field: "title" | "description"; value: string | undefined }
+  | { kind: "setPlanField"; field: PlanField; value: string | undefined }
+  /** Server only (Version history restore): never accepted from a client (see opSchema.ts). */
+  | { kind: "replacePlan"; plan: Plan };
+
+export type PlanField = "title" | "goal" | "doneWhen";
 
 export interface OpEnvelope {
   /** Unique per client operation, so replays after reconnect are applied once. */
@@ -71,10 +79,45 @@ export function serverApply(state: RoomState, env: OpEnvelope, actor: Actor, tod
 
 /** Pure application used by both server and clients. */
 export function applyOp(state: Pick<RoomState, "plan" | "trash" | "restoredForReview">, op: Op, actor: Actor, today: string): Op {
+  if (op.kind === "replacePlan") {
+    state.plan = structuredClone(op.plan);
+    state.restoredForReview = [];
+    return op;
+  }
+  if (op.kind === "setPlanField") {
+    if (op.field === "title" && !op.value) return op; // a plan always has a title
+    if (op.value === undefined) delete state.plan[op.field];
+    else state.plan[op.field] = op.value;
+    return op;
+  }
+  if (op.kind === "addPhase") {
+    if (findPhase(state.plan, op.phase.id)) return op;
+    const phase: Phase = { id: op.phase.id, title: op.phase.title, tasks: [], ...(op.phase.description ? { description: op.phase.description } : {}) };
+    const i = op.afterId ? state.plan.phases.findIndex((p) => p.id === op.afterId) : -1;
+    if (i >= 0) state.plan.phases.splice(i + 1, 0, phase);
+    else state.plan.phases.push(phase);
+    return op;
+  }
+  if (op.kind === "setPhaseField") {
+    const phase = findPhase(state.plan, op.phaseId);
+    if (!phase || (op.field === "title" && !op.value)) return op;
+    if (op.value === undefined) delete phase[op.field];
+    else phase[op.field] = op.value;
+    return op;
+  }
+  if (op.kind === "restoreTask") {
+    const trashed = state.trash[op.taskId];
+    if (!trashed || findTask(state.plan, op.taskId)) return op;
+    const phase = findPhase(state.plan, trashed.phaseId) ?? state.plan.phases[0];
+    if (!phase) return op;
+    phase.tasks.push(trashed.task);
+    delete state.trash[op.taskId];
+    return op;
+  }
   if (op.kind === "addTask") {
     const phase = findPhase(state.plan, op.phaseId) ?? state.plan.phases[0];
     if (!phase || findTask(state.plan, op.task.id)) return op;
-    insertAfter(phase, structuredClone(op.task), op.afterId);
+    insertAfter(phase, structuredClone(op.task), op.afterId, op.first);
     return op;
   }
 
@@ -110,7 +153,7 @@ export function applyOp(state: Pick<RoomState, "plan" | "trash" | "restoredForRe
       const to = findPhase(state.plan, op.phaseId);
       if (!to || op.afterId === op.taskId) return op;
       from.phase.tasks.splice(from.index, 1);
-      insertAfter(to, task, op.afterId);
+      insertAfter(to, task, op.afterId, op.first);
       return op;
     }
     case "deleteTask": {
@@ -134,7 +177,12 @@ function findTask(plan: Plan, id: string): { task: Task; phase: Phase; index: nu
   return undefined;
 }
 
-function insertAfter(phase: Phase, task: Task, afterId?: string): void {
+/** After `afterId`, at the start when `first`, else at the end. */
+function insertAfter(phase: Phase, task: Task, afterId?: string, first?: true): void {
+  if (!afterId && first) {
+    phase.tasks.unshift(task);
+    return;
+  }
   const i = afterId ? phase.tasks.findIndex((t) => t.id === afterId) : -1;
   if (afterId && i >= 0) phase.tasks.splice(i + 1, 0, task);
   else phase.tasks.push(task);

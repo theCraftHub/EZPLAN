@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ArrowLeft, Wifi, WifiOff } from "lucide-react";
+import { ArrowLeft, Download, History as HistoryIcon, Printer, Sparkles, Wifi, WifiOff } from "lucide-react";
 import type { Me } from "../../lib/api";
 import { usePlanRoom } from "../../lib/live";
 import { Link } from "../../lib/router";
@@ -9,6 +9,9 @@ import { usePlanMath } from "./math";
 import { Overview } from "./Overview";
 import { Timeline } from "./Timeline";
 import { Team } from "./Team";
+import { UpdateWithAI } from "./UpdateWithAI";
+import { History } from "./History";
+import { PrintSummary } from "./PrintSummary";
 
 const TABS = [
   { view: "", label: "Overview" },
@@ -25,9 +28,12 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
   if (!room.plan || !room.detail || !math) return <Spinner label="Opening the plan" />;
   const canEdit = room.detail.role !== "viewer";
   const others = room.presence.filter((p) => p.userId !== me.user.id);
+  const updated = Number(new URLSearchParams(location.search).get("updated") ?? 0);
+  const action = "inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-sm font-semibold hover:bg-surface-2";
+  if (view === "print") return <PrintSummary plan={room.plan} math={math} today={room.detail.today} />;
   return (
     <>
-      <header className="flex flex-col gap-3">
+      <header className="flex flex-col gap-3 print:hidden">
         <Link to="/" className="inline-flex min-h-10 items-center gap-1 self-start text-sm font-semibold text-muted hover:text-ink"><ArrowLeft aria-hidden size={16} /> All plans</Link>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h1 className="m-0 text-[26px] leading-tight font-bold tracking-tight">{room.plan.title}</h1>
@@ -48,6 +54,12 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
           )}
           {!canEdit && <span className="font-semibold">View only</span>}
         </div>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Plan actions">
+          {canEdit && <Link to={`/p/${id}/update`} className={`${action} border-primary/40 text-primary-ink`}><Sparkles aria-hidden size={16} /> Update with my AI</Link>}
+          <a href={`/api/plans/${id}/export`} download className={action}><Download aria-hidden size={16} /> Download plan file</a>
+          <Link to={`/p/${id}/print`} className={action}><Printer aria-hidden size={16} /> Print summary</Link>
+          <Link to={`/p/${id}/history`} className={action}><HistoryIcon aria-hidden size={16} /> History and Trash</Link>
+        </div>
         <nav aria-label="Plan views" className="-mx-4 flex gap-1 overflow-x-auto border-b border-line px-4 lg:mx-0 lg:px-0">
           {TABS.map((t) => {
             const to = `/p/${id}${t.view ? `/${t.view}` : ""}`;
@@ -57,6 +69,9 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
         </nav>
       </header>
       {room.notice && <Notice tone="warn"><span className="flex items-center justify-between gap-3">{room.notice}<button onClick={room.clearNotice} className="min-h-9 rounded-lg px-2 font-semibold">OK</button></span></Notice>}
+      {updated > 0 && view === "" && <Notice tone="good">{updated} change{updated === 1 ? "" : "s"} from your AI assistant applied. The earlier plan is in History.</Notice>}
+      {view === "update" && canEdit && <UpdateWithAI planId={id} plan={room.plan} version={room.detail.version} />}
+      {view === "history" && <History planId={id} plan={room.plan} version={room.detail.version} canEdit={canEdit} edit={room.edit} />}
       {view === "" && <Overview plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} planId={id} />}
       {view === "checklist" && <Checklist plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} />}
       {view === "timeline" && <Timeline plan={room.plan} math={math} today={room.detail.today} />}

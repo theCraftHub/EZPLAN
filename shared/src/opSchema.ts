@@ -40,9 +40,14 @@ export const OpSchema = z.union([
   z.object({ kind: z.literal("setStatus"), taskId: Id, status: TaskStatus }),
   SetField,
   // A new task starts unfinished; "Done by" is only ever set by the server.
-  z.object({ kind: z.literal("addTask"), phaseId: Id, task: NewTask, afterId: Id.optional() }),
-  z.object({ kind: z.literal("moveTask"), taskId: Id, phaseId: Id, afterId: Id.optional() }),
+  z.object({ kind: z.literal("addTask"), phaseId: Id, task: NewTask, afterId: Id.optional(), first: z.literal(true).optional() }),
+  z.object({ kind: z.literal("moveTask"), taskId: Id, phaseId: Id, afterId: Id.optional(), first: z.literal(true).optional() }),
   z.object({ kind: z.literal("deleteTask"), taskId: Id }),
+  z.object({ kind: z.literal("restoreTask"), taskId: Id }),
+  z.object({ kind: z.literal("addPhase"), phase: z.object({ id: Id, title: Text(300).min(1), description: Text(2000).optional() }).strict(), afterId: Id.optional() }),
+  z.object({ kind: z.literal("setPhaseField"), phaseId: Id, field: z.enum(["title", "description"]), value: Text(2000).nullable() }),
+  z.object({ kind: z.literal("setPlanField"), field: z.enum(["title", "goal", "doneWhen"]), value: Text(2000).nullable() }),
+  // "replacePlan" is deliberately missing: only the server makes it (Version history restore).
 ]);
 
 export const OpEnvelopeSchema = z.object({ opId: Id, clientId: Id, op: OpSchema });
@@ -52,6 +57,6 @@ export function parseOp(input: unknown): Op | null {
   const r = OpSchema.safeParse(input);
   if (!r.success) return null;
   const op = r.data as Op & { value?: unknown };
-  if (op.kind === "setField" && op.value === null) return { ...op, value: undefined } as Op;
+  if ((op.kind === "setField" || op.kind === "setPhaseField" || op.kind === "setPlanField") && op.value === null) return { ...op, value: undefined } as Op;
   return op as Op;
 }

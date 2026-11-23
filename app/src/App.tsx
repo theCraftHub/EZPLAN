@@ -16,7 +16,7 @@ function Routes({ me, onSignOut, onMe }: { me: Me; onSignOut: () => void; onMe: 
   if (match("/new", path)) return <NewPlan me={me} />;
   if (match("/settings", path)) return <Settings me={me} onSignOut={onSignOut} onMe={onMe} />;
   const p = match("/p/:id", path) ?? match("/p/:id/:view", path);
-  if (p && ["", "checklist", "timeline", "team"].includes(p.view ?? "")) return <PlanPage key={p.id} me={me} id={p.id!} view={p.view ?? ""} />;
+  if (p && ["", "checklist", "timeline", "team", "update", "history", "print"].includes(p.view ?? "")) return <PlanPage key={p.id} me={me} id={p.id!} view={p.view ?? ""} />;
   return <NotFound />;
 }
 

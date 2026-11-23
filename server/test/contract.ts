@@ -193,6 +193,49 @@ export function apiContract(hostName: string, factory: HostFactory) {
       expect((await put({ hoursPerWeek: 40, workdays: [1, 2, 3, 4, 5] })).status).toBe(200);
     });
 
+    it("applies an AI update after saving a version, restores versions exactly, and lists the Trash", async () => {
+      const created = (await (await host.fetch("/api/plans", json({ text: "---\nezplan: 1\ntitle: Move\nstart: 2027-01-04\n---\n## P1: Pack\n- [x] T1: Boxes (1d) @Alex\n- [ ] T2: Pack books (2d) @Alex depends: T1" }), ALEX)).json()) as { id: string };
+      const id = created.id;
+      const get = async () => (await (await host.fetch(`/api/plans/${id}`, {}, ALEX)).json()) as { plan: Plan; version: number };
+      const before = (await get()).plan;
+      const ops = [
+        { kind: "setPlanField", field: "goal", value: "Moved by Friday" },
+        { kind: "addPhase", phase: { id: "P2", title: "Move day" }, afterId: "P1" },
+        { kind: "addTask", phaseId: "P2", task: { id: "T3", title: "Load the van", status: "todo", milestone: false, depends: [{ id: "T2", type: "FS", lagDays: 0 }], notes: [], tags: [], subtasks: [], extra: {} }, first: true },
+        { kind: "setField", taskId: "T2", field: "estimate", value: { amount: 3, unit: "d" } },
+      ];
+      const res = (await (await host.fetch(`/api/plans/${id}/update`, json({ ops }), ALEX)).json()) as { applied: number; savedVersion: number };
+      expect(res.applied).toBe(4);
+      const after = (await get()).plan;
+      expect(after.goal).toBe("Moved by Friday");
+      expect(after.phases.map((p) => p.title)).toEqual(["Pack", "Move day"]);
+      expect(after.phases[0]!.tasks[0]!.done!.by).toBe("Alex"); // progress untouched
+
+      const versions = (await (await host.fetch(`/api/plans/${id}/versions`, {}, ALEX)).json()) as { versions: { version: number; reason: string; by: string }[] };
+      expect(versions.versions.map((v) => v.reason)).toEqual(["Before an update from an AI assistant", "import"]);
+      expect(versions.versions[0]!.by).toBe("Alex");
+
+      expect((await host.fetch(`/api/plans/${id}/versions/${res.savedVersion}/restore`, json({}), ALEX)).status).toBe(200);
+      expect((await get()).plan).toEqual(before);
+      expect(((await (await host.fetch(`/api/plans/${id}/versions`, {}, ALEX)).json()) as { versions: { reason: string }[] }).versions[0]!.reason).toBe(`Before restoring version ${res.savedVersion}`);
+
+      await host.fetch(`/api/plans/${id}/ops`, json({ opId: "del-1", clientId: "c", op: { kind: "deleteTask", taskId: "T2" } }), ALEX);
+      const trash = (await (await host.fetch(`/api/plans/${id}/trash`, {}, ALEX)).json()) as { items: { taskId: string; title: string; by: string }[] };
+      expect(trash.items).toMatchObject([{ taskId: "T2", title: "Pack books", by: "Alex" }]);
+      await host.fetch(`/api/plans/${id}/ops`, json({ opId: "res-1", clientId: "c", op: { kind: "restoreTask", taskId: "T2" } }), ALEX);
+      expect(((await (await host.fetch(`/api/plans/${id}/trash`, {}, ALEX)).json()) as { items: unknown[] }).items).toEqual([]);
+      expect((await get()).plan.phases[0]!.tasks.map((t) => t.id)).toEqual(["T1", "T2"]);
+
+      // Refusals: clients can't send a whole-plan replacement, other workspaces see nothing, bad input is explained.
+      expect((await host.fetch(`/api/plans/${id}/ops`, json({ opId: "x", clientId: "c", op: { kind: "replacePlan", plan: before } }), ALEX)).status).toBe(400);
+      expect((await host.fetch(`/api/plans/${id}/update`, json({ ops: [{ kind: "replacePlan", plan: before }] }), ALEX)).status).toBe(400);
+      expect((await host.fetch(`/api/plans/${id}/update`, json({ ops: [] }), ALEX)).status).toBe(400);
+      expect((await host.fetch(`/api/plans/${id}/update`, json({ ops }), SAM)).status).toBe(404);
+      expect((await host.fetch(`/api/plans/${id}/versions`, {}, SAM)).status).toBe(404);
+      expect((await host.fetch(`/api/plans/${id}/trash`, {}, SAM)).status).toBe(404);
+      expect((await host.fetch(`/api/plans/${id}/versions/99/restore`, json({}), ALEX)).status).toBe(404);
+    });
+
     it("keeps everything across a restart, and migrations run once", async () => {
       await host.restart();
       expect((await host.fetch("/api/health")).status).toBe(200);
