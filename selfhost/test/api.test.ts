@@ -5,6 +5,7 @@ import { apiContract, TODAY, type HostFactory, type TestHost } from "../../serve
 import { testConfig, testHttp } from "../../server/test/hostConfig";
 import { LiveClient, liveContract } from "../../server/test/live.contract";
 import { sharingContract } from "../../server/test/sharing.contract";
+import { aiContract } from "../../server/test/ai.contract";
 import { signInContract } from "../../server/test/signin.contract";
 import { WebSocket } from "ws";
 import { createSelfHost } from "../src/host";
@@ -13,9 +14,9 @@ import { startServer } from "../src/server";
 const clock = { today: () => TODAY, now: () => Date.parse(`${TODAY}T12:00:00Z`) };
 
 const factory: HostFactory = {
-  async start({ testAuth, fake }): Promise<TestHost> {
+  async start({ testAuth, fake, testAi }): Promise<TestHost> {
     const dataDir = mkdtempSync(join(tmpdir(), "selfhost-"));
-    const make = () => createSelfHost({ dataDir, clock, config: testConfig(fake), http: testHttp(fake), testAuth });
+    const make = () => createSelfHost({ dataDir, clock, config: testConfig(fake), http: testHttp(fake), testAuth, ...(testAi ? { testAi } : {}) });
     let server = make();
     let http: ReturnType<typeof startServer> | null = null;
     const listening = async () => {
@@ -72,3 +73,4 @@ apiContract("self-hosted (Node + SQLite)", factory);
 signInContract("self-hosted (Node + SQLite)", factory);
 liveContract("self-hosted (Node + SQLite)", factory);
 sharingContract("self-hosted (Node + SQLite)", factory);
+aiContract("self-hosted (Node + SQLite)", factory);

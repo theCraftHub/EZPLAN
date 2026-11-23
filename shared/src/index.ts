@@ -16,3 +16,5 @@ export * from "./availability";
 export * from "./quickAdd";
 export * from "./update";
 export * from "./templates";
+export * from "./ai";
+export * from "./report";

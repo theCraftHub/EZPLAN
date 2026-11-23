@@ -7,7 +7,7 @@
  */
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { configFromEnv, testAuthEnabled } from "@ezplan/server";
+import { AnthropicEngine, configFromEnv, testAuthEnabled } from "@ezplan/server";
 import { createSelfHost } from "./host";
 import { startServer } from "./server";
 
@@ -16,6 +16,9 @@ const { app, rooms, close } = createSelfHost({
   dataDir: process.env.DATA_DIR ?? "./data",
   config: configFromEnv(process.env),
   testAuth: testAuthEnabled(process.env.TEST_AUTH),
+  testAi: testAuthEnabled(process.env.TEST_AI),
+  // The built-in AI, only when a key is set (never stored in the repository).
+  ...(process.env.ANTHROPIC_API_KEY ? { ai: new AnthropicEngine({ apiKey: process.env.ANTHROPIC_API_KEY, ...(process.env.AI_MODEL ? { model: process.env.AI_MODEL } : {}), ...(process.env.AI_REPORT_MODEL ? { reportModel: process.env.AI_REPORT_MODEL } : {}) }) } : {}),
   staticDir: process.env.STATIC_DIR ?? join(dirname(fileURLToPath(import.meta.url)), "..", "..", "app", "dist"),
 });
 const server = startServer({ app, rooms, port, onListen: (p) => console.log(`Listening on port ${p}`) });

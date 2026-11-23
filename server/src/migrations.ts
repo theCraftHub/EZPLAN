@@ -59,6 +59,27 @@ export const MIGRATIONS: Migration[] = [
       `ALTER TABLE plan_people ADD COLUMN user_id TEXT`,
     ],
   },
+  {
+    id: 5,
+    name: "AI checks, reports, usage, limits and credits, safety holds",
+    statements: [
+      `CREATE TABLE ai_usage (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, plan_id TEXT, workspace_id TEXT NOT NULL, feature TEXT NOT NULL, model TEXT NOT NULL, input_tokens INTEGER NOT NULL, output_tokens INTEGER NOT NULL, cost_usd REAL NOT NULL, status TEXT NOT NULL, month TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+      `CREATE INDEX ai_usage_ws_month ON ai_usage(workspace_id, month)`,
+      `CREATE INDEX ai_usage_user_month ON ai_usage(user_id, month)`,
+      `CREATE TABLE ai_reviews (plan_id TEXT PRIMARY KEY REFERENCES plans(id), plan_version INTEGER NOT NULL, result TEXT NOT NULL, hidden INTEGER NOT NULL, created_by TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+      `CREATE TABLE ai_suppressions (id TEXT PRIMARY KEY, plan_id TEXT NOT NULL REFERENCES plans(id), kind TEXT NOT NULL, text TEXT NOT NULL, task_ids TEXT NOT NULL, created_by TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+      `CREATE INDEX ai_suppressions_plan ON ai_suppressions(plan_id)`,
+      // user_id '*' is the workspace's default allowance; a row per person overrides it.
+      `CREATE TABLE ai_allowances (workspace_id TEXT NOT NULL, user_id TEXT NOT NULL, monthly_checks INTEGER NOT NULL, monthly_reports INTEGER NOT NULL, set_by TEXT NOT NULL, set_at INTEGER NOT NULL, PRIMARY KEY (workspace_id, user_id))`,
+      `CREATE TABLE ai_credit_requests (id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, user_id TEXT NOT NULL, checks INTEGER NOT NULL, reports INTEGER NOT NULL, note TEXT, status TEXT NOT NULL, decided_by TEXT, decided_at INTEGER, created_at INTEGER NOT NULL)`,
+      // user_id NULL = added to the workspace pool (a top-up); otherwise extra for one person this month.
+      `CREATE TABLE ai_credit_grants (id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, user_id TEXT, month TEXT NOT NULL, checks INTEGER NOT NULL, reports INTEGER NOT NULL, granted_by TEXT NOT NULL, reason TEXT, created_at INTEGER NOT NULL)`,
+      `CREATE INDEX ai_grants_ws_month ON ai_credit_grants(workspace_id, month)`,
+      `CREATE TABLE ai_moderation_cache (text_hash TEXT PRIMARY KEY, verdict TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+      `CREATE TABLE safety_holds (id TEXT PRIMARY KEY, plan_id TEXT, user_id TEXT NOT NULL, feature TEXT NOT NULL, category TEXT, excerpt TEXT NOT NULL, status TEXT NOT NULL, note TEXT, decided_by TEXT, decided_at INTEGER, created_at INTEGER NOT NULL)`,
+      `ALTER TABLE members ADD COLUMN department TEXT`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

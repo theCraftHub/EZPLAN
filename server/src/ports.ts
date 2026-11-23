@@ -88,7 +88,22 @@ export interface ServerConfig {
   allowedEmails?: string[];
   /** Mark cookies Secure (always in production; only plain-http local testing turns it off). */
   secureCookies: boolean;
+  /** The owner's team (emails): the only people who can open the safety review queue. */
+  platformAdmins?: string[];
+  /** Monthly AI allowances (per person) and pool (per workspace). */
+  aiLimits?: AiLimits;
 }
+
+export interface AiLimits {
+  checksPerPerson: number;
+  reportsPerPerson: number;
+  poolChecks: number;
+  poolReports: number;
+  /** Highest a pool can be topped up to before billing exists. */
+  poolMax: number;
+}
+
+export const DEFAULT_AI_LIMITS: AiLimits = { checksPerPerson: 100, reportsPerPerson: 30, poolChecks: 1000, poolReports: 300, poolMax: 10000 };
 
 /** Outbound HTTP, so tests can stand in for sign-in providers. */
 export type HttpFetch = (request: Request) => Promise<Response>;
@@ -102,6 +117,8 @@ export interface Ports {
   http: HttpFetch;
   /** TESTS ONLY: also accept the x-test-user header (see auth.ts). Never true in production. */
   testAuth?: boolean;
+  /** The AI engine; absent means AI features are off and everything else works. */
+  ai?: import("./ai/engine").AiEngine;
 }
 
 export const systemClock: Clock = {

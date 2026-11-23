@@ -5,9 +5,15 @@
  *   OIDC_PROVIDERS   JSON list of sign-in providers: [{ id, label, issuer, clientId, clientSecret, trustEmail? }]
  *   ALLOWED_EMAILS   optional comma-separated list; only these people may sign in
  *   SECURE_COOKIES   "0" only for plain-http local testing; anything else keeps cookies Secure
+ *   PLATFORM_ADMINS  comma-separated emails of the owner's team (safety review queue, support inbox)
+ *   AI_MONTHLY_CHECKS, AI_MONTHLY_REPORTS  per-person monthly AI allowance (default 100 and 30)
+ *   AI_POOL_CHECKS, AI_POOL_REPORTS, AI_POOL_MAX  per-workspace monthly pool and top-up ceiling
+ *   ANTHROPIC_API_KEY, AI_MODEL, AI_REPORT_MODEL  the built-in AI (read by each host; AI is off without a key)
  */
 import { DEFAULT_WORK_WEEK } from "@ezplan/shared";
-import type { OidcProvider, ServerConfig } from "./ports";
+import { DEFAULT_AI_LIMITS, type OidcProvider, type ServerConfig } from "./ports";
+
+const num = (v: string | undefined, d: number) => (v && /^\d+$/.test(v) ? Number(v) : d);
 
 export function configFromEnv(env: Record<string, string | undefined>): ServerConfig {
   const publicUrl = env.PUBLIC_URL?.trim();
@@ -35,5 +41,13 @@ export function configFromEnv(env: Record<string, string | undefined>): ServerCo
     providers,
     ...(allowed && allowed.length ? { allowedEmails: allowed } : {}),
     secureCookies: env.SECURE_COOKIES !== "0",
+    ...(env.PLATFORM_ADMINS ? { platformAdmins: env.PLATFORM_ADMINS.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean) } : {}),
+    aiLimits: {
+      checksPerPerson: num(env.AI_MONTHLY_CHECKS, DEFAULT_AI_LIMITS.checksPerPerson),
+      reportsPerPerson: num(env.AI_MONTHLY_REPORTS, DEFAULT_AI_LIMITS.reportsPerPerson),
+      poolChecks: num(env.AI_POOL_CHECKS, DEFAULT_AI_LIMITS.poolChecks),
+      poolReports: num(env.AI_POOL_REPORTS, DEFAULT_AI_LIMITS.poolReports),
+      poolMax: num(env.AI_POOL_MAX, DEFAULT_AI_LIMITS.poolMax),
+    },
   };
 }

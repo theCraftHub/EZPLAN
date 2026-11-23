@@ -2,7 +2,7 @@
  * Cloud entry point (Cloudflare Workers): the shared API (server/) on the Cloudflare connectors,
  * plus the PlanRoom Durable Object for live editing.
  */
-import { configFromEnv, createApp, LiveRoom, PlanRoomCore, systemClock, testAuthEnabled, type Clock, type Peer } from "@ezplan/server";
+import { AnthropicEngine, configFromEnv, createApp, FakeEngine, LiveRoom, PlanRoomCore, systemClock, testAuthEnabled, type Clock, type Peer } from "@ezplan/server";
 import { LIVE_MAX_MESSAGE, type Actor, type OpEnvelope, type ServerMessage } from "@ezplan/shared";
 import { D1Db, DurableRoomHost, R2Blobs, type LiveTicket } from "./adapters";
 
@@ -20,6 +20,12 @@ export interface Env {
   /** Tests only: with TEST_CLOCK=1, a fixed "today", so dates in tests don't drift. Never set in production. */
   TEST_CLOCK?: string;
   TEST_TODAY?: string;
+  /** The built-in AI (secret). Without it, AI features are off. */
+  ANTHROPIC_API_KEY?: string;
+  AI_MODEL?: string;
+  AI_REPORT_MODEL?: string;
+  /** "1" only in tests: a scripted AI engine. Never set in production. */
+  TEST_AI?: string;
 }
 
 function clockFor(env: Env): Clock {
@@ -44,6 +50,11 @@ export default {
           config: configFromEnv(env as unknown as Record<string, string | undefined>),
           http: (req) => fetch(req),
           ...(testAuthEnabled(env.TEST_AUTH) ? { testAuth: true } : {}),
+          ...(testAuthEnabled(env.TEST_AI)
+            ? { ai: new FakeEngine() }
+            : env.ANTHROPIC_API_KEY
+              ? { ai: new AnthropicEngine({ apiKey: env.ANTHROPIC_API_KEY, ...(env.AI_MODEL ? { model: env.AI_MODEL } : {}), ...(env.AI_REPORT_MODEL ? { reportModel: env.AI_REPORT_MODEL } : {}) }) }
+              : {}),
         }),
       };
     }

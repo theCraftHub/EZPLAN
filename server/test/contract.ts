@@ -21,7 +21,7 @@ export interface TestHost {
 
 export interface HostFactory {
   /** `fake`: the stand-in sign-in provider to configure (sign-in tests). */
-  start(opts: { testAuth: boolean; fake?: import("./fakeOidc").FakeOidc }): Promise<TestHost>;
+  start(opts: { testAuth: boolean; fake?: import("./fakeOidc").FakeOidc; testAi?: boolean }): Promise<TestHost>;
 }
 
 const ALEX = "u-alex|Alex|alex@example.com";

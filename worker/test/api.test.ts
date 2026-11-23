@@ -12,6 +12,7 @@ import { apiContract, TODAY, type HostFactory, type TestHost } from "../../serve
 import { testEnv, testHttp } from "../../server/test/hostConfig";
 import { LiveClient, liveContract } from "../../server/test/live.contract";
 import { sharingContract } from "../../server/test/sharing.contract";
+import { aiContract } from "../../server/test/ai.contract";
 import { signInContract } from "../../server/test/signin.contract";
 
 let bundled: Promise<string> | null = null;
@@ -30,7 +31,7 @@ function bundle(): Promise<string> {
 }
 
 const factory: HostFactory = {
-  async start({ testAuth, fake }): Promise<TestHost> {
+  async start({ testAuth, fake, testAi }): Promise<TestHost> {
     const script = await bundle();
     const dir = mkdtempSync(join(tmpdir(), "worker-"));
     const make = () =>
@@ -41,7 +42,7 @@ const factory: HostFactory = {
         d1Databases: { DB: "plans" },
         r2Buckets: ["FILES"],
         durableObjects: { PLAN_ROOM: { className: "PlanRoom", useSQLite: true } },
-        bindings: { ...testEnv(fake), TEST_CLOCK: "1", TEST_TODAY: TODAY, ...(testAuth ? { TEST_AUTH: "1" } : {}) },
+        bindings: { ...testEnv(fake), TEST_CLOCK: "1", TEST_TODAY: TODAY, ...(testAuth ? { TEST_AUTH: "1" } : {}), ...(testAi ? { TEST_AI: "1" } : {}) },
         // Outbound requests (sign-in provider) go to the stand-in provider, never the internet.
         outboundService: (req: unknown) => testHttp(fake)(req as Request) as never,
         d1Persist: join(dir, "d1"),
@@ -90,3 +91,4 @@ apiContract("cloud (Workers + D1 + Durable Objects)", factory);
 signInContract("cloud (Workers + D1 + Durable Objects)", factory);
 liveContract("cloud (Workers + D1 + Durable Objects)", factory);
 sharingContract("cloud (Workers + D1 + Durable Objects)", factory);
+aiContract("cloud (Workers + D1 + Durable Objects)", factory);

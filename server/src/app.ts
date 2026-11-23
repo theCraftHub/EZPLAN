@@ -29,6 +29,7 @@ import { loadRoom, newRoomJson } from "./room";
 import { EMAIL_RE, INVITE_DAYS, inviteProblem, maskEmail, PLAN_ROLES, strongest, type InviteRow, type PlanRole } from "./invites";
 import { createSession, endAllSessions, endSession, randomToken, sha256, SESSION_COOKIE, SESSION_DAYS, userForSession } from "./sessions";
 import type { Ports, User } from "./ports";
+import { aiService, registerAiRoutes } from "./ai/routes";
 
 type Role = "manager" | "editor" | "viewer";
 type Vars = { Variables: { user: User } };
@@ -160,6 +161,21 @@ export function createApp(ports: Ports) {
   }
   // Someone else's plan answers exactly like a missing one, so IDs can't be probed.
   const notFound = { error: "This plan doesn't exist or you don't have access to it." };
+  const heldMessage = "This plan is waiting for a safety review. AI features, sharing and exports are paused until then; everything else works.";
+  const isHeld = async (planId: string) => (await db.first<{ state: string }>(`SELECT state FROM plans WHERE id = ?`, [planId]))?.state === "review";
+
+  const aiDeps = {
+    db,
+    clock,
+    config,
+    ai: ports.ai,
+    access,
+    loadRoom: (planId: string) => loadRoom(db, planId),
+    loadPeople: (planId: string) => loadPeople(planId),
+    workWeekOf: async (wsId: string) => parseWorkWeek((await db.first<{ work_week: string }>(`SELECT work_week FROM workspaces WHERE id = ?`, [wsId]))?.work_week ?? "{}"),
+  };
+  const ai = aiService(aiDeps);
+  registerAiRoutes(app, aiDeps, ai);
 
   app.get("/api/me", async (c) => {
     const user = c.get("user");
@@ -200,7 +216,7 @@ export function createApp(ports: Ports) {
     const members = await db.all<{ name: string }>(`SELECT u.name FROM members m JOIN users u ON u.id = m.user_id WHERE m.workspace_id = ?`, [workspace.workspace_id]);
     const preview = await importPlan(
       { source: typeof body.fileName === "string" ? "upload" : "paste", text: body.text, ...(typeof body.fileName === "string" ? { fileName: body.fileName } : {}) },
-      { importerName: user.name, editablePlanIds: new Set(), memberNames: members.map((m) => m.name), today: clock.today() },
+      { importerName: user.name, editablePlanIds: new Set(), memberNames: members.map((m) => m.name), today: clock.today(), ...(ai.moderator(user, workspace.workspace_id) ? { moderate: ai.moderator(user, workspace.workspace_id)! } : {}) },
     );
     if (!preview.ok || !preview.plan) return { error: c.json({ error: preview.notices[0] ?? "This plan couldn't be read.", notices: preview.notices, parseIssues: preview.parseIssues, moderation: preview.moderation }, 422) };
     const workWeek = parseWorkWeek(workspace.work_week);
@@ -241,6 +257,7 @@ export function createApp(ports: Ports) {
       { sql: `INSERT INTO plan_versions (plan_id, version, reason, snapshot, created_by, created_at) VALUES (?, 0, 'import', ?, ?, ?)`, params: [id, JSON.stringify(plan), user.id, now] },
       ...Object.entries(r.people).map(([name, a]) => ({ sql: `INSERT INTO plan_people (plan_id, name_key, name, availability, updated_at) VALUES (?, ?, ?, ?, ?)`, params: [id, name.toLowerCase(), name, JSON.stringify(a), now] })),
     ]);
+    if (state === "review") await ai.hold(id, user, "moderation", r.preview.moderation.category ?? null, body0(r.plan));
     return c.json({ id, state, notices: r.preview.notices, parseIssues: r.preview.parseIssues, check: r.preview.check }, 201);
   });
 
@@ -349,6 +366,7 @@ export function createApp(ports: Ports) {
       id,
       version: room.seq,
       role: a.role,
+      state: (await db.first<{ state: string }>(`SELECT state FROM plans WHERE id = ?`, [id]))?.state ?? "active",
       plan: room.plan,
       people,
       workWeek,
@@ -474,6 +492,7 @@ export function createApp(ports: Ports) {
     const a = await access(id, user.id);
     if (!a) return c.json(notFound, 404);
     if (!a.canShare) return c.json({ error: "Only people in this plan's workspace can invite others." }, 403);
+    if (await isHeld(id)) return c.json({ error: heldMessage }, 423);
     const body = await c.req.json<{ email?: unknown; role?: unknown; personName?: unknown }>().catch(() => null);
     const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
     const role = body?.role as PlanRole;
@@ -595,6 +614,7 @@ export function createApp(ports: Ports) {
     const id = c.req.param("id");
     const a = await access(id, user.id);
     if (!a) return c.json(notFound, 404);
+    if (await isHeld(id)) return c.json({ error: heldMessage }, 423);
     const room = await loadRoom(db, id);
     if (!room) return c.json(notFound, 404);
     const text = exportPlan(room.plan, { hoursPerDay: hoursPerDay(parseWorkWeek(a.work_week)) });
@@ -612,6 +632,11 @@ export function createApp(ports: Ports) {
   });
 
   return app;
+}
+
+/** A short excerpt of a plan for the safety review queue (only what's needed to judge it). */
+function body0(plan: Plan): string {
+  return [plan.title, plan.goal ?? "", ...plan.phases.flatMap((p) => [p.title, ...p.tasks.map((t) => t.title)])].join("\n").slice(0, 600);
 }
 
 function parseWorkWeek(json: string): WorkWeek {
