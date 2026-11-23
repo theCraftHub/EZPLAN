@@ -108,7 +108,7 @@
    "is_interactive": true
   },
   "TeamDesktop.dc.html": {
-   "x": 3040,
+   "x": 1520,
    "y": 1400,
    "w": 1440,
    "h": 1000,
@@ -117,20 +117,11 @@
    "is_interactive": true
   },
   "AdminConsole.dc.html": {
-   "x": 1520,
-   "y": 1400,
-   "w": 1440,
-   "h": 1000,
-   "title": "Desktop: IT admin (overview, people, offboarding, groups)",
-   "expand": "fill",
-   "is_interactive": true
-  },
-  "AdminSecurity.dc.html": {
    "x": 0,
    "y": 2700,
    "w": 1440,
    "h": 1000,
-   "title": "Desktop: IT admin (setup, policies, audit, licenses)",
+   "title": "Desktop: IT admin console (every section in one side panel)",
    "expand": "fill",
    "is_interactive": true
   },
@@ -167,7 +158,6 @@
   "Desktop.dc.html",
   "AdminConsole.dc.html",
   "TeamDesktop.dc.html",
-  "AdminSecurity.dc.html",
   "BusinessOnboarding.dc.html",
   "AdminPhone.dc.html"
  ],
@@ -182,9 +172,9 @@
   "deskTitle": {
    "x": 0,
    "y": 1110,
-   "text": "EZPLAN on desktop + company IT admin",
+   "text": "EZPLAN on desktop",
    "kind": "title1",
-   "maxW": 4480
+   "maxW": 2960
   },
   "lookNote": {
    "x": 5170,
@@ -194,7 +184,7 @@
    "fill": "blue"
   },
   "teamNote": {
-   "x": 4560,
+   "x": 3040,
    "y": 1400,
    "w": 320,
    "text": "Team schedule: availability sits under the work. Kitchen example: Jordan full time with Tuesday meetings, Priya 20 h a week and off Jan 12 to 13. Every date, finish and what-if here comes from the real scheduling engine. Click T2, then try a change.",
