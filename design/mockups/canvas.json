@@ -139,7 +139,7 @@
    "y": 2700,
    "w": 390,
    "h": 844,
-   "title": "IT admin on a phone (urgent actions)",
+   "title": "IT admin on a phone (every section, same as desktop)",
    "is_interactive": true
   }
  },
@@ -201,7 +201,7 @@
    "x": 3510,
    "y": 2700,
    "w": 340,
-   "text": "Sample company: Northfield Builders (fictional, about 180 people, Microsoft 365). Try: People \u2192 select a few \u2192 Select all 23 \u2192 Move (dry run, then undo). Policies show who each change affects before saving. Onboarding: the two dashed buttons jump to the self-serve and SAML paths; only SAML goes to specialized pricing, and \"I'm not sure\" never does.",
+   "text": "Sample company: Northfield Builders (fictional, about 180 people, Microsoft 365). Admin on phone and desktop share the same sections, data and steps. Try: People \u2192 + Add people (preview before anyone is invited), tap a name for sign out / resend / deactivate, select a few \u2192 Move (dry run, then undo). Onboarding: domain, sign-in questions, connect and test, pick directory groups, second admin and welcome email, seats follow the people count, go live. Only SAML goes to specialized pricing; \"I'm not sure\" never does.",
    "fill": "purple"
   }
  },

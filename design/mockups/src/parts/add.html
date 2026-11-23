@@ -1,0 +1,41 @@
+        <div style="display: flex; align-items: center; gap: 12px">
+          <h2 style="flex: 1; margin: 0; font-size: 19px; font-weight: 700">Add people</h2>
+          <button onClick="{{ closeAdd }}" aria-label="Close" style="width: 44px; height: 44px; flex: none; border-radius: 12px; border: 1px solid #E2E8F0; background: #FFFFFF; font: 600 18px Inter, sans-serif; color: #334155; cursor: pointer">✕</button>
+        </div>
+        <sc-if value="{{ addForm }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 14px">
+            <span style="font-size: 13px; line-height: 1.5; color: #334155; padding: 10px 12px; border-radius: 10px; background: #F8FAFC">{{ syncNote }}</span>
+            <div role="radiogroup" aria-label="How many" style="display: flex; background: #E9ECF1; border-radius: 10px; padding: 3px; gap: 3px">
+              <sc-for list="{{ modeOpts }}" as="m" hint-placeholder-count="2"><button role="radio" aria-checked="{{ m.checked }}" onClick="{{ m.pick }}" style="{{ m.style }}">{{ m.label }}</button></sc-for>
+            </div>
+            <sc-if value="{{ isOne }}" hint-placeholder-val="{{ true }}">
+              <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600">Work email
+                <input id="addEmail" type="email" value="{{ addEmail }}" onChange="{{ setAddEmail }}" aria-invalid="{{ addError }}" style="min-height: 48px; border-radius: 10px; border: 1px solid #CBD5E1; padding: 0 12px; font: 500 16px Inter, sans-serif; color: #0F172A">
+                <sc-if value="{{ addError }}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: 13px; font-weight: 600; color: #B91C1C">{{ addError }}</span></sc-if>
+              </label>
+            </sc-if>
+            <sc-if value="{{ isMany }}" hint-placeholder-val="{{ false }}">
+              <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600">Paste emails, one per line, or a CSV (name, email, department)
+                <textarea readonly rows="5" value="{{ manyText }}" style="border-radius: 10px; border: 1px solid #CBD5E1; padding: 10px 12px; font: 500 14px/1.5 ui-monospace, monospace; color: #0F172A; resize: vertical"></textarea>
+              </label>
+              <span style="font-size: 13px; color: #475569">Or upload a .csv file. We check every row before anyone is added.</span>
+            </sc-if>
+            <sc-if value="{{ roleHidden }}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #1E1B4B; padding: 10px 12px; border-radius: 10px; background: #EEF2FF">This address is outside northfield.example, so they'll join as a Guest. You'll pick their plans next.</span></sc-if>
+            <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 14px; font-weight: 600">Workspace</span><div role="radiogroup" aria-label="Workspace" style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{ wsOpts }}" as="o" hint-placeholder-count="4"><button role="radio" aria-checked="{{ o.checked }}" onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button></sc-for></div></div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 14px; font-weight: 600">Role</span><div role="radiogroup" aria-label="Role" style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{ roleOpts }}" as="o" hint-placeholder-count="3"><button role="radio" aria-checked="{{ o.checked }}" onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button></sc-for></div><span style="font-size: 13px; color: #475569">Viewer: sees plans. Editor: updates tasks. Manager: runs the workspace and adds people to it.</span></div>
+            <span style="font-size: 13px; color: #475569">{{ seatNote }}</span>
+            <button onClick="{{ toPreview }}" disabled="{{ previewDisabled }}" style="{{ previewStyle }}">Preview</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ addPreview }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <span style="font-size: 15px; font-weight: 700">{{ previewTitle }}</span>
+            <span style="font-size: 14px; color: #334155">Nothing happens until you press the button below.</span>
+            <sc-for list="{{ previewRows }}" as="r" hint-placeholder-count="2"><div style="{{ r.style }}"><span style="font-size: 13px; font-weight: 700; overflow-wrap: anywhere">{{ r.email }}</span><span style="font-size: 14px">{{ r.text }}</span></div></sc-for>
+            <span style="font-size: 13px; color: #475569">Each person gets a welcome email with one "Sign in with Microsoft" button and lands in their workspace. Invites you don't want can be cancelled any time.</span>
+            <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px">
+              <button onClick="{{ backToForm }}" style="min-height: 48px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer">Back</button>
+              <button onClick="{{ doAdd }}" style="min-height: 48px; border-radius: 10px; border: none; background: #4F46E5; font: 600 15px Inter, sans-serif; color: #FFFFFF; cursor: pointer">{{ addLabel }}</button>
+            </div>
+          </div>
+        </sc-if>

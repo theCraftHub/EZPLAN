@@ -105,16 +105,20 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
             <span style="font-size: 14px; color: #475569">184 people · synced from Microsoft Entra ID 12 minutes ago</span>
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap">
-            <button style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F172A; cursor: pointer">Import CSV</button>
-            <button style="min-height: 40px; padding: 0 14px; border-radius: 10px; border: none; background: #4F46E5; font: 600 14px Inter, sans-serif; color: #FFFFFF; cursor: pointer">Invite people</button>
+            <button onClick="{{ openAddMany }}" style="min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F172A; cursor: pointer">Import CSV</button>
+            <button onClick="{{ openAdd }}" style="min-height: 44px; padding: 0 14px; border-radius: 10px; border: none; background: #4F46E5; font: 600 14px Inter, sans-serif; color: #FFFFFF; cursor: pointer">+ Add people</button>
           </div>
         </header>
         <div role="group" aria-label="Filter by department" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
           <sc-for list="{{ filters }}" as="f" hint-placeholder-count="5">
             <button aria-pressed="{{ f.on }}" onClick="{{ f.pick }}" style="{{ f.style }}">{{ f.label }}</button>
           </sc-for>
-          <span style="margin-left: auto; font-size: 13px; color: #475569">Saved views: Field crews · Inactive 60+ days · Guests</span>
+          <label for="findD" style="position: absolute; left: -9999px">Find a person</label>
+          <input id="findD" value="{{ q }}" onChange="{{ setQ }}" placeholder="Find a person" style="margin-left: auto; min-height: 40px; width: 220px; border-radius: 10px; border: 1px solid #CBD5E1; padding: 0 12px; font: 500 14px Inter, sans-serif; color: #0F172A">
         </div>
+        <sc-if value="{{ notice }}" hint-placeholder-val="{{ false }}">
+          <div role="status" style="display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 12px; background: #F0FDFA; border: 1px solid #5EEAD4; font-size: 14px; line-height: 1.5; color: #134E4A"><span style="flex: 1">{{ notice }}</span><button onClick="{{ clearNotice }}" aria-label="Dismiss" style="min-height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid #5EEAD4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #134E4A; cursor: pointer">OK</button></div>
+        </sc-if>
 
         <sc-if value="{{ selCount }}" hint-placeholder-val="{{ false }}">
           <div role="region" aria-label="Bulk actions" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; background: #EEF2FF; border: 1px solid #C7D2FE">
@@ -144,7 +148,7 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
               <sc-for list="{{ rows }}" as="r" hint-placeholder-count="8">
                 <tr style="{{ r.rowStyle }}">
                   <td style="padding: 10px 14px"><input type="checkbox" checked="{{ r.checked }}" onChange="{{ r.toggle }}" aria-label="{{ r.aria }}" style="width: 18px; height: 18px"></td>
-                  <td style="padding: 10px 8px"><span style="display: flex; flex-direction: column"><span style="font-weight: 600">{{ r.name }}</span><span style="font-size: 12px; color: #475569">{{ r.email }}</span></span></td>
+                  <td style="padding: 10px 8px"><button onClick="{{ r.open }}" style="display: flex; flex-direction: column; align-items: flex-start; border: none; background: transparent; padding: 0; cursor: pointer; font-family: Inter, sans-serif; text-align: left"><span style="font-weight: 600; font-size: 14px; color: #3730A3; text-decoration: underline; text-underline-offset: 3px">{{ r.name }}</span><span style="font-size: 12px; color: #475569">{{ r.email }}</span></button></td>
                   <td style="padding: 10px 8px">{{ r.dept }}</td>
                   <td style="padding: 10px 8px">{{ r.ws }}</td>
                   <td style="padding: 10px 8px">{{ r.role }}</td>
@@ -358,6 +362,94 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
     </sc-if>
   </main>
 
+  <!-- Person panel (same content as the phone sheet) -->
+  <sc-if value="{{ isOpenPerson }}" hint-placeholder-val="{{ false }}">
+    <div style="position: fixed; inset: 0; background: rgba(15,23,42,0.35); display: flex; justify-content: flex-end; z-index: 9">
+      <aside role="dialog" aria-modal="true" aria-label="Person" style="width: 100%; max-width: 440px; height: 100%; overflow-y: auto; box-sizing: border-box; background: #FFFFFF; padding: 22px; display: flex; flex-direction: column; gap: 16px; box-shadow: -10px 0 30px rgba(15,23,42,0.15)">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <span aria-hidden="true" style="width: 44px; height: 44px; border-radius: 22px; flex: none; background: #E0E7FF; color: #3730A3; display: flex; align-items: center; justify-content: center; font-weight: 700">{{ person.initials }}</span>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><h2 style="margin: 0; font-size: 19px; font-weight: 700">{{ person.name }}</h2><span style="font-size: 13px; color: #475569; overflow-wrap: anywhere">{{ person.email }}</span></div>
+          <button onClick="{{ closePerson }}" aria-label="Close" style="width: 44px; height: 44px; flex: none; border-radius: 12px; border: 1px solid #E2E8F0; background: #FFFFFF; font: 600 18px Inter, sans-serif; color: #334155; cursor: pointer">✕</button>
+        </div>
+        <sc-if value="{{ person.alert }}" hint-placeholder-val="{{ false }}"><div style="padding: 10px 12px; border-radius: 12px; background: #FFF7ED; border: 1px solid #FED7AA; font-size: 14px; line-height: 1.5; color: #7C2D12">{{ person.alert }}</div></sc-if>
+        <dl style="margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; font-size: 14px">
+          <sc-for list="{{ person.facts }}" as="f" hint-placeholder-count="6"><dt style="color: #475569">{{ f.k }}</dt><dd style="margin: 0; font-weight: 600">{{ f.v }}</dd></sc-for>
+        </dl>
+        <sc-if value="{{ person.off }}" hint-placeholder-val="{{ false }}">
+          <div role="status" style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px; background: #F1F5F9; font-size: 14px; color: #0F172A">{{ person.off }}<button onClick="{{ undoDeactivate }}" style="align-self: flex-start; min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F172A; cursor: pointer">Undo</button></div>
+        </sc-if>
+        <sc-if value="{{ person.choosing }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <sc-if value="{{ person.offboard }}" hint-placeholder-val="{{ false }}"><button onClick="{{ goOffboard }}" style="min-height: 50px; border-radius: 12px; border: none; background: #4F46E5; font: 600 15px Inter, sans-serif; color: #FFFFFF; cursor: pointer; text-align: left; padding: 0 14px">Start offboarding</button></sc-if>
+            <sc-if value="{{ person.canSignOut }}" hint-placeholder-val="{{ true }}"><button onClick="{{ signOutAll }}" style="min-height: 50px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer; text-align: left; padding: 0 14px">Sign out everywhere</button></sc-if>
+            <sc-if value="{{ person.canResend }}" hint-placeholder-val="{{ false }}"><button onClick="{{ resend }}" style="min-height: 50px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer; text-align: left; padding: 0 14px">Resend invite</button></sc-if>
+            <button style="min-height: 50px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer; text-align: left; padding: 0 14px">Change role or workspace…</button>
+            <button onClick="{{ askDeactivate }}" style="min-height: 50px; border-radius: 12px; border: 1px solid #FCA5A5; background: #FEF2F2; font: 600 15px Inter, sans-serif; color: #991B1B; cursor: pointer; text-align: left; padding: 0 14px">Deactivate…</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ person.confirming }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 15px; font-weight: 700">Deactivate {{ person.name }}?</span>
+            <span style="font-size: 14px; line-height: 1.5; color: #334155">{{ person.deactivateText }}</span>
+            <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px">
+              <button onClick="{{ cancelConfirm }}" style="min-height: 50px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer">Cancel</button>
+              <button onClick="{{ deactivate }}" style="min-height: 50px; border-radius: 12px; border: none; background: #B91C1C; font: 600 15px Inter, sans-serif; color: #FFFFFF; cursor: pointer">Deactivate</button>
+            </div>
+          </div>
+        </sc-if>
+      </aside>
+    </div>
+  </sc-if>
+
+  <!-- Add people (same content as the phone sheet) -->
+  <sc-if value="{{ addOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position: fixed; inset: 0; background: rgba(15,23,42,0.45); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 10">
+      <section role="dialog" aria-modal="true" aria-label="Add people" style="width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; box-sizing: border-box; background: #FFFFFF; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 20px 40px rgba(15,23,42,0.25)">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <h2 style="flex: 1; margin: 0; font-size: 19px; font-weight: 700">Add people</h2>
+          <button onClick="{{ closeAdd }}" aria-label="Close" style="width: 44px; height: 44px; flex: none; border-radius: 12px; border: 1px solid #E2E8F0; background: #FFFFFF; font: 600 18px Inter, sans-serif; color: #334155; cursor: pointer">✕</button>
+        </div>
+        <sc-if value="{{ addForm }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 14px">
+            <span style="font-size: 13px; line-height: 1.5; color: #334155; padding: 10px 12px; border-radius: 10px; background: #F8FAFC">{{ syncNote }}</span>
+            <div role="radiogroup" aria-label="How many" style="display: flex; background: #E9ECF1; border-radius: 10px; padding: 3px; gap: 3px">
+              <sc-for list="{{ modeOpts }}" as="m" hint-placeholder-count="2"><button role="radio" aria-checked="{{ m.checked }}" onClick="{{ m.pick }}" style="{{ m.style }}">{{ m.label }}</button></sc-for>
+            </div>
+            <sc-if value="{{ isOne }}" hint-placeholder-val="{{ true }}">
+              <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600">Work email
+                <input id="addEmail" type="email" value="{{ addEmail }}" onChange="{{ setAddEmail }}" aria-invalid="{{ addError }}" style="min-height: 48px; border-radius: 10px; border: 1px solid #CBD5E1; padding: 0 12px; font: 500 16px Inter, sans-serif; color: #0F172A">
+                <sc-if value="{{ addError }}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size: 13px; font-weight: 600; color: #B91C1C">{{ addError }}</span></sc-if>
+              </label>
+            </sc-if>
+            <sc-if value="{{ isMany }}" hint-placeholder-val="{{ false }}">
+              <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600">Paste emails, one per line, or a CSV (name, email, department)
+                <textarea readonly rows="5" value="{{ manyText }}" style="border-radius: 10px; border: 1px solid #CBD5E1; padding: 10px 12px; font: 500 14px/1.5 ui-monospace, monospace; color: #0F172A; resize: vertical"></textarea>
+              </label>
+              <span style="font-size: 13px; color: #475569">Or upload a .csv file. We check every row before anyone is added.</span>
+            </sc-if>
+            <sc-if value="{{ roleHidden }}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #1E1B4B; padding: 10px 12px; border-radius: 10px; background: #EEF2FF">This address is outside northfield.example, so they'll join as a Guest. You'll pick their plans next.</span></sc-if>
+            <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 14px; font-weight: 600">Workspace</span><div role="radiogroup" aria-label="Workspace" style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{ wsOpts }}" as="o" hint-placeholder-count="4"><button role="radio" aria-checked="{{ o.checked }}" onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button></sc-for></div></div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 14px; font-weight: 600">Role</span><div role="radiogroup" aria-label="Role" style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{ roleOpts }}" as="o" hint-placeholder-count="3"><button role="radio" aria-checked="{{ o.checked }}" onClick="{{ o.pick }}" style="{{ o.style }}">{{ o.label }}</button></sc-for></div><span style="font-size: 13px; color: #475569">Viewer: sees plans. Editor: updates tasks. Manager: runs the workspace and adds people to it.</span></div>
+            <span style="font-size: 13px; color: #475569">{{ seatNote }}</span>
+            <button onClick="{{ toPreview }}" disabled="{{ previewDisabled }}" style="{{ previewStyle }}">Preview</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ addPreview }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <span style="font-size: 15px; font-weight: 700">{{ previewTitle }}</span>
+            <span style="font-size: 14px; color: #334155">Nothing happens until you press the button below.</span>
+            <sc-for list="{{ previewRows }}" as="r" hint-placeholder-count="2"><div style="{{ r.style }}"><span style="font-size: 13px; font-weight: 700; overflow-wrap: anywhere">{{ r.email }}</span><span style="font-size: 14px">{{ r.text }}</span></div></sc-for>
+            <span style="font-size: 13px; color: #475569">Each person gets a welcome email with one "Sign in with Microsoft" button and lands in their workspace. Invites you don't want can be cancelled any time.</span>
+            <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px">
+              <button onClick="{{ backToForm }}" style="min-height: 48px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer">Back</button>
+              <button onClick="{{ doAdd }}" style="min-height: 48px; border-radius: 10px; border: none; background: #4F46E5; font: 600 15px Inter, sans-serif; color: #FFFFFF; cursor: pointer">{{ addLabel }}</button>
+            </div>
+          </div>
+        </sc-if>
+      </section>
+    </div>
+  </sc-if>
+
   <!-- Dry-run preview for the bulk move -->
   <sc-if value="{{ moveOpen }}" hint-placeholder-val="{{ false }}">
     <div style="position: fixed; inset: 0; background: rgba(15,23,42,0.45); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 10">
@@ -382,7 +474,7 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = Object.assign({ tab: 'overview', filter: 'Field Ops', sel: {}, all: false, moveOpen: false, moved: false, undo: false, step: 0, guestFixed: false, synced: false }, { peopleDone: false, handoff: false, pol: { links: 'approval', guests: 90, week: '40', ai: 'on' }, draft: {}, saved: {}, audit: 'All', siem: 'Splunk', reclaim: false });
+    this.state = Object.assign({ q: '', person: null, confirming: false, notice: '', menu: false, addOpen: false, addMode: 'one', addStep: 'form', addEmail: 'nia.brooks@northfield.example', addRole: 'Editor', addWs: 'Field Ops', added: [], deactivated: {}, signedOut: {} }, { tab: 'overview', filter: 'Field Ops', sel: {}, all: false, moveOpen: false, moved: false, undo: false, step: 0, guestFixed: false, synced: false }, { peopleDone: false, handoff: false, pol: { links: 'approval', guests: 90, week: '40', ai: 'on' }, draft: {}, saved: {}, audit: 'All', siem: 'Splunk', reclaim: false });
   }
   renderVals() {
     var self = this;
@@ -396,7 +488,13 @@ class Component extends DCLogic {
       return { label: n[1], badge: n[2] || false, heading: n[3] || false, current: on ? 'page' : 'false', pick: function () { self.setState({ tab: n[0] }); },
         style: 'min-height: 42px; padding: 0 12px; border-radius: 10px; border: none; display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer; font: ' + (on ? '600' : '500') + ' 14px Inter, sans-serif; ' + (on ? 'background: #1E293B; color: #FFFFFF;' : 'background: transparent; color: #CBD5E1;') };
     });
-    return Object.assign({}, this.manageVals(), this.securityVals(), { nav: nav });
+    var cur = items.filter(function (n) { return n[0] === st.tab; })[0];
+    var menu = items.map(function (n) {
+      var on = st.tab === n[0];
+      return { label: n[1], badge: n[2] || false, heading: n[3] || false, current: on ? 'page' : 'false', pick: function () { self.setState({ tab: n[0], menu: false, person: null }); },
+        style: 'min-height: 52px; padding: 0 14px; border-radius: 12px; border: none; display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer; font: ' + (on ? '700' : '600') + ' 16px Inter, sans-serif; ' + (on ? 'background: #EEF2FF; color: #1E1B4B;' : 'background: transparent; color: #0F172A;') };
+    });
+    return Object.assign({}, this.manageVals(), this.securityVals(), this.extraVals(), { nav: nav, menu: menu, sectionTitle: cur ? cur[1] : '', menuOpen: st.menu, openMenu: function () { self.setState({ menu: true }); }, closeMenu: function () { self.setState({ menu: false }); } });
   }
   manageVals() {
     var self = this;
@@ -425,7 +523,9 @@ class Component extends DCLogic {
         stateStyle: 'font-size: 12px; font-weight: 700; ' + (i[1] ? 'color: #115E59;' : 'color: #9A3412;') };
     });
     var alerts = [
+      { title: '5 failed sign-ins', body: 'luis.park@northfield.example, yesterday 17:55, from 203.0.113.7. Guest on Kitchen Remodel.', action: 'Review Luis Park', act: function () { self.setState({ tab: 'people', filter: 'All', person: 'Luis Park', confirming: false }); } },
       { title: '16 seats left', body: 'Sync adds new hires automatically. Turn on "add seats automatically" or buy more before you run out.', action: 'Manage seats', act: function () { self.setState({ tab: 'licenses' }); } },
+      { title: '2 invites not accepted', body: 'Sent 5 days ago to Ivy Chen and Noah Diaz. They can\'t sign in until they do.', action: 'See invites', act: function () { self.setState({ tab: 'people', filter: 'Invited' }); } },
       { title: '1 person to offboard', body: 'Marcus Reyes was disabled in Entra today and still owns 3 plans.', action: 'Start', act: function () { self.setState({ tab: 'off', step: 0 }); } }
     ];
     var adoption = [['Field Ops', 92], ['Estimating', 88], ['Office', 71], ['Safety', 64]].map(function (d) {
@@ -445,14 +545,20 @@ class Component extends DCLogic {
       ['Marcus Reyes', 'Estimating', 'Estimating', 'Editor', 'Today', 'Disabled in Entra'],
       ['Hana Kim', 'Estimating', 'Estimating', 'Manager', 'Today', 'Active'],
       ['Ravi Shah', 'Office', 'Office', 'Editor', '64 days ago', 'Inactive 60+ days'],
-      ['Sofia Costa', 'Safety', 'Safety', 'Editor', 'Today', 'Active']
-    ];
+      ['Sofia Costa', 'Safety', 'Safety', 'Editor', 'Today', 'Active'],
+      ['Ivy Chen', 'Office', 'Office', 'Editor', 'Not signed in yet', 'Invited · 5 days ago'],
+      ['Noah Diaz', 'Field Ops', 'Field Ops', 'Editor', 'Not signed in yet', 'Invited · 5 days ago']
+    ].concat(st.added.map(function (a) { return [a.name, a.dept, a.ws, a.role, 'Not signed in yet', a.status]; })).map(function (p) {
+      if (st.deactivated[p[0]]) return [p[0], p[1], p[2], p[3], p[4], 'Deactivated · undo until midnight'];
+      return p;
+    });
     var shown = people.filter(function (p) {
       if (st.filter === 'All') return true;
       if (st.filter === 'Inactive') return /Inactive/.test(p[5]);
+      if (st.filter === 'Invited') return /Invited/.test(p[5]);
       return p[1] === st.filter;
-    });
-    var filters = ['All', 'Field Ops', 'Estimating', 'Office', 'Safety', 'Inactive'].map(function (f) {
+    }).filter(function (p) { var q = st.q.trim().toLowerCase(); return !q || p[0].toLowerCase().indexOf(q) >= 0 || p[1].toLowerCase().indexOf(q) >= 0; });
+    var filters = ['All', 'Invited', 'Field Ops', 'Estimating', 'Office', 'Safety', 'Inactive'].map(function (f) {
       var on = st.filter === f;
       return { label: f === 'Inactive' ? 'Inactive 60+ days' : f, on: on ? 'true' : 'false', pick: function () { self.setState({ filter: f, sel: {}, all: false }); },
         style: 'min-height: 36px; padding: 0 12px; border-radius: 999px; cursor: pointer; font: 600 13px Inter, sans-serif; ' + (on ? 'background: #0F172A; color: #FFFFFF; border: 1px solid #0F172A;' : 'background: #FFFFFF; color: #0F172A; border: 1px solid #CBD5E1;') };
@@ -462,13 +568,15 @@ class Component extends DCLogic {
       var on = st.all || !!st.sel[p[0]];
       var ws = st.moved && p[1] === 'Field Ops' && p[2] === 'Field Ops' && (st.all || st.sel[p[0]]) ? 'Field Ops North' : p[2];
       var status = p[5];
-      var tone = /Inactive|Disabled/.test(status) ? 'background: #FFEDD5; color: #9A3412;' : /Guest/.test(status) ? 'background: #F1F5F9; color: #334155;' : 'background: #CCFBF1; color: #115E59;';
+      var tone = /Invited/.test(status) ? 'background: #EEF2FF; color: #3730A3;' : /Inactive|Disabled|Deactivated/.test(status) ? 'background: #FFEDD5; color: #9A3412;' : /Guest/.test(status) ? 'background: #F1F5F9; color: #334155;' : 'background: #CCFBF1; color: #115E59;';
       return { name: p[0], email: p[0].toLowerCase().replace(' ', '.') + '@northfield.example', dept: p[1], ws: ws, role: p[3], last: p[4], status: status, checked: on, aria: 'Select ' + p[0],
+        open: function () { self.setState({ person: p[0], confirming: false, notice: '' }); }, first: p[0].split(' ')[0],
         toggle: function () { var s = Object.assign({}, st.sel); s[p[0]] = !s[p[0]]; self.setState({ sel: s, all: false }); },
         statusStyle: 'font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; ' + tone,
         rowStyle: 'border-top: 1px solid #EEF2F6; ' + (on ? 'background: #F5F7FF;' : '') };
     });
     var selCount = st.all ? 23 : selected.length;
+    var footerText = st.filter === 'Field Ops' && !st.q ? 'Showing ' + rows.length + ' of 23 people in Field Ops' : 'Showing ' + rows.length + ' people';
     var moveCount = selCount;
 
     // ---- offboarding
@@ -517,7 +625,7 @@ class Component extends DCLogic {
       isOverview: st.tab === 'overview', isPeople: st.tab === 'people', isOff: st.tab === 'off', isGroups: st.tab === 'groups',
       kpis: kpis, checklist: checklist, score: done + ' of ' + items.length + ' done', alerts: alerts, adoption: adoption,
       filters: filters, rows: rows,
-      footer: st.filter === 'Field Ops' ? 'Showing 8 of 23 people in Field Ops' : 'Showing ' + rows.length + ' people',
+      footer: footerText, q: st.q, setQ: function (e) { self.setState({ q: e.target.value }); }, clearSel: function () { self.setState({ sel: {}, all: false }); },
       selCount: selCount > 0, selText: selCount + ' selected', offerAll: !st.all && st.filter === 'Field Ops' && selected.length > 0 && selected.length < 23,
       selectAll: function () { self.setState({ all: true }); },
       openMove: function () { self.setState({ moveOpen: true }); },
@@ -531,6 +639,87 @@ class Component extends DCLogic {
       next: function () { self.setState({ step: finished ? 0 : st.step + 1 }); },
       nextLabel: finished ? 'Start over (demo)' : st.step === 4 ? 'Offboard Marcus Reyes' : 'Continue',
       groups: groups, syncLabel: st.synced ? 'Synced just now' : 'Sync now', syncNow: function () { self.setState({ synced: true }); }
+    };
+  }
+  extraVals() {
+    var self = this;
+    var st = this.state;
+    // ---- person panel (same on desktop drawer and phone sheet)
+    var info = {
+      'Luis Park': { email: 'luis.park@northfield.example', role: 'Guest', ws: 'Kitchen Remodel (guest)', sessions: 1, owns: 0, tasks: 2, manager: 'Invited by Ana Lima', alert: '5 failed sign-ins yesterday 17:55 from 203.0.113.7. If this wasn\'t Luis, sign out everywhere; Microsoft blocks the account after 10 tries.', guest: true },
+      'Marcus Reyes': { email: 'marcus.reyes@northfield.example', role: 'Editor', ws: 'Estimating', sessions: 3, owns: 3, tasks: 14, manager: 'Manager: Hana Kim', alert: 'Disabled in Microsoft Entra today. Offboarding hands over his work.', offboard: true },
+      'Ivy Chen': { email: 'ivy.chen@northfield.example', role: 'Editor', ws: 'Office', sessions: 0, owns: 0, tasks: 1, manager: 'Invited by Hana Kim', invited: true },
+      'Noah Diaz': { email: 'noah.diaz@northfield.example', role: 'Editor', ws: 'Field Ops', sessions: 0, owns: 0, tasks: 3, manager: 'Invited by Ana Lima', invited: true }
+    };
+    st.added.forEach(function (a) { info[a.name] = { email: a.email, role: a.role, ws: a.ws, sessions: 0, owns: 0, tasks: 0, manager: 'Added by you just now', invited: true, guest: a.role === 'Guest' }; });
+    var name = st.person;
+    var pi = name ? (info[name] || { email: name.toLowerCase().replace(' ', '.') + '@northfield.example', role: 'Editor', ws: 'Field Ops', sessions: 2, owns: 1, tasks: 6, manager: 'Manager: Ana Lima' }) : null;
+    var off = name && st.deactivated[name];
+    var person = pi ? {
+      name: name, email: pi.email, initials: name.split(' ').map(function (w) { return w[0]; }).join(''),
+      facts: [['Role', pi.role], ['Workspace', pi.ws], ['Signed in on', pi.invited ? 'Not yet' : (st.signedOut[name] ? '0 devices' : pi.sessions + (pi.sessions === 1 ? ' device' : ' devices'))], ['Plans owned', String(pi.owns)], ['Open tasks', String(pi.tasks)], ['', pi.manager]].map(function (f) { return { k: f[0], v: f[1] }; }),
+      alert: pi.alert || false,
+      confirming: st.confirming, choosing: !st.confirming && !off,
+      off: off ? name + ' is deactivated and signed out everywhere. Undo is available until midnight.' : false,
+      canResend: !!pi.invited, canSignOut: !pi.invited && !st.signedOut[name] && !off, offboard: !!pi.offboard,
+      deactivateText: name + ' is signed out of ' + (pi.sessions || 0) + (pi.sessions === 1 ? ' device' : ' devices') + ' at once and can\'t sign in. ' + (pi.owns || pi.tasks ? 'Their ' + pi.tasks + ' open tasks and ' + pi.owns + ' plans stay put until you hand them over in Offboarding.' : 'Nothing else changes.') + ' You can undo this today.'
+    } : false;
+    var setPerson = function (o) { self.setState(o); };
+
+    // ---- add people (one person, or several pasted / CSV) with a dry run first
+    var free = 16 - st.added.filter(function (a) { return a.role !== 'Guest'; }).length;
+    var email = st.addEmail.trim().toLowerCase();
+    var validEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+    var outsider = validEmail && !/@northfield\.example$/.test(email);
+    var nameFromEmail = function (e) { return e.split('@')[0].split(/[._]/).map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' '); };
+    var many = [
+      ['nia.brooks@northfield.example', 'add'], ['owen.patel@northfield.example', 'add'], ['tess.nguyen@northfield.example', 'dup'],
+      ['sam.ortiz@harborelectric.example', 'guest'], ['kevin@northfield', 'bad']
+    ];
+    var manyLines = many.map(function (m) {
+      var txt = { add: 'Will be added to ' + st.addWs + ' as ' + st.addRole + ', uses 1 seat', dup: 'Skipped: Tess Nguyen is already a member', guest: 'Outside your domain: becomes a Guest on the plans you pick, no seat', bad: 'Skipped: not a complete email address (line 5)' }[m[1]];
+      return { email: m[0], text: txt, style: 'display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; ' + ({ add: 'background: #F0FDFA; color: #134E4A;', dup: 'background: #F1F5F9; color: #334155;', guest: 'background: #EEF2FF; color: #1E1B4B;', bad: 'background: #FFF7ED; color: #7C2D12;' }[m[1]]) };
+    });
+    var roleOpts = ['Viewer', 'Editor', 'Manager'].map(function (r) { var on = st.addRole === r; return { label: r, checked: on ? 'true' : 'false', pick: function () { self.setState({ addRole: r }); }, style: 'min-height: 40px; padding: 0 12px; border-radius: 9px; cursor: pointer; font: 600 14px Inter, sans-serif; ' + (on ? 'background: #0F172A; color: #FFFFFF; border: 1px solid #0F172A;' : 'background: #FFFFFF; color: #0F172A; border: 1px solid #CBD5E1;') }; });
+    var wsOpts = ['Field Ops', 'Estimating', 'Office', 'Safety'].map(function (w) { var on = st.addWs === w; return { label: w, checked: on ? 'true' : 'false', pick: function () { self.setState({ addWs: w }); }, style: 'min-height: 40px; padding: 0 12px; border-radius: 9px; cursor: pointer; font: 600 14px Inter, sans-serif; ' + (on ? 'background: #0F172A; color: #FFFFFF; border: 1px solid #0F172A;' : 'background: #FFFFFF; color: #0F172A; border: 1px solid #CBD5E1;') }; });
+    var modeOpts = [['one', 'One person'], ['many', 'Several at once']].map(function (m) { var on = st.addMode === m[0]; return { label: m[1], checked: on ? 'true' : 'false', pick: function () { self.setState({ addMode: m[0], addStep: 'form' }); }, style: 'flex: 1; min-height: 40px; padding: 0 12px; border-radius: 8px; border: none; cursor: pointer; font: 600 14px Inter, sans-serif; ' + (on ? 'background: #FFFFFF; color: #0F172A; box-shadow: 0 1px 2px rgba(15,23,42,0.12);' : 'background: transparent; color: #475569;') }; });
+    var addCount = st.addMode === 'one' ? 1 : 2;
+    var addError = st.addMode === 'one' && st.addStep === 'form' && email && !validEmail ? 'Enter a full email address, like name@northfield.example' : false;
+    var onePreview = outsider
+      ? [{ email: email, text: 'Outside northfield.example, so ' + nameFromEmail(email) + ' joins as a Guest: only the plans you pick, no seat, expires after 90 days (your policy).', style: 'display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; background: #EEF2FF; color: #1E1B4B;' }]
+      : [{ email: email, text: nameFromEmail(email) + ' will be added to ' + st.addWs + ' as ' + st.addRole + ' and uses 1 seat (' + free + ' free → ' + (free - 1) + ').', style: 'display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; background: #F0FDFA; color: #134E4A;' }];
+    var doAdd = function () {
+      var list = st.addMode === 'one'
+        ? [{ email: email, name: nameFromEmail(email), dept: outsider ? 'Guest' : st.addWs, ws: outsider ? 'Plans you pick (guest)' : st.addWs, role: outsider ? 'Guest' : st.addRole, status: 'Invited · just now' }]
+        : [{ email: many[0][0], name: 'Nia Brooks', dept: st.addWs, ws: st.addWs, role: st.addRole, status: 'Invited · just now' }, { email: many[1][0], name: 'Owen Patel', dept: st.addWs, ws: st.addWs, role: st.addRole, status: 'Invited · just now' }, { email: many[3][0], name: 'Sam Ortiz', dept: 'Guest', ws: 'Plans you pick (guest)', role: 'Guest', status: 'Invited · just now' }];
+      self.setState({ added: st.added.concat(list), addOpen: false, addStep: 'form', tab: 'people', filter: 'Invited', q: '', notice: (list.length === 1 ? list[0].name + ' was' : list.length + ' people were') + ' invited. They get a welcome email with a "Sign in with Microsoft" button; you\'ll see "Invited" until they sign in. Logged in the audit log.' });
+    };
+    return {
+      person: person, isOpenPerson: !!person,
+      closePerson: function () { setPerson({ person: null, confirming: false }); },
+      askDeactivate: function () { setPerson({ confirming: true }); },
+      cancelConfirm: function () { setPerson({ confirming: false }); },
+      deactivate: function () { var d = Object.assign({}, st.deactivated); d[name] = true; setPerson({ deactivated: d, confirming: false, notice: name + ' is deactivated and signed out everywhere. Undo is available until midnight. Hand over their work in Offboarding.' }); },
+      undoDeactivate: function () { var d = Object.assign({}, st.deactivated); delete d[name]; setPerson({ deactivated: d, notice: '' }); },
+      signOutAll: function () { var so = Object.assign({}, st.signedOut); so[name] = true; setPerson({ signedOut: so, notice: name + ' was signed out on every device. Logged in the audit log.' }); },
+      resend: function () { setPerson({ notice: 'Invite sent again to ' + name + '.' }); },
+      goOffboard: function () { setPerson({ tab: 'off', step: 0, person: null, menu: false }); },
+      notice: st.notice || false, clearNotice: function () { self.setState({ notice: '' }); },
+      addOpen: st.addOpen, openAdd: function () { self.setState({ addOpen: true, addStep: 'form', notice: '' }); }, closeAdd: function () { self.setState({ addOpen: false }); },
+      openAddMany: function () { self.setState({ addOpen: true, addMode: 'many', addStep: 'form', notice: '' }); },
+      modeOpts: modeOpts, isOne: st.addMode === 'one', isMany: st.addMode === 'many', addForm: st.addStep === 'form', addPreview: st.addStep === 'preview',
+      addEmail: st.addEmail, setAddEmail: function (e) { self.setState({ addEmail: e.target.value }); },
+      addError: addError, roleOpts: roleOpts, wsOpts: wsOpts, roleHidden: outsider && st.addMode === 'one',
+      seatNote: free + ' of 200 seats free. People on northfield.example use a seat; anyone else joins as a Guest without one.',
+      syncNote: 'Most people arrive by themselves from Microsoft Entra ID. Add someone here only if they aren\'t in Entra yet, like a contractor or a new hire starting today.',
+      manyText: many.map(function (m) { return m[0]; }).join('\n'),
+      previewRows: st.addMode === 'one' ? onePreview : manyLines,
+      previewTitle: st.addMode === 'one' ? 'Check before you send' : '5 rows checked: 2 will be added, 1 Guest, 2 skipped',
+      toPreview: function () { if (!(st.addMode === 'one' && !validEmail)) self.setState({ addStep: 'preview' }); },
+      backToForm: function () { self.setState({ addStep: 'form' }); },
+      doAdd: doAdd, addLabel: st.addMode === 'one' ? 'Send invite' : 'Invite 3 people',
+      previewDisabled: st.addMode === 'one' && !validEmail,
+      previewStyle: 'min-height: 46px; padding: 0 18px; border-radius: 10px; border: none; font: 600 15px Inter, sans-serif; color: #FFFFFF; ' + (st.addMode === 'one' && !validEmail ? 'background: #94A3B8; cursor: not-allowed;' : 'background: #4F46E5; cursor: pointer;')
     };
   }
   securityVals() {

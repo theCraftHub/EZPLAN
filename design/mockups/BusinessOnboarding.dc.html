@@ -18,10 +18,10 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
 <div style="width: 100%; min-height: 1000px; box-sizing: border-box; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 24px 16px 48px">
 
   <div style="width: 100%; max-width: 760px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between">
-    <span style="font-size: 13px; font-weight: 600; color: #475569">Set up your business · {{ stepLabel }}</span>
+    <span style="font-size: 13px; font-weight: 600; color: #475569">Set up your business · {{ stepLabel }} · {{ timeLeft }}</span>
     <div role="group" aria-label="Mockup shortcuts" style="display: flex; gap: 6px; flex-wrap: wrap">
       <span style="font-size: 12px; color: #475569; align-self: center">Mockup paths:</span>
-      <button onClick="{{ demoMs }}" style="min-height: 32px; padding: 0 10px; border-radius: 8px; border: 1px dashed #94A3B8; background: #FFFFFF; font: 600 12px Inter, sans-serif; color: #334155; cursor: pointer">Microsoft → self-serve</button>
+      <button onClick="{{ demoMs }}" style="min-height: 32px; padding: 0 10px; border-radius: 8px; border: 1px dashed #94A3B8; background: #FFFFFF; font: 600 12px Inter, sans-serif; color: #334155; cursor: pointer">Microsoft path (skip to People)</button>
       <button onClick="{{ demoSaml }}" style="min-height: 32px; padding: 0 10px; border-radius: 8px; border: 1px dashed #94A3B8; background: #FFFFFF; font: 600 12px Inter, sans-serif; color: #334155; cursor: pointer">SAML → specialized pricing</button>
     </div>
   </div>
@@ -62,7 +62,7 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
           <button onClick="{{ checkDns }}" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F172A; cursor: pointer">Check now</button>
           <span style="{{ dnsStyle }}">{{ dnsState }}</span>
         </div>
-        <span style="font-size: 13px; color: #475569">Or prove it by signing in as a Microsoft 365 or Google Workspace admin for northfield.example.</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding-top: 4px; border-top: 1px solid #EEF2F6"><span style="flex: 1 1 280px; font-size: 13px; color: #475569">No access to DNS? If you're a Microsoft 365 admin, signing in proves the domain at once.</span><button onClick="{{ verifyMs }}" style="min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F172A; cursor: pointer">Verify with Microsoft admin sign-in</button></div>
       </div>
     </sc-if>
 
@@ -74,6 +74,65 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
             <sc-if value="{{ o.hint }}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #475569">{{ o.hint }}</span></sc-if>
           </button>
         </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ connect }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <sc-for list="{{ connect }}" as="c" hint-placeholder-count="2">
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 14px; border-radius: 12px; border: 1px solid #E2E8F0; background: #FFFFFF">
+            <span aria-hidden="true" style="{{ c.iconStyle }}">{{ c.icon }}</span>
+            <span style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">{{ c.title }}</span><span style="font-size: 13px; line-height: 1.5; color: #475569">{{ c.body }}</span></span>
+            <sc-if value="{{ c.action }}" hint-placeholder-val="{{ false }}"><button onClick="{{ c.act }}" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: none; background: #0F172A; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">{{ c.action }}</button></sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ groupRows }}" hint-placeholder-val="{{ false }}">
+      <section aria-label="Who will join" style="display: flex; flex-direction: column; border: 1px solid #E2E8F0; border-radius: 14px; overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; padding: 12px 14px; background: #F8FAFC"><span style="font-size: 14px; font-weight: 700">{{ groupTitle }}</span><span style="font-size: 14px; font-weight: 700; color: #115E59">{{ groupTotal }}</span></div>
+        <sc-for list="{{ groupRows }}" as="g" hint-placeholder-count="5">
+          <label style="display: flex; gap: 12px; align-items: center; min-height: 56px; padding: 8px 14px; border-top: 1px solid #EEF2F6; cursor: pointer">
+            <input type="checkbox" checked="{{ g.on }}" onChange="{{ g.toggle }}" aria-label="{{ g.name }}" style="width: 20px; height: 20px; flex: none">
+            <span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 600">{{ g.name }} · {{ g.count }} people</span><span style="font-size: 13px; color: #475569">{{ g.sub }}</span></span>
+          </label>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ admin2 }}" hint-placeholder-val="{{ false }}">
+      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600">A second admin (recommended)
+        <input id="admin2" type="email" value="{{ admin2Value }}" onChange="{{ setAdmin2 }}" style="min-height: 46px; border-radius: 10px; border: 1px solid #CBD5E1; padding: 0 12px; font: 500 16px Inter, sans-serif; color: #0F172A">
+        <span style="font-size: 13px; font-weight: 400; color: #475569">So someone can still manage people when you're away. Leave empty to skip; you can add one later in People.</span>
+      </label>
+    </sc-if>
+
+    <sc-if value="{{ email }}" hint-placeholder-val="{{ false }}">
+      <section aria-label="Welcome email preview" style="border: 1px solid #E2E8F0; border-radius: 14px; overflow: hidden">
+        <div style="padding: 10px 14px; background: #F8FAFC; font-size: 13px; color: #475569; display: flex; flex-direction: column; gap: 2px"><span>Welcome email preview, as <strong style="color: #0F172A">{{ email.to }}</strong> gets it</span><span>Subject: <strong style="color: #0F172A">{{ email.subject }}</strong></span></div>
+        <div style="padding: 16px; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 1.55; color: #0F172A">
+          <sc-for list="{{ email.lines }}" as="l" hint-placeholder-count="3"><span>{{ l.text }}</span></sc-for>
+          <span style="align-self: flex-start; min-height: 44px; padding: 0 16px; border-radius: 10px; background: #0F172A; color: #FFFFFF; font-weight: 600; display: flex; align-items: center">{{ email.button }}</span>
+          <span style="font-size: 13px; color: #475569">{{ email.footer }}</span>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ seen }}" hint-placeholder-val="{{ false }}">
+      <section aria-label="What employees see" style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 15px; font-weight: 700">What your employees see</span>
+        <ol style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px">
+          <sc-for list="{{ seen }}" as="s" hint-placeholder-count="3"><li style="display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 12px; background: #F8FAFC; border: 1px solid #E2E8F0"><span style="font-size: 12px; font-weight: 700; color: #4338CA">{{ s.n }}</span><span style="font-size: 14px; font-weight: 600">{{ s.title }}</span><span style="font-size: 13px; line-height: 1.5; color: #475569">{{ s.body }}</span></li></sc-for>
+        </ol>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ seatWarn }}" hint-placeholder-val="{{ false }}"><div role="alert" style="padding: 12px 14px; border-radius: 12px; background: #FFF7ED; border: 1px solid #FED7AA; font-size: 14px; line-height: 1.5; color: #7C2D12">{{ seatWarn }}</div></sc-if>
+
+    <sc-if value="{{ notes }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <sc-for list="{{ notes }}" as="n" hint-placeholder-count="2"><div style="{{ n.style }}"><span style="font-size: 14px; font-weight: 700">{{ n.title }}</span><span style="font-size: 14px; line-height: 1.5">{{ n.body }}</span></div></sc-for>
       </div>
     </sc-if>
 
@@ -124,11 +183,15 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
       </div>
     </sc-if>
 
+    <sc-if value="{{ notesAfter }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 8px"><sc-for list="{{ notesAfter }}" as="n" hint-placeholder-count="1"><div style="{{ n.style }}"><span style="font-size: 14px; font-weight: 700">{{ n.title }}</span><span style="font-size: 14px; line-height: 1.5">{{ n.body }}</span></div></sc-for></div>
+    </sc-if>
+
     <div style="display: flex; flex-wrap: wrap; gap: 10px; padding-top: 4px">
       <sc-if value="{{ canBack }}" hint-placeholder-val="{{ false }}"><button onClick="{{ back }}" style="min-height: 48px; padding: 0 18px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer">{{ backLabel }}</button></sc-if>
       <sc-if value="{{ nextLabel }}" hint-placeholder-val="{{ true }}"><button onClick="{{ next }}" disabled="{{ nextDisabled }}" style="{{ nextStyle }}">{{ nextLabel }}</button></sc-if>
       <sc-if value="{{ altLabel }}" hint-placeholder-val="{{ false }}"><button onClick="{{ alt }}" style="min-height: 48px; padding: 0 18px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer">{{ altLabel }}</button></sc-if>
-      <sc-if value="{{ toAdmin }}" hint-placeholder-val="{{ false }}"><a href="AdminConsole.dc.html" style="min-height: 48px; padding: 0 18px; border-radius: 12px; background: #0F172A; color: #FFFFFF; font: 600 15px Inter, sans-serif; display: flex; align-items: center">Open the admin console</a></sc-if>
+      <sc-if value="{{ toAdmin }}" hint-placeholder-val="{{ false }}"><a href="AdminConsole.dc.html" style="min-height: 48px; padding: 0 18px; border-radius: 12px; background: #0F172A; color: #FFFFFF; font: 600 15px Inter, sans-serif; display: flex; align-items: center">Go live and open the admin console</a></sc-if>
     </div>
   </main>
 </div>
@@ -137,7 +200,7 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { step: 'company', q1: null, detected: true, q2: null, q3: null, sentIt: false, dns: 'waiting', seats: 180, annual: true, es: false, people: 'sync', ai: 'builtin', rules: 'standard', first: 'starter' };
+    this.state = { step: 'company', q1: null, detected: true, q2: null, q3: null, sentIt: false, dns: 'waiting', seats: 180, annual: true, es: false, people: 'sync', ai: 'builtin', rules: 'standard', first: 'starter', connected: false, tested: false, groupsOff: {}, admin2: 'ana.lima@northfield.example', welcome: 'golive', seatsTouched: false };
   }
   renderVals() {
     var self = this;
@@ -156,12 +219,22 @@ class Component extends DCLogic {
     // "I'm not sure" never goes to sales: email sign-in now, company sign-in later.
     var signIn = st.q1 === 'microsoft' ? 'microsoft' : st.q1 === 'google' ? 'google' : st.q1 === 'none' || st.q1 === 'unsure' ? 'email' : st.q3 === 'oidc' ? 'oidc' : st.q3 === 'saml' ? 'saml' : st.q3 === 'unsure' ? 'email' : null;
     var special = signIn === 'saml';
-    var order = ['company', 'domain', 'q1', 'q2', 'q3', 'summary', 'price', 'people', 'ai', 'rules', 'first', 'live'];
-    var path = order.filter(function (s) { return (s !== 'q2' && s !== 'q3') || st.q1 === 'separate'; });
+    var order = ['company', 'domain', 'q1', 'q2', 'q3', 'summary', 'connect', 'people', 'welcome', 'price', 'ai', 'rules', 'first', 'live'];
+    var path = order.filter(function (s) {
+      if (s === 'q2' || s === 'q3') return st.q1 === 'separate';
+      if (s === 'connect') return signIn === null || signIn === 'microsoft' || signIn === 'google' || signIn === 'oidc';
+      return true;
+    });
+    // Who joins: directory groups (sync) decide the count, and the seat count follows it.
+    var groupDefs = [['Construction-PMs', 23, 'Field Ops', 'Manager'], ['Field-Crews', 73, 'Field Ops', 'Editor'], ['Estimators', 31, 'Estimating', 'Editor'], ['Office-Staff', 41, 'Office', 'Editor'], ['Safety-Team', 16, 'Safety', 'Editor']];
+    var hasSync = signIn === 'microsoft' || signIn === 'google' || signIn === 'oidc';
+    var syncing = st.people === 'sync' && hasSync;
+    var joining = syncing ? groupDefs.filter(function (g) { return !st.groupsOff[g[0]]; }).reduce(function (n, g) { return n + g[1]; }, 0) : 25;
+    var seatsNow = st.seatsTouched ? st.seats : Math.max(5, Math.ceil(joining / 5) * 5);
     var idx = path.indexOf(st.step);
     var nextStep = function () { return path[Math.min(path.length - 1, idx + 1)]; };
     var prevStep = function () { return path[Math.max(0, idx - 1)]; };
-    var v = { banner: false, bannerYes: false, bannerNo: false, bannerStyle: '', fields: false, dns: false, options: false, explain: false, askIt: false, pricing: false, special: false, checklist: false, lead: false, altLabel: false, alt: null, toAdmin: false, nextDisabled: false, nextLabel: 'Continue', backLabel: 'Back' };
+    var v = { notesAfter: false, connect: false, groupRows: false, notes: false, admin2: false, email: false, seen: false, seatWarn: false, banner: false, bannerYes: false, bannerNo: false, bannerStyle: '', fields: false, dns: false, options: false, explain: false, askIt: false, pricing: false, special: false, checklist: false, lead: false, altLabel: false, alt: null, toAdmin: false, nextDisabled: false, nextLabel: 'Continue', backLabel: 'Back' };
 
     if (st.step === 'company') {
       v.kicker = 'ABOUT YOUR COMPANY'; v.title = 'Start your business account';
@@ -169,8 +242,8 @@ class Component extends DCLogic {
       v.fields = [{ label: 'Company name', value: 'Northfield Builders' }, { label: 'Your work email', value: 'hana.kim@northfield.example' }, { label: 'Industry', value: 'Construction' }, { label: 'People who will use it', value: 'About 180' }];
     } else if (st.step === 'domain') {
       v.kicker = 'VERIFY YOUR DOMAIN'; v.title = 'Show that northfield.example is yours';
-      v.lead = 'Add this record where your domain is managed (your IT person or domain provider can do it in 2 minutes). Verifying lets everyone with an @northfield.example address join automatically.';
-      v.dns = true; v.nextDisabled = st.dns !== 'found';
+      v.lead = 'Add this record where your domain is managed (your IT person or domain provider can do it in 2 minutes). Verifying lets everyone with an @northfield.example address join automatically. You don\'t have to wait here: we keep checking, and only automatic joining waits for it.';
+      v.dns = true; v.nextLabel = st.dns === 'found' ? 'Continue' : 'Continue, keep checking in the background';
     } else if (st.step === 'q1') {
       v.kicker = 'SIGN-IN · QUESTION 1 OF 3'; v.title = 'How do your employees sign in to their work email and computers today?';
       if (st.detected) { v.banner = 'It looks like your company uses Microsoft 365 (from northfield.example\'s email settings). Is that right?'; v.bannerStyle = 'display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 12px; background: #EEF2FF; border: 1px solid #C7D2FE; color: #1E1B4B'; v.bannerYes = function () { go('summary', { q1: 'microsoft', detected: false }); }; v.bannerNo = function () { self.setState({ detected: false }); }; }
@@ -192,24 +265,54 @@ class Component extends DCLogic {
       var lines = { microsoft: 'Your employees will sign in with their Microsoft work accounts. Included in your plan at no extra cost.', google: 'Your employees will sign in with their Google Workspace accounts. Included in your plan at no extra cost.', oidc: 'Your employees will sign in through ' + vendor + ' (OIDC). Included in your plan at no extra cost.', saml: 'Your sign-in service (' + vendor + ') connects with SAML, which needs a custom setup. Your business qualifies for specialized pricing.', email: 'For now, people sign in with a one-time code sent to their work email. You can connect company sign-in later in the admin console, at no extra cost.' };
       v.banner = lines[signIn] || ''; v.bannerStyle = 'padding: 16px; border-radius: 12px; font-size: 15px; ' + (special ? 'background: #EEF2FF; border: 1px solid #C7D2FE; color: #1E1B4B;' : 'background: #F0FDFA; border: 1px solid #5EEAD4; color: #134E4A;');
       v.nextLabel = 'Looks right'; v.altLabel = 'Change my answers'; v.alt = function () { go('q1', { q1: null, q2: null, q3: null }); };
+    } else if (st.step === 'connect') {
+      var prov = signIn === 'microsoft' ? 'Microsoft 365' : signIn === 'google' ? 'Google Workspace' : vendor;
+      v.kicker = 'CONNECT SIGN-IN'; v.title = 'Connect ' + prov;
+      v.lead = signIn === 'oidc' ? 'Paste the two values your IT team creates in ' + vendor + ' (our step-by-step guide shows where), then try it with your own account.' : 'One approval from a ' + prov + ' admin, then a quick test with your own account. About 2 minutes.';
+      var ic = function (done) { return 'width: 32px; height: 32px; border-radius: 16px; flex: none; display: flex; align-items: center; justify-content: center; font-weight: 700; ' + (done ? 'background: #CCFBF1; color: #115E59;' : 'background: #EEF2FF; color: #3730A3;'); };
+      v.connect = [
+        { icon: st.connected ? '✓' : '1', iconStyle: ic(st.connected), title: st.connected ? (signIn === 'oidc' ? vendor + ' connected' : 'Approved by hana.kim@northfield.example') : (signIn === 'oidc' ? 'Add the app details' : 'Approve EZPLAN in ' + prov), body: st.connected ? 'EZPLAN can now sign people in. It reads name, email and department only; never passwords or mail.' : (signIn === 'oidc' ? 'Issuer address and client ID from ' + vendor + '.' : 'Opens ' + prov + ' in a new window. You need to be an admin there; if you aren\'t, send this step to your IT person.'), action: st.connected ? false : (signIn === 'oidc' ? 'Paste and connect' : 'Approve in ' + prov), act: function () { self.setState({ connected: true }); } },
+        { icon: st.tested ? '✓' : '2', iconStyle: ic(st.tested), title: st.tested ? 'Signed in as Hana Kim' : 'Test with my account', body: st.tested ? 'It works. Your employees will see the same sign-in.' : 'Signs you in once through ' + prov + ', so you know it works before anyone else tries.', action: st.connected && !st.tested ? 'Test now' : false, act: function () { self.setState({ tested: true }); } }
+      ];
+      v.askIt = !st.connected; v.askItText = st.sentIt ? 'Sent to it@northfield.example. Keep going; this step completes when they approve, and we email you.' : 'Not a ' + prov + ' admin? Send just this step to your IT person.'; v.askItLabel = st.sentIt ? 'Sent' : 'Send to my IT person'; v.sendIt = function () { self.setState({ sentIt: true }); };
+      v.nextDisabled = !(st.tested || st.sentIt); v.nextLabel = st.tested || st.sentIt ? 'Continue' : 'Continue after the test';
+    } else if (st.step === 'people') {
+      v.kicker = 'BRING YOUR PEOPLE'; v.title = 'Who should join, and how?';
+      var syncName = signIn === 'microsoft' ? 'Microsoft Entra ID' : signIn === 'google' ? 'Google Workspace' : vendor;
+      var methods = hasSync ? [['sync', 'Automatic sync from ' + syncName + ' (recommended)', 'Hires, leavers and changes flow in by themselves. Pick the groups below.']] : [];
+      v.options = choices('people', methods.concat([['csv', 'Upload a spreadsheet (CSV)', 'Name, email, department. We check every row and show you the result before adding anyone.'], ['invite', 'Invite by email', 'Paste addresses. Good for a small pilot team.']]));
+      if (syncing) {
+        v.groupTitle = 'Groups found in ' + syncName; v.groupTotal = joining + ' people will join';
+        v.groupRows = groupDefs.map(function (g) { return { name: g[0], count: g[1], sub: 'Workspace ' + g[2] + ' · role ' + g[3] + ' (change any time in Groups)', on: !st.groupsOff[g[0]], toggle: function () { var o = Object.assign({}, st.groupsOff); o[g[0]] = !o[g[0]]; self.setState({ groupsOff: o, seatsTouched: false }); } }; });
+      }
+      v.notes = [
+        { title: '3 people already use EZPLAN with a personal account', body: 'Ana Lima, Jun Watanabe and Ravi Shah signed up with @northfield.example addresses. They\'ll be asked to join; their personal plans stay theirs unless they choose to bring them.', style: 'display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 12px; background: #EEF2FF; border: 1px solid #C7D2FE; color: #1E1B4B' },
+        { title: 'Nobody is emailed yet', body: 'You choose when the welcome email goes out on the next step.', style: 'display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; color: #334155' }
+      ];
+      v.nextDisabled = syncing && joining === 0;
+    } else if (st.step === 'welcome') {
+      v.kicker = 'WELCOME YOUR TEAM'; v.title = 'Choose when people hear about it, and add a second admin';
+      v.admin2 = true; v.admin2Value = st.admin2; v.setAdmin2 = function (e) { self.setState({ admin2: e.target.value }); };
+      v.options = choices('welcome', [['golive', 'Send when I press Go live (recommended)', 'Finish setup first, then everyone gets one email at once.'], ['date', 'On a date I pick', 'For example Monday Dec 7 at 8:00 am, in their own time zone.'], ['silent', 'Add them without an email', 'EZPLAN appears in their ' + (signIn === 'google' ? 'Google' : 'Microsoft') + ' apps list. Good for a quiet start.']]);
+      var signBtn = signIn === 'microsoft' ? 'Sign in with Microsoft' : signIn === 'google' ? 'Sign in with Google' : signIn === 'oidc' ? 'Sign in with ' + vendor : 'Get my sign-in code';
+      if (st.welcome !== 'silent') v.email = { to: 'Ana Lima (Field Ops, Manager)', subject: 'Northfield Builders now plans projects in EZPLAN', lines: [{ text: 'Hi Ana,' }, { text: 'Hana Kim set up EZPLAN for Northfield Builders. You\'re in the Field Ops workspace as a Manager.' }, { text: (signIn === 'email' || signIn === 'saml' ? 'Sign in with your work email; we send a one-time code. No password to remember.' : 'Use your usual work account. No new password.') }], button: signBtn, footer: 'Questions? Reply to reach Hana Kim. Already have a personal account at this address? You\'ll be asked whether to bring your plans.' };
+      v.seen = [{ n: '1', title: st.welcome === 'silent' ? 'An app tile' : 'One email', body: st.welcome === 'silent' ? 'EZPLAN in their apps list.' : 'With a single button. No password to create.' }, { n: '2', title: signBtn, body: 'Their usual work sign-in, then they\'re in.' }, { n: '3', title: 'Their workspace', body: 'Plans they\'re on, their tasks first, and a 4-step tour they can skip.' }];
     } else if (st.step === 'price') {
       v.kicker = special ? 'PRICING' : 'PRICING · SELF-SERVE'; v.title = special ? 'Your business qualifies for specialized pricing' : 'Choose seats and billing';
       if (special) { v.special = true; v.nextLabel = 'Start free trial now'; }
       else {
         v.pricing = true;
         var per = st.annual ? 12 : 15; var es = st.es ? 3 : 0;
-        v.seats = st.seats; v.lessSeats = function () { self.setState({ seats: Math.max(5, st.seats - 5) }); }; v.moreSeats = function () { self.setState({ seats: st.seats + 5 }); };
+        v.seats = seatsNow; v.lessSeats = function () { self.setState({ seats: Math.max(5, seatsNow - 5), seatsTouched: true }); }; v.moreSeats = function () { self.setState({ seats: seatsNow + 5, seatsTouched: true }); };
+        v.lead = 'We started from the ' + joining + ' people you chose to bring in. You can change seats any time; extra seats are prorated.';
+        if (seatsNow < joining) v.seatWarn = (joining - seatsNow) + ' of the ' + joining + ' people would arrive without a seat and couldn\'t sign in until you add seats. We\'ll tell you who.';
         v.billing = [['annual', 'Yearly ($12/seat/mo)'], ['monthly', 'Monthly ($15/seat/mo)']].map(function (b) { var on = (b[0] === 'annual') === st.annual; return { label: b[1], checked: on ? 'true' : 'false', pick: function () { self.setState({ annual: b[0] === 'annual' }); }, style: 'min-height: 40px; padding: 0 12px; border-radius: 8px; border: none; cursor: pointer; font: 600 13px Inter, sans-serif; ' + (on ? 'background: #FFFFFF; color: #0F172A; box-shadow: 0 1px 2px rgba(15,23,42,0.12);' : 'background: transparent; color: #475569;') }; });
         v.esOn = st.es; v.toggleEs = function () { self.setState({ es: !st.es }); };
-        var month = st.seats * (per + es);
-        v.priceLine = st.seats + ' seats × $' + (per + es) + ' a month' + (st.es ? ' (incl. $3 Enterprise Security)' : '') + (st.annual ? ', billed yearly' : ', billed monthly');
+        var month = seatsNow * (per + es);
+        v.priceLine = seatsNow + ' seats × $' + (per + es) + ' a month' + (st.es ? ' (incl. $3 Enterprise Security)' : '') + (st.annual ? ', billed yearly' : ', billed monthly');
         v.total = st.annual ? '$' + (month * 12).toLocaleString('en-US') + ' a year' : '$' + month.toLocaleString('en-US') + ' a month';
-        v.nextLabel = 'Start 14-day trial, no card'; v.altLabel = 'Pay by card or invoice'; v.alt = function () { go('people'); };
+        v.nextLabel = 'Start 14-day trial, no card'; v.altLabel = 'Pay by card or invoice'; v.alt = function () { go(nextStep()); };
       }
-    } else if (st.step === 'people') {
-      v.kicker = 'BRING YOUR PEOPLE'; v.title = 'How should people join?';
-      v.options = choices('people', signIn === 'microsoft' ? [['sync', 'Automatic sync from Microsoft Entra ID (recommended)', 'Hires, leavers and changes flow in by themselves. Takes about 5 minutes with our step-by-step guide.'], ['csv', 'Upload a spreadsheet (CSV)', 'Name, email, department; we check every row before adding anyone.'], ['invite', 'Send invite links', 'Good for a small pilot team.']] : [['csv', 'Upload a spreadsheet (CSV)', 'Name, email, department; we check every row before adding anyone.'], ['invite', 'Send invite links', 'Good for a small pilot team.']]);
-      v.explain = 'We suggest one workspace per department (Field Ops, Estimating, Office, Safety). You can change this any time in Groups.';
     } else if (st.step === 'ai') {
       v.kicker = 'AI (OPTIONAL)'; v.title = 'Which AI should we use for Plan Check and status reports?';
       v.options = choices('ai', [['builtin', 'Our built-in AI (default)', 'Nothing to set up. Your plans are never used to train AI models.'], ['own', 'Your company\'s own AI', 'Anthropic, Azure OpenAI, Amazon Bedrock, Google Vertex AI or a compatible endpoint. Add the key later in the admin console.'], ['off', 'No AI for now', 'Every planning feature still works; free checks stay on.']]);
@@ -222,11 +325,20 @@ class Component extends DCLogic {
       v.options = choices('first', [['starter', 'Start from "Construction job"', 'Phases, permits, inspections and waits already in place.'], ['ai', 'Use my AI assistant', 'Paste our prompt into a chat where you planned something.'], ['file', 'Import a plan file or spreadsheet', 'From Asana, Trello, Monday, Smartsheet, ClickUp or a plan file.']]);
     } else {
       v.kicker = 'GO LIVE'; v.title = 'Northfield Builders is ready';
-      v.checklist = [(signIn === 'microsoft' ? 'Employees sign in with Microsoft' : signIn === 'saml' ? 'Trial running with email sign-in; SAML connection quote on its way' : 'Sign-in ready'), (st.people === 'sync' ? '184 people will be added by Entra sync, with a welcome email you can preview' : 'People added from your list'), 'Rules: ' + st.rules.charAt(0).toUpperCase() + st.rules.slice(1), 'First plan: Construction job, ready to edit', 'A printable "How to start" page for your team'];
+      v.lead = 'Nothing has gone to employees yet. Check the list, then press Go live.';
+      v.checklist = [(signIn === 'microsoft' ? 'Employees sign in with Microsoft (tested with your account)' : signIn === 'google' ? 'Employees sign in with Google (tested with your account)' : signIn === 'oidc' ? 'Employees sign in through ' + vendor + ' (tested)' : signIn === 'saml' ? 'Trial running with email sign-in; SAML connection quote on its way' : 'People sign in with a one-time code sent to their work email'),
+        (syncing ? joining + ' people join from your directory groups, each in their department\'s workspace' : 'People join from your list or invites'),
+        (st.admin2 ? 'Second admin: ' + st.admin2 : 'Only you are an admin (add another any time in People)'),
+        (st.welcome === 'golive' ? 'Welcome email goes out when you press Go live' : st.welcome === 'date' ? 'Welcome email scheduled for Monday Dec 7, 8:00 am' : 'No welcome email; EZPLAN shows up in their apps list'),
+        'Rules: ' + st.rules.charAt(0).toUpperCase() + st.rules.slice(1) + ' · first plan ready to edit'];
+      v.notesAfter = [{ title: 'After today, new people mostly take care of themselves', body: (syncing ? 'New hires added to your directory groups arrive with a welcome email, and leavers start offboarding by themselves. ' : '') + 'To add someone by hand (a contractor, or a starter not in the directory yet), use People → Add people in the admin console. It works the same on a computer and on your phone.', style: 'display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 12px; background: #F0FDFA; border: 1px solid #5EEAD4; color: #134E4A' }];
       v.nextLabel = false; v.toAdmin = true;
     }
 
-    var labels = { company: 'Company', domain: 'Domain', q1: 'Sign-in', q2: 'Sign-in', q3: 'Sign-in', summary: 'Sign-in', price: 'Pricing', people: 'People', ai: 'AI', rules: 'Rules', first: 'First plan', live: 'Go live' };
+    var labels = { company: 'Company', domain: 'Domain', q1: 'Sign-in', q2: 'Sign-in', q3: 'Sign-in', summary: 'Sign-in', connect: 'Connect sign-in', price: 'Pricing', people: 'People', welcome: 'Welcome', ai: 'AI', rules: 'Rules', first: 'First plan', live: 'Go live' };
+    var mins = { company: 2, domain: 3, q1: 1, q2: 1, q3: 1, summary: 1, connect: 3, people: 4, welcome: 3, price: 2, ai: 1, rules: 1, first: 2, live: 1 };
+    var left = path.slice(Math.max(0, idx)).reduce(function (n, s) { return n + mins[s]; }, 0);
+    v.timeLeft = st.step === 'live' ? 'ready to go live' : 'about ' + left + ' min left';
     v.stepLabel = 'Step ' + (idx + 1) + ' of ' + path.length + ': ' + labels[st.step];
     v.progress = 'width: ' + ((idx + 1) / path.length * 100) + '%; background: #4F46E5;';
     v.canBack = idx > 0 && st.step !== 'live';
@@ -236,7 +348,8 @@ class Component extends DCLogic {
     v.dnsState = st.dns === 'found' ? '✓ Found. northfield.example is verified.' : st.dns === 'checking' ? 'Not found yet. DNS changes can take a few minutes; we keep checking.' : 'Waiting for the record';
     v.dnsStyle = 'font-size: 14px; font-weight: 600; ' + (st.dns === 'found' ? 'color: #115E59;' : 'color: #475569;');
     v.checkDns = function () { self.setState({ dns: st.dns === 'waiting' ? 'checking' : 'found' }); };
-    v.demoMs = function () { go('price', { q1: 'microsoft', q2: null, q3: null, dns: 'found' }); };
+    v.verifyMs = function () { self.setState({ dns: 'found' }); };
+    v.demoMs = function () { go('people', { q1: 'microsoft', q2: null, q3: null, dns: 'found', connected: true, tested: true }); };
     v.demoSaml = function () { go('summary', { q1: 'separate', q2: 'okta', q3: 'saml', dns: 'found' }); };
     return v;
   }

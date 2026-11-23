@@ -1,0 +1,31 @@
+        <div style="display: flex; align-items: center; gap: 12px">
+          <span aria-hidden="true" style="width: 44px; height: 44px; border-radius: 22px; flex: none; background: #E0E7FF; color: #3730A3; display: flex; align-items: center; justify-content: center; font-weight: 700">{{ person.initials }}</span>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0"><h2 style="margin: 0; font-size: 19px; font-weight: 700">{{ person.name }}</h2><span style="font-size: 13px; color: #475569; overflow-wrap: anywhere">{{ person.email }}</span></div>
+          <button onClick="{{ closePerson }}" aria-label="Close" style="width: 44px; height: 44px; flex: none; border-radius: 12px; border: 1px solid #E2E8F0; background: #FFFFFF; font: 600 18px Inter, sans-serif; color: #334155; cursor: pointer">✕</button>
+        </div>
+        <sc-if value="{{ person.alert }}" hint-placeholder-val="{{ false }}"><div style="padding: 10px 12px; border-radius: 12px; background: #FFF7ED; border: 1px solid #FED7AA; font-size: 14px; line-height: 1.5; color: #7C2D12">{{ person.alert }}</div></sc-if>
+        <dl style="margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; font-size: 14px">
+          <sc-for list="{{ person.facts }}" as="f" hint-placeholder-count="6"><dt style="color: #475569">{{ f.k }}</dt><dd style="margin: 0; font-weight: 600">{{ f.v }}</dd></sc-for>
+        </dl>
+        <sc-if value="{{ person.off }}" hint-placeholder-val="{{ false }}">
+          <div role="status" style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px; background: #F1F5F9; font-size: 14px; color: #0F172A">{{ person.off }}<button onClick="{{ undoDeactivate }}" style="align-self: flex-start; min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F172A; cursor: pointer">Undo</button></div>
+        </sc-if>
+        <sc-if value="{{ person.choosing }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <sc-if value="{{ person.offboard }}" hint-placeholder-val="{{ false }}"><button onClick="{{ goOffboard }}" style="min-height: 50px; border-radius: 12px; border: none; background: #4F46E5; font: 600 15px Inter, sans-serif; color: #FFFFFF; cursor: pointer; text-align: left; padding: 0 14px">Start offboarding</button></sc-if>
+            <sc-if value="{{ person.canSignOut }}" hint-placeholder-val="{{ true }}"><button onClick="{{ signOutAll }}" style="min-height: 50px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer; text-align: left; padding: 0 14px">Sign out everywhere</button></sc-if>
+            <sc-if value="{{ person.canResend }}" hint-placeholder-val="{{ false }}"><button onClick="{{ resend }}" style="min-height: 50px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer; text-align: left; padding: 0 14px">Resend invite</button></sc-if>
+            <button style="min-height: 50px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer; text-align: left; padding: 0 14px">Change role or workspace…</button>
+            <button onClick="{{ askDeactivate }}" style="min-height: 50px; border-radius: 12px; border: 1px solid #FCA5A5; background: #FEF2F2; font: 600 15px Inter, sans-serif; color: #991B1B; cursor: pointer; text-align: left; padding: 0 14px">Deactivate…</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ person.confirming }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 15px; font-weight: 700">Deactivate {{ person.name }}?</span>
+            <span style="font-size: 14px; line-height: 1.5; color: #334155">{{ person.deactivateText }}</span>
+            <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px">
+              <button onClick="{{ cancelConfirm }}" style="min-height: 50px; border-radius: 12px; border: 1px solid #CBD5E1; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F172A; cursor: pointer">Cancel</button>
+              <button onClick="{{ deactivate }}" style="min-height: 50px; border-radius: 12px; border: none; background: #B91C1C; font: 600 15px Inter, sans-serif; color: #FFFFFF; cursor: pointer">Deactivate</button>
+            </div>
+          </div>
+        </sc-if>
