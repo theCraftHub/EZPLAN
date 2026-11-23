@@ -44,6 +44,13 @@ test("Sam (commenter) comments and mentions Alex; Alex sees it live; Sam can't c
   await alexSheet.getByRole("button", { name: "Close" }).click();
   await expect(row(alex, "Order cabinets").getByLabel("1 comment")).toBeVisible();
 
+  // Alex's bell: the mention, which opens the task with the comment.
+  await alex.goto("/");
+  await alex.getByRole("link", { name: /^Notifications, \d+ unread$/ }).click();
+  await alex.getByRole("button", { name: "Unread: Sam Okoye mentioned you on Order cabinets (Comment Kitchen)" }).click();
+  await expect(alex.getByRole("dialog").getByRole("listitem", { name: "Comment by Sam Okoye" })).toBeVisible();
+  await alex.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+
   // Alex changes the task; Activity lists it, Sam's comment and Sam joining.
   await row(alex, "Order cabinets").getByRole("button", { name: /Mark as Doing/ }).click();
   await alex.getByRole("link", { name: "Activity" }).click();

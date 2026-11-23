@@ -106,6 +106,14 @@ export const MIGRATIONS: Migration[] = [
       `CREATE INDEX activity_plan ON activity(plan_id, created_at)`,
     ],
   },
+  {
+    id: 8,
+    name: "notifications",
+    statements: [
+      `CREATE TABLE notifications (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), plan_id TEXT, kind TEXT NOT NULL, text TEXT NOT NULL, link TEXT NOT NULL, created_at INTEGER NOT NULL, read_at INTEGER)`,
+      `CREATE INDEX notifications_user ON notifications(user_id, read_at, created_at)`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

@@ -4,18 +4,18 @@ import { api } from "../lib/api";
 import { useRouter } from "../lib/router";
 import { Button, Card, Notice, PageTitle, Spinner } from "../ui/kit";
 
-export function Invite({ token }: { token: string }) {
+export function Invite({ token, byId = false }: { token: string; byId?: boolean }) {
   const { go } = useRouter();
   const [info, setInfo] = useState<Awaited<ReturnType<typeof api.inviteInfo>> | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    api.inviteInfo(token).then((i) => (i.accepted && i.planId ? go(`/p/${i.planId}`, { replace: true }) : setInfo(i))).catch((e: Error) => setError(e.message));
+    api.inviteInfo(token, byId).then((i) => (i.accepted && i.planId ? go(`/p/${i.planId}`, { replace: true }) : setInfo(i))).catch((e: Error) => setError(e.message));
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
   const accept = async () => {
     setBusy(true);
     try {
-      const r = await api.acceptInvite(token);
+      const r = await api.acceptInvite(token, byId);
       go(`/p/${r.planId}`, { replace: true });
     } catch (e) {
       setError(e instanceof Error ? e.message : "That didn't work.");

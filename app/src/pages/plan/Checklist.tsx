@@ -13,7 +13,8 @@ type Math = NonNullable<ReturnType<typeof usePlanMath>>;
 const est = (t: Task) => (t.estimate ? `${t.estimate.amount}${t.estimate.unit}` : null);
 
 export function Checklist({ plan, math, today, canEdit, edit }: { plan: Plan; math: Math; today: string; canEdit: boolean; edit: (op: Op) => void }) {
-  const [open, setOpen] = useState<string | null>(null);
+  // A link like ?task=T3 (from a notification) opens that task.
+  const [open, setOpen] = useState<string | null>(() => new URLSearchParams(location.search).get("task"));
   const task = open ? math.byId.get(open) : undefined;
   return (
     <div className="flex flex-col gap-4">

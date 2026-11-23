@@ -3,8 +3,9 @@
  * saves the result. Both hosts use this unchanged: the cloud inside a Durable Object, the
  * self-hosted server in memory.
  */
-import { describeOp, newRoom, serverApply, taskBefore, type Actor, type Applied, type OpEnvelope, type Plan, type RoomState } from "@ezplan/shared";
+import { allTasks, describeOp, newRoom, serverApply, taskBefore, type Actor, type Applied, type OpEnvelope, type Plan, type RoomState } from "@ezplan/shared";
 import { recordActivity } from "./activity";
+import { notify, userForName } from "./notify";
 import type { ApplyResult, Clock, Db } from "./ports";
 
 /** How many recent edit IDs a room remembers to ignore replays (sent again after a reconnect). */
@@ -74,7 +75,16 @@ export class PlanRoomCore {
     await saveRoom(this.db, this.planId, state, this.clock.now());
     // Activity comes from the edit as applied and the signed-in person (never from the client).
     // Bulk changes (AI update, version restore) write one summary line from their endpoint instead.
-    if (envelope.clientId !== "update" && envelope.clientId !== "restore") await recordActivity(this.db, this.planId, applied.actor, describeOp(applied.effective, before, state.plan, applied.actor.name), this.clock.now());
+    if (envelope.clientId !== "update" && envelope.clientId !== "restore") {
+      const line = describeOp(applied.effective, before, state.plan, applied.actor.name);
+      await recordActivity(this.db, this.planId, applied.actor, line, this.clock.now());
+      // "Assigned to you": the new owner's name is linked to an account on this plan.
+      if (line?.owner && line.taskId) {
+        const to = await userForName(this.db, this.planId, line.owner);
+        const title = allTasks(state.plan).find((t) => t.id === line.taskId)?.title ?? line.taskId;
+        if (to) await notify(this.db, this.clock.now(), { userId: to, planId: this.planId, kind: "assigned", text: `${applied.actor.name} gave you ${title} on ${state.plan.title}`, link: `/p/${this.planId}/checklist?task=${encodeURIComponent(line.taskId)}` }, applied.actor.userId);
+      }
+    }
     return { status: "applied", applied, version: state.seq };
   }
 

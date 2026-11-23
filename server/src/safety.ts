@@ -5,6 +5,7 @@
 import type { Hono } from "hono";
 import type { Clock, Db, ServerConfig, User } from "./ports";
 import { endAllSessions } from "./sessions";
+import { notify } from "./notify";
 
 export const isPlatformAdmin = (config: ServerConfig, user: User) => (config.platformAdmins ?? []).includes(user.email.toLowerCase());
 
@@ -39,6 +40,17 @@ export function registerSafetyRoutes(app: Hono<{ Variables: { user: User } }>, d
       // Other open holds on the same plan keep it held.
       const others = await db.first(`SELECT 1 AS x FROM safety_holds WHERE plan_id = ? AND status = 'held'`, [h.plan_id]);
       if (!others) await db.run(`UPDATE plans SET state = 'active' WHERE id = ?`, [h.plan_id]);
+    }
+    if (action !== "suspend") {
+      const title = h.plan_id ? (await db.first<{ title: string }>(`SELECT title FROM plans WHERE id = ?`, [h.plan_id]))?.title : null;
+      const what = title ?? "your new plan";
+      await notify(db, clock.now(), {
+        userId: h.user_id,
+        planId: h.plan_id,
+        kind: "safety",
+        text: action === "release" ? `The safety review of ${what} is done: everything works again.` : `${what} stays held after review.${note ? ` Note: ${note}` : ""}`,
+        link: h.plan_id ? `/p/${h.plan_id}` : "/",
+      });
     }
     if (action === "suspend") {
       await db.run(`UPDATE users SET suspended_at = ? WHERE id = ?`, [clock.now(), h.user_id]);

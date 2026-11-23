@@ -26,6 +26,7 @@ import { DEFAULT_AI_LIMITS, type Clock, type Db, type ServerConfig, type User } 
 import { costUsd, withRefusalRule, type AiEngine, type AiResult } from "./engine";
 
 import { canEdit, type Role } from "../roles";
+import { notify } from "../notify";
 type Access = { workspace_id: string; role: Role } | null;
 export type Feature = "check" | "report" | "moderation";
 
@@ -97,6 +98,18 @@ export function aiService(d: AiDeps) {
       `INSERT INTO ai_usage (id, user_id, plan_id, workspace_id, feature, model, input_tokens, output_tokens, cost_usd, status, month, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [crypto.randomUUID(), user.id, planId, ws, feature, u.model, u.inputTokens, u.outputTokens, costUsd(u), status ?? (r.ok ? "ok" : r.reason), monthOf(clock.now()), clock.now()],
     );
+    if (r.ok && !status && (feature === "check" || feature === "report")) await warnIfLow(user, ws, planId, feature);
+  }
+
+  /** Once a month, the first time someone passes 80% of an allowance: a notice with the way to ask for more. */
+  async function warnIfLow(user: User, ws: string, planId: string | null, feature: "check" | "report") {
+    const u = await usage(ws, user.id);
+    const mine = feature === "check" ? u.checks : u.reports;
+    if (!mine.limit || mine.used / mine.limit < 0.8) return;
+    const monthStart = Date.parse(`${monthOf(clock.now())}-01T00:00:00Z`);
+    if (await db.first(`SELECT 1 AS x FROM notifications WHERE user_id = ? AND kind = 'ai-low' AND created_at >= ?`, [user.id, monthStart])) return;
+    const left = Math.max(0, mine.limit - mine.used);
+    await notify(db, clock.now(), { userId: user.id, planId, kind: "ai-low", text: `AI ${feature === "check" ? "checks" : "reports"} are running low: ${left} of ${mine.limit} left this month. You can ask for more.`, link: planId ? `/p/${planId}` : "/settings" });
   }
 
   /** Declined twice: the plan stops using AI, sharing and exports until the owner's team reviews it. */

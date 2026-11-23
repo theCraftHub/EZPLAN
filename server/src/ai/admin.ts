@@ -7,6 +7,7 @@ import type { Hono } from "hono";
 import type { Clock, Db, ServerConfig, User } from "../ports";
 import { DEFAULT_AI_LIMITS } from "../ports";
 import { monthOf, type AiService } from "./routes";
+import { notify } from "../notify";
 
 type Role = "manager" | "editor" | "viewer";
 
@@ -22,6 +23,7 @@ export function csvCell(v: unknown): string {
 }
 
 const NO_PROJECT = "none";
+const amount = (c: number, r: number) => [c ? `${c} AI check${c === 1 ? "" : "s"}` : "", r ? `${r} AI report${r === 1 ? "" : "s"}` : ""].filter(Boolean).join(" and ");
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const dayStart = (iso: string) => Date.parse(`${iso}T00:00:00Z`);
 
@@ -49,6 +51,8 @@ export function registerAiAdminRoutes(app: Hono<{ Variables: { user: User } }>, 
     if (await db.first(`SELECT 1 AS x FROM ai_credit_requests WHERE workspace_id = ? AND user_id = ? AND status = 'pending'`, [ws, user.id])) return c.json({ error: "You already have a request waiting. You'll be told when it's answered." }, 409);
     const id = crypto.randomUUID();
     await db.run(`INSERT INTO ai_credit_requests (id, workspace_id, user_id, checks, reports, note, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`, [id, ws, user.id, checks, reports, note, clock.now()]);
+    const managers = await db.all<{ user_id: string; role: Role }>(`SELECT user_id, role FROM members WHERE workspace_id = ?`, [ws]);
+    for (const m of managers.filter((x) => canManageAiCredits(x.role))) await notify(db, clock.now(), { userId: m.user_id, kind: "credit-request", text: `${user.name} asks for ${amount(checks, reports)}`, link: `/admin/ai/${ws}` }, user.id);
     return c.json({ id }, 201);
   });
 
@@ -78,6 +82,7 @@ export function registerAiAdminRoutes(app: Hono<{ Variables: { user: User } }>, 
     const b = await c.req.json<{ decision?: unknown; checks?: unknown; reports?: unknown }>().catch(() => null);
     if (b?.decision === "decline") {
       await db.run(`UPDATE ai_credit_requests SET status = 'declined', decided_by = ?, decided_at = ? WHERE id = ?`, [user.id, clock.now(), c.req.param("rid")]);
+      await notify(db, clock.now(), { userId: r.user_id, kind: "credit-answer", text: `${user.name} declined your request for ${amount(Number(r.checks), Number(r.reports))}`, link: "/settings" }, user.id);
       return c.json({ ok: true });
     }
     if (b?.decision !== "approve") return c.json({ error: "Choose approve or decline." }, 400);
@@ -90,6 +95,7 @@ export function registerAiAdminRoutes(app: Hono<{ Variables: { user: User } }>, 
       { sql: `INSERT INTO ai_credit_grants (id, workspace_id, user_id, month, checks, reports, granted_by, reason, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, params: [crypto.randomUUID(), ws, r.user_id, monthOf(clock.now()), checks, reports, user.id, "request approved", clock.now()] },
       { sql: `UPDATE ai_credit_requests SET status = 'approved', checks = ?, reports = ?, decided_by = ?, decided_at = ? WHERE id = ?`, params: [checks, reports, user.id, clock.now(), c.req.param("rid")] },
     ]);
+    await notify(db, clock.now(), { userId: r.user_id, kind: "credit-answer", text: `${user.name} gave you ${amount(checks, reports)} more this month`, link: "/settings" }, user.id);
     return c.json({ ok: true });
   });
 

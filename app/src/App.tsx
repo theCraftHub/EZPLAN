@@ -10,6 +10,7 @@ import { SignIn } from "./pages/SignIn";
 import { Settings } from "./pages/Settings";
 import { AiAdminPage } from "./pages/AiAdmin";
 import { SafetyPage } from "./pages/Safety";
+import { NotificationsPage } from "./pages/Notifications";
 import type { SpendType } from "./lib/api";
 import { Shell } from "./ui/Shell";
 import { Notice, Spinner } from "./ui/kit";
@@ -18,8 +19,11 @@ function Routes({ me, onSignOut, onMe }: { me: Me; onSignOut: () => void; onMe: 
   const { path } = useRouter();
   if (match("/", path)) return <Home me={me} />;
   if (match("/new", path)) return <NewPlan me={me} />;
+  const invId = match("/invite/id/:id", path);
+  if (invId) return <Invite key={invId.id} token={invId.id!} byId />;
   const inv = match("/invite/:token", path);
   if (inv) return <Invite token={inv.token!} />;
+  if (match("/notifications", path)) return <NotificationsPage onUnread={(n) => onMe({ ...me, unread: n })} />;
   if (match("/settings", path)) return <Settings me={me} onSignOut={onSignOut} onMe={onMe} />;
   if (match("/admin/safety", path)) return <SafetyPage onCount={(n) => onMe({ ...me, safetyOpen: n })} />;
   const det = match("/admin/ai/:ws/spending/:type/:key", path);
@@ -43,7 +47,7 @@ function Root() {
   if (me === "signed-out") return <SignIn />;
   const signOut = () => void api.logout().finally(() => location.assign("/"));
   return (
-    <Shell me={me} onSignOut={signOut}>
+    <Shell me={me} onSignOut={signOut} onUnread={(n) => setMe((m) => (m && m !== "signed-out" ? { ...m, unread: n } : m))}>
       <Routes me={me} onSignOut={signOut} onMe={setMe} />
     </Shell>
   );

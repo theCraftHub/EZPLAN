@@ -1,6 +1,8 @@
 /** Page frame: a side panel on desktop, a top bar and bottom tabs on phones. Same destinations on both. */
 import type { ReactNode } from "react";
-import { FolderKanban, Home, LogOut, Plus, Settings, ShieldAlert, Sparkles, ChartLine } from "lucide-react";
+import { useEffect } from "react";
+import { Bell, FolderKanban, Home, LogOut, Plus, Settings, ShieldAlert, Sparkles, ChartLine } from "lucide-react";
+import { api } from "../lib/api";
 import { BRAND } from "@ezplan/shared";
 import { Link, useRouter } from "../lib/router";
 import type { Me } from "../lib/api";
@@ -11,8 +13,19 @@ const NAV = [
   { to: "/settings", label: "Settings", Icon: Settings },
 ];
 
-export function Shell({ me, onSignOut, children }: { me: Me; onSignOut: () => void; children: ReactNode }) {
+export function Shell({ me, onSignOut, onUnread, children }: { me: Me; onSignOut: () => void; onUnread: (n: number) => void; children: ReactNode }) {
   const { path } = useRouter();
+  // The unread count: on every screen change, and every minute while the tab is visible.
+  useEffect(() => {
+    const check = () => { if (document.visibilityState === "visible") api.unreadCount().then((r) => onUnread(r.unread)).catch(() => {}); };
+    check();
+    const timer = setInterval(check, 60_000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [path]);
+  const unread = me.unread ?? 0;
+  const bellLabel = unread ? `Notifications, ${unread} unread` : "Notifications";
+  const badge = unread > 0 && <span className="ml-auto min-w-6 rounded-full bg-amber-300 px-1.5 text-center text-xs font-bold text-slate-900">{unread > 99 ? "99+" : unread}</span>;
   const manages = me.workspaces.filter((w) => w.role === "manager");
   const current = (to: string) => (to === "/" ? path === "/" || path.startsWith("/p/") : path.startsWith(to));
   return (
@@ -23,6 +36,9 @@ export function Shell({ me, onSignOut, children }: { me: Me; onSignOut: () => vo
           <span className="text-[17px] font-bold text-white">{BRAND.name}</span>
         </div>
         <nav aria-label="Main" className="flex flex-col gap-1">
+          <Link to="/notifications" aria-label={bellLabel} aria-current={path.startsWith("/notifications") ? "page" : undefined} className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium ${path.startsWith("/notifications") ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5"}`}>
+            <Bell aria-hidden size={18} /> Notifications {badge}
+          </Link>
           {NAV.map((n) => (
             <Link key={n.to} to={n.to} aria-current={current(n.to) ? "page" : undefined} className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium ${current(n.to) ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5"}`}>
               <n.Icon aria-hidden size={18} /> {n.label}
@@ -65,6 +81,10 @@ export function Shell({ me, onSignOut, children }: { me: Me; onSignOut: () => vo
         <header className="sticky top-0 z-10 flex items-center gap-2 bg-nav px-4 py-3 text-white lg:hidden print:hidden">
           <FolderKanban aria-hidden size={20} className="text-indigo-300" />
           <span className="font-bold">{BRAND.name}</span>
+          <Link to="/notifications" aria-label={bellLabel} className="relative ml-auto flex h-11 w-11 items-center justify-center rounded-xl">
+            <Bell aria-hidden size={22} />
+            {unread > 0 && <span aria-hidden className="absolute top-1 right-0.5 min-w-5 rounded-full bg-amber-300 px-1 text-center text-[11px] font-bold text-slate-900">{unread > 99 ? "99+" : unread}</span>}
+          </Link>
         </header>
         <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-5 lg:px-8 lg:py-7">{children}</main>
       </div>

@@ -15,6 +15,7 @@ import { sharingContract } from "../../server/test/sharing.contract";
 import { aiContract } from "../../server/test/ai.contract";
 import { aiAdminContract } from "../../server/test/aiAdmin.contract";
 import { collabContract } from "../../server/test/collab.contract";
+import { notifyContract } from "../../server/test/notify.contract";
 import { signInContract } from "../../server/test/signin.contract";
 
 let bundled: Promise<string> | null = null;
@@ -96,3 +97,4 @@ sharingContract("cloud (Workers + D1 + Durable Objects)", factory);
 aiContract("cloud (Workers + D1 + Durable Objects)", factory);
 aiAdminContract("cloud (Workers + D1 + Durable Objects)", factory);
 collabContract("cloud (Workers + D1 + Durable Objects)", factory);
+notifyContract("cloud (Workers + D1 + Durable Objects)", factory);

@@ -36,6 +36,7 @@ import { isPlatformAdmin, registerSafetyRoutes } from "./safety";
 import { canEdit, type Role } from "./roles";
 import { recordActivity } from "./activity";
 import { registerCollabRoutes } from "./comments";
+import { notify, registerNotificationRoutes, unreadCount, userForName } from "./notify";
 
 const ROLE_WORD: Record<string, string> = { editor: "an Editor", commenter: "a Commenter", viewer: "a Viewer" };
 const suspendedMessage = "This account is suspended after a safety review. Contact support if you think this is a mistake.";
@@ -187,14 +188,25 @@ export function createApp(ports: Ports) {
   registerAiRoutes(app, aiDeps, ai);
   registerAiAdminRoutes(app, { db, clock, config }, ai);
   registerSafetyRoutes(app, { db, clock, config });
-  registerCollabRoutes(app, { db, clock, rooms, access, notFound });
+  registerNotificationRoutes(app, { db, clock });
+  registerCollabRoutes(app, {
+    db, clock, rooms, access, notFound,
+    // Mentions first; then the task's owner (when their name is linked to an account) hears about it once.
+    onComment: async ({ planId, taskId, taskTitle, taskOwner, author, mentions }) => {
+      const title = (await db.first<{ title: string }>(`SELECT title FROM plans WHERE id = ?`, [planId]))?.title ?? "a plan";
+      const link = `/p/${planId}/checklist?task=${encodeURIComponent(taskId)}`;
+      for (const userId of mentions) await notify(db, clock.now(), { userId, planId, kind: "mention", text: `${author.name} mentioned you on ${taskTitle} (${title})`, link }, author.id);
+      const owner = await userForName(db, planId, taskOwner);
+      if (owner && !mentions.includes(owner)) await notify(db, clock.now(), { userId: owner, planId, kind: "comment", text: `${author.name} commented on your task ${taskTitle} (${title})`, link }, author.id);
+    },
+  });
 
   app.get("/api/me", async (c) => {
     const user = c.get("user");
     const workspaces = await db.all(`SELECT w.id, w.name, m.role, w.work_week FROM workspaces w JOIN members m ON m.workspace_id = w.id WHERE m.user_id = ? ORDER BY w.created_at`, [user.id]);
     const platformAdmin = isPlatformAdmin(config, user);
     const safetyOpen = platformAdmin ? Number((await db.first<{ n: number }>(`SELECT COUNT(*) AS n FROM safety_holds WHERE status = 'held'`))?.n ?? 0) : 0;
-    return c.json({ user, platformAdmin, safetyOpen, workspaces: workspaces.map((w) => ({ ...w, work_week: JSON.parse(String(w.work_week)) })) });
+    return c.json({ user, platformAdmin, safetyOpen, unread: await unreadCount(db, user.id), workspaces: workspaces.map((w) => ({ ...w, work_week: JSON.parse(String(w.work_week)) })) });
   });
 
   /** Availability saved for a plan, by name (what the scheduler and Plan Check use). */
@@ -525,6 +537,10 @@ export function createApp(ports: Ports) {
     const expiresAt = clock.now() + INVITE_DAYS * 86_400_000;
     await db.run(`INSERT INTO invites (id, token_hash, plan_id, email, role, person_name, created_by, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [inviteId, await sha256(token), id, email, role, personName, user.id, clock.now(), expiresAt]);
     // The link is shown once, to the person inviting; only its hash is stored.
+    // Someone who already has an account also gets a notice; it opens the invite by its id (the
+    // secret link is never stored), and only the invited address can accept it.
+    const invitee = await db.first<{ id: string }>(`SELECT id FROM users WHERE lower(email) = ?`, [email.toLowerCase()]);
+    if (invitee) await notify(db, clock.now(), { userId: invitee.id, planId: id, kind: "invited", text: `${user.name} invited you to ${a.title} as ${ROLE_WORD[role]}`, link: `/invite/id/${inviteId}` }, user.id);
     return c.json({ id: inviteId, link: `${siteOrigin}/invite/${token}`, expiresAt }, 201);
   });
 
@@ -571,19 +587,19 @@ export function createApp(ports: Ports) {
 
   const nameOf = async (userId: string) => (await db.first<{ name: string }>(`SELECT name FROM users WHERE id = ?`, [userId]))?.name ?? "someone";
 
-  /** An invite by its link secret (the signed-in person is checked against it). */
-  async function inviteFor(token: string) {
+  /** An invite by its link secret, or by its id from a notification (the signed-in person is checked against it either way). */
+  async function inviteFor(token: string, byId = false) {
     if (!token || token.length > 100) return null;
     return db.first<InviteRow & { plan_title: string; inviter: string | null }>(
-      `SELECT i.*, p.title AS plan_title, u.name AS inviter FROM invites i JOIN plans p ON p.id = i.plan_id LEFT JOIN users u ON u.id = i.created_by WHERE i.token_hash = ?`,
-      [await sha256(token)],
+      `SELECT i.*, p.title AS plan_title, u.name AS inviter FROM invites i JOIN plans p ON p.id = i.plan_id LEFT JOIN users u ON u.id = i.created_by WHERE ${byId ? "i.id" : "i.token_hash"} = ?`,
+      [byId ? token : await sha256(token)],
     );
   }
   const noInvite = { error: "This invite link isn't valid. Ask for a new one." };
 
   app.get("/api/invites/:token", async (c) => {
     const user = c.get("user");
-    const inv = await inviteFor(c.req.param("token"));
+    const inv = await inviteFor(c.req.param("token"), c.req.query("by") === "id");
     if (!inv) return c.json(noInvite, 404);
     const problem = inviteProblem(inv, clock.now(), user.email, user.id);
     return c.json({ planTitle: problem ? null : inv.plan_title, inviter: inv.inviter ?? "Someone", role: inv.role, email: maskEmail(inv.email), problem, accepted: inv.accepted_by === user.id, planId: inv.accepted_by === user.id ? inv.plan_id : null });
@@ -591,7 +607,7 @@ export function createApp(ports: Ports) {
 
   app.post("/api/invites/:token/accept", async (c) => {
     const user = c.get("user");
-    const inv = await inviteFor(c.req.param("token"));
+    const inv = await inviteFor(c.req.param("token"), c.req.query("by") === "id");
     if (!inv) return c.json(noInvite, 404);
     const problem = inviteProblem(inv, clock.now(), user.email, user.id);
     if (problem) return c.json({ error: problem }, 403);

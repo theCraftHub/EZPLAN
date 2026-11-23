@@ -20,6 +20,13 @@ export interface Me {
   /** On the owner's team (PLATFORM_ADMINS): sees the safety review queue. */
   platformAdmin?: boolean;
   safetyOpen?: number;
+  unread?: number;
+}
+
+export interface Notifications {
+  unread: number;
+  due: { planId: string; planTitle: string; taskId: string; title: string; due: string; overdue: boolean }[];
+  items: { id: string; planId: string | null; kind: string; text: string; link: string; createdAt: number; read: boolean }[];
 }
 
 export interface CreditRequest { id: string; userId: string; name: string; checks: number; reports: number; note: string | null; status: "pending" | "approved" | "declined"; decidedBy: string | null; createdAt: number; decidedAt: number | null }
@@ -146,8 +153,11 @@ export const api = {
   cancelInvite: (planId: string, inviteId: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/invites/${encodeURIComponent(inviteId)}`, { method: "DELETE" }),
   setRole: (planId: string, userId: string, role: PlanRole) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/members/${encodeURIComponent(userId)}`, { method: "PUT", body: JSON.stringify({ role }) }),
   removeMember: (planId: string, userId: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/members/${encodeURIComponent(userId)}`, { method: "DELETE" }),
-  inviteInfo: (token: string) => call<{ planTitle: string | null; inviter: string; role: PlanRole; email: string; problem: string | null; accepted: boolean; planId: string | null }>(`/api/invites/${encodeURIComponent(token)}`),
-  acceptInvite: (token: string) => call<{ planId: string }>(`/api/invites/${encodeURIComponent(token)}/accept`, { method: "POST", body: "{}" }),
+  notifications: () => call<Notifications>("/api/notifications"),
+  unreadCount: () => call<{ unread: number }>("/api/notifications/count"),
+  markRead: (ids: string[] | "all") => call<{ ok: true; unread: number }>("/api/notifications/read", { method: "POST", body: JSON.stringify(ids === "all" ? { all: true } : { ids }) }),
+  inviteInfo: (token: string, byId = false) => call<{ planTitle: string | null; inviter: string; role: PlanRole; email: string; problem: string | null; accepted: boolean; planId: string | null }>(`/api/invites/${encodeURIComponent(token)}${byId ? "?by=id" : ""}`),
+  acceptInvite: (token: string, byId = false) => call<{ planId: string }>(`/api/invites/${encodeURIComponent(token)}/accept${byId ? "?by=id" : ""}`, { method: "POST", body: "{}" }),
   ai: (planId: string) => call<AiState>(`/api/plans/${encodeURIComponent(planId)}/ai`),
   aiCheck: (planId: string) => call<{ review: AiReview; hidden: number; usage: AiUsage }>(`/api/plans/${encodeURIComponent(planId)}/ai/check`, { method: "POST", body: "{}" }),
   suppress: (planId: string, kind: SuggestionKind, text: string, taskIds: string[]) => call<{ id: string }>(`/api/plans/${encodeURIComponent(planId)}/ai/suppressions`, { method: "POST", body: JSON.stringify({ kind, text, taskIds }) }),
