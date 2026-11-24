@@ -157,6 +157,11 @@ export const MIGRATIONS: Migration[] = [
       `CREATE INDEX status_updates_plan ON status_updates(plan_id, created_at)`,
     ],
   },
+  {
+    id: 13,
+    name: "per-person settings (dashboard layout)",
+    statements: [`CREATE TABLE user_prefs (user_id TEXT NOT NULL REFERENCES users(id), key TEXT NOT NULL, value TEXT NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY (user_id, key))`],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

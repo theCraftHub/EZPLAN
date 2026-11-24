@@ -78,5 +78,18 @@ export function statusContract(hostName: string, factory: HostFactory) {
       expect((await list()).body.overdue).toBe(true);
       expect((await req("GET", "/api/plans", undefined, ALEX)).body.plans.find((p: { id: string }) => p.id === id).statusUpdate).toMatchObject({ overdue: true, last: { rag: "amber" } });
     });
+
+    it("settings: each person's own, small, by key", async () => {
+      const layout = { order: ["kpis", "workload"], hidden: ["activity"] };
+      expect((await req("GET", "/api/me/prefs/overview.widgets", undefined, ALEX)).body).toEqual({ value: null });
+      expect((await req("PUT", "/api/me/prefs/overview.widgets", { value: layout }, ALEX)).status).toBe(200);
+      expect((await req("GET", "/api/me/prefs/overview.widgets", undefined, ALEX)).body).toEqual({ value: layout });
+      expect((await req("GET", "/api/me/prefs/overview.widgets", undefined, SAM)).body).toEqual({ value: null }); // not shared
+      expect((await req("PUT", "/api/me/prefs/overview.widgets", { value: { ...layout, hidden: [] } }, ALEX)).status).toBe(200);
+      expect((await req("GET", "/api/me/prefs/overview.widgets", undefined, ALEX)).body.value.hidden).toEqual([]);
+      expect((await req("PUT", "/api/me/prefs/Bad Key!", { value: 1 }, ALEX)).status).toBe(400);
+      expect((await req("PUT", "/api/me/prefs/big", { value: "x".repeat(5000) }, ALEX)).status).toBe(413);
+      expect((await req("PUT", "/api/me/prefs/big", {}, ALEX)).status).toBe(400);
+    });
   });
 }

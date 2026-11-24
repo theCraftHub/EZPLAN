@@ -13,7 +13,7 @@ test("Overview shows progress, finish, next milestone and what's ready to start"
   await openPlan(page);
   await expect(page.getByRole("heading", { name: "Kitchen Remodel" })).toBeVisible();
   await expect(page.getByText("1 of 5 tasks done")).toBeVisible();
-  await expect(page.getByText("Order placed")).toBeVisible();
+  await expect(page.getByText("Order placed").first()).toBeVisible(); // the next milestone (on desktop it also shows in other widgets)
   const upNext = page.getByRole("region", { name: "Up next" });
   await expect(upNext.getByText("Get three contractor quotes")).toBeVisible();
   await expect(upNext.getByText("Order cabinets")).toHaveCount(0); // still waiting on the quotes

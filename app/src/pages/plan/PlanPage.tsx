@@ -89,7 +89,7 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
       {view === "report" && <Report planId={id} today={room.detail.today} canEdit={canEdit} onPosted={() => void api.statusUpdates(id).then((u) => room.setDetail({ ...room.detail!, statusUpdate: { last: u.items[0] ? { rag: u.items[0].rag, headline: u.items[0].headline, at: u.items[0].createdAt } : null, overdue: u.overdue } })).catch(() => {})} />}
       {view === "share" && <Share planId={id} plan={room.plan} me={me} />}
       {view === "history" && <History planId={id} plan={room.plan} version={room.detail.version} canEdit={canEdit} edit={room.edit} />}
-      {view === "" && <Overview plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} planId={id} version={room.version} statusUpdate={room.detail.statusUpdate} />}
+      {view === "" && <Overview plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} planId={id} version={room.version} statusUpdate={room.detail.statusUpdate} people={room.detail.people} workWeek={room.detail.workWeek} />}
       {view === "checklist" && <Checklist plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} />}
       {view === "timeline" && <Timeline plan={room.plan} math={math} today={room.detail.today} />}
       {view === "team" && <Team me={me} planId={id} plan={room.plan} math={math} people={room.detail.people} workWeek={room.detail.workWeek} today={room.detail.today} canEdit={canEdit} edit={room.edit} onPeople={(people) => room.setDetail({ ...room.detail!, people })} />}

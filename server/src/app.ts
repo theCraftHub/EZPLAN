@@ -36,6 +36,7 @@ import { isPlatformAdmin, registerSafetyRoutes } from "./safety";
 import { canEdit, type Role } from "./roles";
 import { recordActivity } from "./activity";
 import { registerStatusUpdateRoutes, updateState } from "./statusUpdates";
+import { registerPrefRoutes } from "./prefs";
 import { registerCollabRoutes } from "./comments";
 import { notify, registerNotificationRoutes, unreadCount, userForName } from "./notify";
 import { registerSupportRoutes, supportOpen } from "./support";
@@ -197,6 +198,7 @@ export function createApp(ports: Ports) {
   registerNotificationRoutes(app, { db, clock });
   registerSupportRoutes(app, { db, clock, config, access, ...(ports.mail ? { mail: ports.mail } : {}) });
   registerStatusUpdateRoutes(app, { db, clock, access, notFound });
+  registerPrefRoutes(app, { db, clock });
   registerSafetyCaseRoutes(app, { db, clock, config, ...(ports.mail ? { mail: ports.mail } : {}) });
   registerCollabRoutes(app, {
     db, clock, rooms, access, notFound,
