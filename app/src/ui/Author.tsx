@@ -9,7 +9,7 @@ import type { Who } from "../lib/api";
 
 const when = (ms: number) => new Date(ms).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
-/** The accessible name of a message: "Message from EZPLAN safety team (official)" or "Message from Alex Rivera, Manager at Northfield". */
+/** The accessible name of a message: "Message from <brand> safety team (official)" or "Message from Alex Rivera, Manager at Northfield". */
 export function whoLabel(w: Who): string {
   return w.kind === "team" ? `${w.team} (official)` : [w.name, [w.role, w.company && `at ${w.company}`].filter(Boolean).join(" ")].filter(Boolean).join(", ");
 }
