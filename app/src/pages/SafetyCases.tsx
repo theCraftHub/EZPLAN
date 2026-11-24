@@ -8,6 +8,7 @@ import { Mail, ShieldCheck } from "lucide-react";
 import { api, ApiError, type SafetyCase, type SafetyCaseRow } from "../lib/api";
 import { Link } from "../lib/router";
 import { Button, Card, Notice, PageTitle, Spinner } from "../ui/kit";
+import { Message } from "../ui/Author";
 
 const when = (ms: number) => new Date(ms).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const STATUS = { open: "Open", closed: "Closed" } as const;
@@ -60,16 +61,12 @@ export function SafetyCasePage({ id }: { id: string }) {
       <Card aria-label="Conversation" className="flex flex-col gap-3">
         <ul className="m-0 flex list-none flex-col gap-3 p-0">
           {c.messages.map((m) => (
-            <li key={m.id} aria-label={`Message from ${m.author}`} className={`flex flex-col gap-1 rounded-xl p-3 ${m.fromStaff ? "bg-primary-soft" : "bg-surface-2"}`}>
-              <span className="flex flex-wrap items-center gap-x-2 text-xs text-muted">
-                <strong className="text-ink-2">{m.author}</strong> · {when(m.createdAt)}
-                {m.via === "email" && <span className="inline-flex items-center gap-1"><Mail aria-hidden size={12} /> by email</span>}
-              </span>
+            <Message key={m.id} who={m.who} at={m.createdAt} extra={m.via === "email" && <span className="inline-flex items-center gap-1"><Mail aria-hidden size={12} /> by email</span>}>
               <p className="m-0 text-[15px] break-words whitespace-pre-wrap">{m.body}</p>
               {staff && m.emails && m.emails.length > 0 && (
                 <span className="text-xs text-muted">Emailed to {m.emails.map((e) => e.to).join(", ")}{m.emails.every((e) => e.status === "off") ? " (not sent: email is off on this server, kept in the outbox)" : m.emails.some((e) => e.status === "failed") ? " (some failed to send)" : ""}</span>
               )}
-            </li>
+            </Message>
           ))}
         </ul>
         <form className="flex flex-col gap-2" onSubmit={(e) => { e.preventDefault(); void run(() => api.replySafetyCase(id, reply)).then((ok) => ok && setReply("")); }}>

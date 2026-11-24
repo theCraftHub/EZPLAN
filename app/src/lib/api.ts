@@ -28,10 +28,12 @@ export interface SupportContact { team: string; email: string | null; phone: str
 export interface HelpInfo { staff: boolean; workspaces: { workspaceId: string; name: string; canManage: boolean; contact: SupportContact | null }[] }
 export type TicketTopic = "problem" | "question" | "billing" | "account" | "safety";
 export interface TicketRow { id: string; topic: TicketTopic; subject: string; status: "open" | "waiting" | "solved"; via: "direct" | "it"; from: string | null; updatedAt: number }
+/** Who wrote a message to or from our team: our team (the brand) or a customer. */
+export type Who = { kind: "team"; team: string; person: string | null } | { kind: "customer"; name: string; domain: string; role: "Manager" | "Employee" | "Guest"; company: string | null };
 export interface TicketThread {
   as: "author" | "staff" | "it";
   ticket: { id: string; topic: TicketTopic; subject: string; status: "open" | "waiting" | "solved"; via: "direct" | "it"; from: string; createdAt: number; context: { page: string; browser: string; version: string; errors: string[] } | null };
-  messages: { id: string; author: string; fromStaff: boolean; body: string; createdAt: number }[];
+  messages: { id: string; author: string; who: Who; fromStaff: boolean; body: string; createdAt: number }[];
   grants: { id: string; planId: string; planTitle: string | null; expiresAt: number; active: boolean }[];
   views: { by: string; at: number }[];
 }
@@ -40,7 +42,7 @@ export interface SafetyCaseRow { id: string; workspace: string; status: "open" |
 export interface SafetyCase {
   as: "staff" | "manager";
   case: { id: string; workspace: string; status: "open" | "closed"; createdAt: number; reportId: string | null };
-  messages: { id: string; author: string; fromStaff: boolean; via: "app" | "email" | "system"; body: string; createdAt: number; emails?: { to: string; status: "off" | "sent" | "failed" }[] }[];
+  messages: { id: string; author: string; who: Who; fromStaff: boolean; via: "app" | "email" | "system"; body: string; createdAt: number; emails?: { to: string; status: "off" | "sent" | "failed" }[] }[];
   emailOff: boolean;
 }
 

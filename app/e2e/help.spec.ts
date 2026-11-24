@@ -48,7 +48,11 @@ test("company contact, a request to support with plan access, a reply from our t
   await alex.goto("/");
   await expect(alex.getByRole("link", { name: /^Notifications, \d+ unread$/ }).first()).toBeVisible();
   await alex.goto(new URL(url).pathname);
-  await expect(alex.getByRole("listitem", { name: "Message from Support" })).toContainText("Found it");
+  const fromUs = alex.getByRole("listitem", { name: /^Message from .+ support \(official\)$/ });
+  await expect(fromUs).toContainText("Found it");
+  await expect(fromUs.getByText("Official")).toBeVisible();
+  await expect(alex.getByRole("listitem", { name: /^Message from Alex Rivera, (Manager|Employee|Guest)/ }).first()).toContainText("example.com"); // customers: name, role, company, domain
+  if (process.env.SHOTS) await alex.screenshot({ path: `e2e/.results/shots/${info.project.name}-j0-request-thread.png`, fullPage: true });
   await expect(alex.getByText(/Opened by support: Pat Lee/)).toBeVisible();
   await alex.getByRole("button", { name: "Take back access" }).click();
   await expect(alex.getByText(/access ended/)).toBeVisible();

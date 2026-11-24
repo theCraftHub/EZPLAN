@@ -70,6 +70,7 @@ export function supportContract(hostName: string, factory: HostFactory) {
       const n = (await req("GET", "/api/notifications", undefined, SAM)).body.items[0];
       expect(n).toMatchObject({ kind: "support", text: "Support replied: Dates look wrong", link: `/help/requests/${tid}` });
       const thread = (await req("GET", `/api/support/tickets/${tid}`, undefined, SAM)).body;
+      expect(thread.messages[1].who).toEqual({ kind: "team", team: expect.stringMatching(/ support$/), person: "Owner" });
       expect(thread.messages.map((m: { author: string; fromStaff: boolean }) => [m.author, m.fromStaff])).toEqual([["Sam", false], ["Owner", true]]);
       expect(thread.ticket.context).toBeNull(); // the technical details are for support
 
@@ -97,6 +98,9 @@ export function supportContract(hostName: string, factory: HostFactory) {
       expect((await req("GET", "/api/notifications", undefined, ALEX)).body.items[0]).toMatchObject({ kind: "support", text: "Sam asked for help: Can't add Kim" });
       expect((await req("GET", "/api/support/tickets", undefined, ALEX)).body.company).toMatchObject([{ subject: "Can't add Kim", from: "Sam" }]);
       expect((await req("POST", `/api/support/tickets/${tid}/messages`, { body: "Checking our settings." }, ALEX)).status).toBe(200);
+      // The company's own IT is a customer, not our team: shown with their role and company.
+      const itThread = (await req("GET", `/api/support/tickets/${tid}`, undefined, SAM)).body.messages;
+      expect(itThread.map((m: { who: { kind: string; role?: string } }) => [m.who.kind, m.who.role])).toEqual([["customer", "Guest"], ["customer", "Manager"]]);
       expect((await req("POST", `/api/support/tickets/${tid}/forward`, {}, SAM)).status).toBe(404);
       expect((await req("POST", `/api/support/tickets/${tid}/forward`, {}, ALEX)).status).toBe(200);
       expect((await req("GET", `/api/support/tickets/${tid}`, undefined, OWNER)).body.as).toBe("staff");
@@ -155,7 +159,16 @@ export function supportContract(hostName: string, factory: HostFactory) {
 
       // Our team replies in the app; Alex sees "safety team", not the staff member's name.
       await req("POST", `/api/safety-cases/${caseId}/messages`, { body: "Please remove the account u-123 from Office 2." }, OWNER);
-      expect((await req("GET", `/api/safety-cases/${caseId}`, undefined, ALEX)).body.messages.at(-1)).toMatchObject({ author: expect.stringMatching(/safety team$/), body: "Please remove the account u-123 from Office 2." });
+      const fromUs = (await req("GET", `/api/safety-cases/${caseId}`, undefined, ALEX)).body.messages;
+      expect(fromUs.at(-1)).toMatchObject({ author: expect.stringMatching(/safety team$/), body: "Please remove the account u-123 from Office 2." });
+      // Our team is the brand, never a person, to customers; customers show name, role, company and domain.
+      expect(fromUs.at(-1).who).toEqual({ kind: "team", team: expect.stringMatching(/ safety team$/), person: null });
+      expect(fromUs[1].who).toEqual({ kind: "customer", name: "Alex", domain: "example.com", role: "Manager", company: expect.any(String) });
+      expect((await req("GET", `/api/safety-cases/${caseId}`, undefined, OWNER)).body.messages.at(-1).who).toMatchObject({ kind: "team", person: "Owner" });
+      const [, toAlex] = await out("alex@example.com");
+      expect(toAlex!.body).toMatch(/ safety team \(official\) wrote:/);
+      expect(toAlex!.body).not.toContain("Owner");
+      expect((await out("owner@example.com"))[0]!.body).toMatch(/^Alex \(Manager, .+, example\.com\) wrote:$/m);
 
       // Alex replies by email: only the new text is kept, and it lands in the case.
       const inbound = (body: unknown, secret = "test-inbound-secret") => host.fetch("/inbound/email", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${secret}` }, body: JSON.stringify(body) });

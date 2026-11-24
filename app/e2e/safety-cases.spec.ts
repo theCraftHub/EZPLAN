@@ -31,7 +31,7 @@ test("Kim reports; Alex (Kim's manager) follows up with our team, never learning
     for (const secret of ["Kim", "Harassing", "insults"]) await expect(alex.getByText(secret)).toHaveCount(0);
     await alex.getByLabel("Reply to our safety team").fill("Which team is this about?");
     await alex.getByRole("button", { name: "Send" }).click();
-    await expect(convo.getByRole("listitem", { name: "Message from Alex Rivera" })).toContainText("Which team is this about?");
+    await expect(convo.getByRole("listitem", { name: /^Message from Alex Rivera, Manager at / })).toContainText("Which team is this about?");
     if (process.env.SHOTS) await alex.screenshot({ path: shots("case-manager"), fullPage: true });
 
     // Pat (our safety team) finds it under Safety review, with the original report and what was emailed.
@@ -42,12 +42,12 @@ test("Kim reports; Alex (Kim's manager) follows up with our team, never learning
     await expect(pat.getByText(/Emailed to alex@example.com \(not sent: email is off on this server/).first()).toBeVisible();
     await pat.getByLabel("Write to the company's managers").fill("Please check the comments on Office move.");
     await pat.getByRole("button", { name: "Send" }).click();
-    await expect(pat.getByRole("listitem", { name: "Message from Pat Lee" })).toBeVisible();
+    await expect(pat.getByRole("listitem", { name: /^Message from .+ safety team \(official\)$/ }).last()).toContainText("(Pat Lee)"); // our team sees who wrote it
     if (process.env.SHOTS) await pat.screenshot({ path: shots("case-staff"), fullPage: true });
 
     // Alex sees "safety team", not Pat's name; Kim (the reporter) has no case to open.
     await alex.reload();
-    await expect(convo.getByRole("listitem", { name: /^Message from .+ safety team$/ }).last()).toContainText("Please check the comments on Office move.");
+    await expect(convo.getByRole("listitem", { name: /^Message from .+ safety team \(official\)$/ }).last()).toContainText("Please check the comments on Office move.");
     await expect(alex.getByText("Pat Lee")).toHaveCount(0);
     await kim.goto("/help");
     await expect(kim.getByRole("region", { name: "Safety follow-ups" })).toHaveCount(0);

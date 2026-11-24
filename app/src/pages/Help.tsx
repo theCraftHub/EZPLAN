@@ -11,6 +11,7 @@ import { recentErrors } from "../lib/errors";
 import { Link, useRouter } from "../lib/router";
 import { Button, Card, Notice, PageTitle, Spinner } from "../ui/kit";
 import { SafetyCaseList } from "./SafetyCases";
+import { Message } from "../ui/Author";
 
 export const TOPIC: Record<TicketTopic, string> = { problem: "Something isn't working", question: "A question", billing: "Billing", account: "My account or sign-in", safety: "Report abuse or a safety problem" };
 const STATUS: Record<string, string> = { open: "Open", waiting: "Waiting for you", solved: "Solved" };
@@ -158,10 +159,9 @@ export function RequestPage({ id }: { id: string }) {
       <Card aria-label="Conversation" className="flex flex-col gap-3">
         <ul className="m-0 flex list-none flex-col gap-3 p-0">
           {t.messages.map((m) => (
-            <li key={m.id} aria-label={`Message from ${m.fromStaff && t.as === "author" && t.ticket.via === "direct" ? "Support" : m.author}`} className={`flex flex-col gap-1 rounded-xl p-3 ${m.fromStaff ? "bg-primary-soft" : "bg-surface-2"}`}>
-              <span className="text-xs text-muted"><strong className="text-ink-2">{m.fromStaff && t.as === "author" && t.ticket.via === "direct" ? `${BRAND.name} support (${m.author})` : m.author}</strong> · {when(m.createdAt)}</span>
+            <Message key={m.id} who={m.who} at={m.createdAt}>
               <p className="m-0 text-[15px] break-words whitespace-pre-wrap">{m.body}</p>
-            </li>
+            </Message>
           ))}
         </ul>
         <form className="flex flex-col gap-2" onSubmit={(e) => { e.preventDefault(); void run(() => api.replyTicket(id, reply)).then((ok) => ok && setReply("")); }}>

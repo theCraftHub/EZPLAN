@@ -6,6 +6,8 @@
 import type { Hono } from "hono";
 import { exportPlan, freeModeration } from "@ezplan/shared";
 import { openCases } from "./safetyCases";
+import { customerWho, readWho, teamWho } from "./authors";
+import { BRAND } from "@ezplan/shared";
 import type { Mailer } from "./mail";
 import type { Clock, Db, ServerConfig, User } from "./ports";
 import { notify } from "./notify";
@@ -13,6 +15,7 @@ import { loadRoom } from "./room";
 import { isPlatformAdmin } from "./safety";
 import type { Role } from "./roles";
 
+const SUPPORT = `${BRAND.name} support`;
 const TOPICS = ["problem", "question", "billing", "account", "safety"] as const;
 type Topic = (typeof TOPICS)[number];
 const STATUSES = ["open", "waiting", "solved"] as const;
@@ -127,7 +130,7 @@ export function registerSupportRoutes(app: Hono<{ Variables: { user: User } }>, 
     const now = clock.now();
     await db.batch([
       { sql: `INSERT INTO support_tickets (id, user_id, workspace_id, topic, subject, status, via, context, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'open', ?, ?, ?, ?)`, params: [id, user.id, wsId, topic, subject, via, context, now, now] },
-      { sql: `INSERT INTO support_messages (id, ticket_id, author_id, from_staff, body, created_at) VALUES (?, ?, ?, 0, ?, ?)`, params: [crypto.randomUUID(), id, user.id, body, now] },
+      { sql: `INSERT INTO support_messages (id, ticket_id, author_id, from_staff, body, author_info, created_at) VALUES (?, ?, ?, 0, ?, ?, ?)`, params: [crypto.randomUUID(), id, user.id, body, JSON.stringify(await customerWho(db, user.id, wsId)), now] },
       ...(planId && b?.sharePlan === true ? [{ sql: `INSERT INTO support_access_grants (id, ticket_id, plan_id, granted_by, expires_at) VALUES (?, ?, ?, ?, ?)`, params: [crypto.randomUUID(), id, planId, user.id, now + GRANT_DAYS * DAY] }] : []),
     ]);
     if (topic === "safety") {
@@ -162,8 +165,8 @@ export function registerSupportRoutes(app: Hono<{ Variables: { user: User } }>, 
     const t = await ticket(c.req.param("tid"));
     const as = t ? await canSee(t, user) : null;
     if (!t || !as) return c.json({ error: "That request doesn't exist." }, 404);
-    const msgs = await db.all<{ id: string; name: string; from_staff: number; body: string; created_at: number }>(
-      `SELECT m.id, u.name, m.from_staff, m.body, m.created_at FROM support_messages m JOIN users u ON u.id = m.author_id WHERE m.ticket_id = ? ORDER BY m.created_at, m.rowid`,
+    const msgs = await db.all<{ id: string; name: string; from_staff: number; body: string; author_info: string | null; created_at: number }>(
+      `SELECT m.id, u.name, m.from_staff, m.body, m.author_info, m.created_at FROM support_messages m JOIN users u ON u.id = m.author_id WHERE m.ticket_id = ? ORDER BY m.created_at, m.rowid`,
       [t.id],
     );
     const grants = await db.all<{ id: string; plan_id: string; title: string | null; expires_at: number; revoked_at: number | null }>(
@@ -174,7 +177,7 @@ export function registerSupportRoutes(app: Hono<{ Variables: { user: User } }>, 
     return c.json({
       as,
       ticket: { id: t.id, topic: t.topic, subject: t.subject, status: t.status, via: t.via, from: await nameOf(t.user_id), createdAt: Number(t.created_at), context: as === "author" ? null : JSON.parse(t.context) },
-      messages: msgs.map((m) => ({ id: m.id, author: m.name, fromStaff: !!m.from_staff, body: m.body, createdAt: Number(m.created_at) })),
+      messages: msgs.map((m) => ({ id: m.id, author: m.name, who: readWho(m.author_info, m.from_staff ? teamWho(SUPPORT, m.name) : { kind: "customer" as const, name: m.name, domain: "", role: "Employee" as const, company: null }, true), fromStaff: !!m.from_staff, body: m.body, createdAt: Number(m.created_at) })),
       grants: grants.map((g) => ({ id: g.id, planId: g.plan_id, planTitle: g.title, expiresAt: Number(g.expires_at), active: !g.revoked_at && Number(g.expires_at) > clock.now() })),
       views: views.map((v) => ({ by: v.name, at: Number(v.viewed_at) })),
     });
@@ -190,7 +193,7 @@ export function registerSupportRoutes(app: Hono<{ Variables: { user: User } }>, 
     const now = clock.now();
     const status = as === "author" ? "open" : "waiting";
     await db.batch([
-      { sql: `INSERT INTO support_messages (id, ticket_id, author_id, from_staff, body, created_at) VALUES (?, ?, ?, ?, ?, ?)`, params: [crypto.randomUUID(), t.id, user.id, as === "author" ? 0 : 1, body, now] },
+      { sql: `INSERT INTO support_messages (id, ticket_id, author_id, from_staff, body, author_info, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, params: [crypto.randomUUID(), t.id, user.id, as === "author" ? 0 : 1, body, JSON.stringify(as === "staff" ? teamWho(SUPPORT, user.name) : await customerWho(db, user.id, t.workspace_id)), now] },
       { sql: `UPDATE support_tickets SET status = ?, updated_at = ? WHERE id = ?`, params: [status, now, t.id] },
     ]);
     if (as !== "author") await notify(db, now, { userId: t.user_id, kind: "support", text: `${as === "staff" ? "Support" : await nameOf(user.id)} replied: ${t.subject}`, link: `/help/requests/${t.id}` }, user.id);
@@ -215,7 +218,7 @@ export function registerSupportRoutes(app: Hono<{ Variables: { user: User } }>, 
     const t = await ticket(c.req.param("tid"));
     if (!t || (await canSee(t, user)) !== "it") return c.json({ error: "That request doesn't exist." }, 404);
     await db.run(`UPDATE support_tickets SET via = 'direct', status = 'open', updated_at = ? WHERE id = ?`, [clock.now(), t.id]);
-    await db.run(`INSERT INTO support_messages (id, ticket_id, author_id, from_staff, body, created_at) VALUES (?, ?, ?, 0, ?, ?)`, [crypto.randomUUID(), t.id, user.id, `${user.name} passed this request on to support.`, clock.now()]);
+    await db.run(`INSERT INTO support_messages (id, ticket_id, author_id, from_staff, body, author_info, created_at) VALUES (?, ?, ?, 0, ?, ?, ?)`, [crypto.randomUUID(), t.id, user.id, `${user.name} passed this request on to support.`, JSON.stringify(await customerWho(db, user.id, t.workspace_id)), clock.now()]);
     await notify(db, clock.now(), { userId: t.user_id, kind: "support", text: `${user.name} passed your request on to support: ${t.subject}`, link: `/help/requests/${t.id}` }, user.id);
     return c.json({ ok: true });
   });

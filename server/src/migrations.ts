@@ -141,6 +141,14 @@ export const MIGRATIONS: Migration[] = [
       `CREATE TABLE server_secrets (name TEXT PRIMARY KEY, value TEXT NOT NULL)`,
     ],
   },
+  {
+    id: 11,
+    name: "who wrote each message to or from our team (brand vs customer name, domain, role, company)",
+    statements: [
+      `ALTER TABLE safety_case_messages ADD COLUMN author_info TEXT`,
+      `ALTER TABLE support_messages ADD COLUMN author_info TEXT`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

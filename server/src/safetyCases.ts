@@ -9,6 +9,7 @@ import { BRAND } from "@ezplan/shared";
 import type { Clock, Db, ServerConfig, User } from "./ports";
 import { notify } from "./notify";
 import { isPlatformAdmin } from "./safety";
+import { customerWho, readWho, teamWho, whoLine, type Who } from "./authors";
 import { bareAddress, caseFromReply, mailSettings, REPLY_MARKER, replyAddress, replyText, sendEmail, type Mailer } from "./mail";
 
 export interface CaseDeps { db: Db; clock: Clock; config: ServerConfig; mail?: Mailer }
@@ -32,12 +33,12 @@ const staffUsers = (db: Db, config: ServerConfig) => {
 };
 
 /** Adds a message, then tells the other side in the app and by email (threaded, with a reply address each). */
-async function post(d: CaseDeps, c: CaseRow, m: { authorId: string | null; authorName: string; fromStaff: boolean; via: "app" | "email" | "system"; body: string }) {
+async function post(d: CaseDeps, c: CaseRow, m: { authorId: string | null; authorName: string; fromStaff: boolean; via: "app" | "email" | "system"; body: string; who: Who }) {
   const { db, clock, config } = d;
   const now = clock.now();
   const id = crypto.randomUUID();
   await db.batch([
-    { sql: `INSERT INTO safety_case_messages (id, case_id, author_id, author_name, from_staff, via, body, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, params: [id, c.id, m.authorId, m.authorName, m.fromStaff ? 1 : 0, m.via, m.body, now] },
+    { sql: `INSERT INTO safety_case_messages (id, case_id, author_id, author_name, from_staff, via, body, author_info, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, params: [id, c.id, m.authorId, m.authorName, m.fromStaff ? 1 : 0, m.via, m.body, JSON.stringify(m.who), now] },
     { sql: `UPDATE safety_cases SET updated_at = ?, status = 'open', closed_at = NULL WHERE id = ?`, params: [now, c.id] },
   ]);
   const ws = (await db.first<{ name: string }>(`SELECT name FROM workspaces WHERE id = ?`, [c.workspace_id]))?.name ?? "your workspace";
@@ -47,7 +48,7 @@ async function post(d: CaseDeps, c: CaseRow, m: { authorId: string | null; autho
   // Managers hear from the team and from each other; the team hears from managers.
   const toManagers = managers.filter((p) => p.id !== m.authorId);
   const staffEmails = m.fromStaff ? [] : (config.platformAdmins ?? []);
-  const shown = m.fromStaff ? TEAM : m.authorName;
+  const shown = whoLine({ ...m.who, ...(m.who.kind === "team" ? { person: null } : {}) } as Who);
   const subject = `${BRAND.name} safety follow-up: ${ws} (case ${c.id.slice(0, 8)})`;
   const root = `<case-${c.id}@${settings.replyDomain}>`;
   const first = !(await db.first(`SELECT 1 AS x FROM email_outbox WHERE case_id = ?`, [c.id]));
@@ -64,8 +65,8 @@ async function post(d: CaseDeps, c: CaseRow, m: { authorId: string | null; autho
     ].join("\n");
     await sendEmail(db, clock, settings, d.mail, { to: to.email, subject, text, replyTo: await replyAddress(db, settings, c.id, to.email), headers }, c.id, id);
   }
-  for (const p of toManagers) await notify(db, now, { userId: p.id, kind: "safety", text: m.via === "system" ? m.body : `${shown} wrote in a safety case for ${ws}`, link: `/help/cases/${c.id}` }, m.authorId ?? undefined);
-  if (!m.fromStaff) for (const s of await staffUsers(db, config)) await notify(db, now, { userId: s.id, kind: "safety", text: `${m.authorName} (${ws}) replied in a safety case`, link: `/help/cases/${c.id}` }, m.authorId ?? undefined);
+  for (const p of toManagers) await notify(db, now, { userId: p.id, kind: "safety", text: m.via === "system" ? m.body : `${TEAM} wrote in a safety case for ${ws}`, link: `/help/cases/${c.id}` }, m.authorId ?? undefined);
+  if (!m.fromStaff) for (const s of await staffUsers(db, config)) await notify(db, now, { userId: s.id, kind: "safety", text: `${shown} replied in a safety case`, link: `/help/cases/${c.id}` }, m.authorId ?? undefined);
 }
 
 /** Opens a case for each company the reporter belongs to that has another manager. Returns the case ids. */
@@ -77,7 +78,7 @@ export async function openCases(d: CaseDeps, reportId: string, reporterId: strin
     const now = d.clock.now();
     const c: CaseRow = { id: crypto.randomUUID(), workspace_id: ws, report_id: reportId, reporter_id: reporterId, status: "open", created_at: now, updated_at: now };
     await d.db.run(`INSERT INTO safety_cases (id, workspace_id, report_id, reporter_id, status, created_at, updated_at) VALUES (?, ?, ?, ?, 'open', ?, ?)`, [c.id, ws, reportId, reporterId, now, now]);
-    await post(d, c, { authorId: null, authorName: TEAM, fromStaff: true, via: "system", body: CASE_NOTICE });
+    await post(d, c, { authorId: null, authorName: TEAM, fromStaff: true, via: "system", body: CASE_NOTICE, who: teamWho(TEAM, null) });
     ids.push(c.id);
   }
   return ids;
@@ -115,12 +116,12 @@ export function registerSafetyCaseRoutes(app: Hono<{ Variables: { user: User } }
     const as = sc && (await roleIn(sc, user));
     if (!sc || !as) return c.json(notFound, 404);
     const ws = (await db.first<{ name: string }>(`SELECT name FROM workspaces WHERE id = ?`, [sc.workspace_id]))?.name ?? "";
-    const msgs = await db.all<{ id: string; author_name: string; from_staff: number; via: string; body: string; created_at: number }>(`SELECT id, author_name, from_staff, via, body, created_at FROM safety_case_messages WHERE case_id = ? ORDER BY created_at, rowid`, [sc.id]);
+    const msgs = await db.all<{ id: string; author_name: string; from_staff: number; via: string; body: string; author_info: string | null; created_at: number }>(`SELECT id, author_name, from_staff, via, body, author_info, created_at FROM safety_case_messages WHERE case_id = ? ORDER BY created_at, rowid`, [sc.id]);
     const sent = as === "staff" ? await db.all<{ message_id: string; to_addr: string; status: string }>(`SELECT message_id, to_addr, status FROM email_outbox WHERE case_id = ? ORDER BY created_at, rowid`, [sc.id]) : [];
     return c.json({
       as,
       case: { id: sc.id, workspace: ws, status: sc.status, createdAt: Number(sc.created_at), reportId: as === "staff" ? sc.report_id : null },
-      messages: msgs.map((m) => ({ id: m.id, author: m.from_staff && as !== "staff" ? TEAM : m.author_name, fromStaff: !!m.from_staff, via: m.via, body: m.body, createdAt: Number(m.created_at), emails: as === "staff" ? sent.filter((e) => e.message_id === m.id).map((e) => ({ to: e.to_addr, status: e.status })) : undefined })),
+      messages: msgs.map((m) => ({ id: m.id, author: m.from_staff && as !== "staff" ? TEAM : m.author_name, who: readWho(m.author_info, m.from_staff ? teamWho(TEAM, m.author_name) : { kind: "customer", name: m.author_name, domain: "", role: "Manager", company: ws }, as === "staff"), fromStaff: !!m.from_staff, via: m.via, body: m.body, createdAt: Number(m.created_at), emails: as === "staff" ? sent.filter((e) => e.message_id === m.id).map((e) => ({ to: e.to_addr, status: e.status })) : undefined })),
       emailOff: !d.mail,
     });
   });
@@ -133,7 +134,7 @@ export function registerSafetyCaseRoutes(app: Hono<{ Variables: { user: User } }
     const b = await c.req.json<{ body?: unknown }>().catch(() => null);
     const body = typeof b?.body === "string" ? b.body.replace(/\r\n/g, "\n").trim().slice(0, 5000) : "";
     if (!body) return c.json({ error: "Write something first." }, 400);
-    await post(d, sc, { authorId: user.id, authorName: user.name, fromStaff: as === "staff", via: "app", body });
+    await post(d, sc, { authorId: user.id, authorName: user.name, fromStaff: as === "staff", via: "app", body, who: as === "staff" ? teamWho(TEAM, user.name) : await customerWho(db, user.id, sc.workspace_id) });
     return c.json({ ok: true });
   });
 
@@ -174,13 +175,13 @@ export function registerInboundEmail(app: Hono, d: CaseDeps, ready: () => Promis
     if (!body) return c.json({ ok: true, accepted: false }, 202);
     if ((config.platformAdmins ?? []).includes(from)) {
       const u = await db.first<{ id: string; name: string }>(`SELECT id, name FROM users WHERE lower(email) = ?`, [from]);
-      await post(d, sc, { authorId: u?.id ?? null, authorName: u?.name ?? TEAM, fromStaff: true, via: "email", body });
+      await post(d, sc, { authorId: u?.id ?? null, authorName: u?.name ?? TEAM, fromStaff: true, via: "email", body, who: teamWho(TEAM, u?.name ?? null) });
       return c.json({ ok: true, accepted: true });
     }
     // Still a manager of that company (not the reporter) at the time of the reply.
     const u = (await caseManagers(db, sc)).find((p) => p.email.toLowerCase() === from);
     if (!u) return c.json({ ok: true, accepted: false }, 202);
-    await post(d, sc, { authorId: u.id, authorName: u.name, fromStaff: false, via: "email", body });
+    await post(d, sc, { authorId: u.id, authorName: u.name, fromStaff: false, via: "email", body, who: await customerWho(db, u.id, sc.workspace_id) });
     return c.json({ ok: true, accepted: true });
   });
 }
