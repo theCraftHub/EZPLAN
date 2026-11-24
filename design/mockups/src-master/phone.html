@@ -4,7 +4,7 @@
 <style>body{margin:0}button:focus-visible{outline:3px solid #4F46E5;outline-offset:2px}</style>
 </helmet>
 <div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-direction: column; overflow: hidden">
-  <header style="background: #0F172A; color: #FFFFFF; padding: 12px 16px; font-weight: 700">EZPLAN</header>
+  <header style="background: #0F172A; color: #FFFFFF; padding: 0 8px 0 16px; min-height: 48px; font-weight: 700; display: flex; align-items: center; justify-content: space-between"><span>EZPLAN</span><span aria-label="{{ bellLabel }}" style="font-size: 13px; font-weight: 600; color: #E2E8F0; padding: 0 8px">{{ bell }}</span></header>
   <div style="padding: 14px 16px 0; display: flex; flex-direction: column; gap: 6px">
     <span style="font-size: 13px; color: #475569">All plans ›</span>
     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><h1 style="margin: 0; font-size: 22px; letter-spacing: -0.02em">{{ title }}</h1><span style="{{ masterHealthStyle }}">{{ masterHealth }}</span></div>
@@ -64,13 +64,86 @@
       <div style="display: flex; align-items: center; gap: 8px"><h2 style="margin: 0; font-size: 20px">{{ cur.title }}</h2><span style="{{ cur.healthStyle }}">{{ cur.health }}</span></div>
       <span style="font-size: 13px; color: #334155">{{ cur.when }} · {{ cur.done }} of {{ cur.count }} done</span>
       <div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{ curDepts }}" as="d" hint-placeholder-count="2"><span style="{{ d.chip.style }}"><span style="{{ d.chip.dot }}"></span>{{ d.chip.name }}</span></sc-for></div>
+      <sc-if value="{{ noTask }}" hint-placeholder-val="{{ true }}">
       <sc-for list="{{ curTasks }}" as="t" hint-placeholder-count="4">
-        <section style="background: #FFFFFF; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 4px">
-          <span style="display: flex; justify-content: space-between; gap: 6px"><span style="font-size: 15px; font-weight: 600">{{ t.title }}</span><span style="{{ t.statusStyle }}">{{ t.status }}</span></span>
+        <button onClick="{{ t.open }}" style="background: #FFFFFF; border: none; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 4px; text-align: left; cursor: pointer; font-family: Inter, sans-serif; color: #0F172A">
+          <span style="display: flex; justify-content: space-between; gap: 6px; width: 100%"><span style="font-size: 15px; font-weight: 600">{{ t.title }}</span><span style="{{ t.statusStyle }}">{{ t.status }}</span></span>
           <span style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap"><span style="{{ t.chip.style }}"><span style="{{ t.chip.dot }}"></span>{{ t.chip.name }}</span><span style="font-size: 12px; color: #334155">{{ t.who }} · {{ t.dates }}</span></span>
           <sc-for list="{{ t.ext }}" as="x" hint-placeholder-count="1"><span style="font-size: 12px; font-weight: 600; color: #9A3412">{{ x }}</span></sc-for>
-        </section>
+          <sc-if value="{{ t.comments }}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; font-weight: 600; color: #334155; background: #F1F5F9; border-radius: 999px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>{{ t.comments }}</span></sc-if>
+        </button>
       </sc-for>
+      </sc-if>
+      <sc-if value="{{ task }}" hint-placeholder-val="{{ false }}">
+        <section aria-label="{{ task.title }}" style="background: #FFFFFF; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+          <button onClick="{{ task.close }}" style="align-self: flex-start; min-height: 44px; border: none; background: none; padding: 0; color: #4338CA; font: 600 14px Inter, sans-serif; cursor: pointer">‹ All tasks in {{ cur.title }}</button>
+          <span style="display: flex; justify-content: space-between; gap: 6px"><span style="font-size: 17px; font-weight: 700">{{ task.title }}</span><span style="{{ task.statusStyle }}">{{ task.status }}</span></span>
+          <span style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap"><span style="{{ task.chip.style }}"><span style="{{ task.chip.dot }}"></span>{{ task.chip.name }}</span><span style="font-size: 12px; color: #334155">{{ task.who }} · {{ task.dates }}</span></span>
+          <sc-for list="{{ task.ext }}" as="x" hint-placeholder-count="1"><span style="font-size: 12px; font-weight: 600; color: #9A3412">{{ x }}</span></sc-for>
+          <h3 style="margin: 4px 0 0; font-size: 15px; border-top: 1px solid #E2E8F0; padding-top: 10px">Comments ({{ task.count }})</h3>
+          <sc-if value="{{ task.none }}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: 14px; color: #475569">No comments yet.</p></sc-if>
+          <sc-for list="{{ task.comments }}" as="c" hint-placeholder-count="2">
+            <div style="background: #F1F5F9; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 4px">
+              <span style="font-size: 12px; color: #475569"><strong style="color: #1E293B">{{ c.who }}</strong> · {{ c.dept.name }} · {{ c.when }}</span>
+              <p style="margin: 0; font-size: 14px; line-height: 1.45; white-space: pre-wrap"><sc-for list="{{ c.segs }}" as="g" hint-placeholder-count="1"><span style="{{ g.style }}">{{ g.t }}</span></sc-for></p>
+            </div>
+          </sc-for>
+          <label for="new-comment-phone" style="font-size: 13px; font-weight: 600">Add a comment</label>
+          <div style="position: relative; display: flex; flex-direction: column">
+            <textarea id="new-comment-phone" rows="3" value="{{ task.draft }}" onChange="{{ task.onDraft }}" placeholder="{{ task.placeholder }}" style="border: 1px solid #CBD5E1; border-radius: 12px; padding: 8px; font: 15px Inter, sans-serif" onKeyDown="{{ task.mention.onKey }}" aria-autocomplete="list" aria-expanded="{{ task.mention.open }}"></textarea>
+            <sc-if value="{{ task.mention.open }}" hint-placeholder-val="{{ false }}"><div role="listbox" aria-label="People to mention" style="{{ task.mention.box }}"><sc-for list="{{ task.mention.list }}" as="p" hint-placeholder-count="3"><button role="option" aria-selected="{{ p.sel }}" onClick="{{ p.pick }}" style="{{ p.style }}"><span style="font-size: 14px; font-weight: 600">{{ p.name }}</span><span style="font-size: 12px; color: #475569">{{ p.role }}</span></button></sc-for><span style="font-size: 11px; color: #64748B; padding: 4px 10px">↑ ↓ to choose · Enter to add · Esc to close</span></div></sc-if>
+          </div>
+          <button onClick="{{ task.post }}" style="min-height: 44px; border: none; border-radius: 12px; background: #4F46E5; color: #FFFFFF; cursor: pointer; font: 600 15px Inter, sans-serif">Post comment</button>
+        </section>
+      </sc-if>
+    </sc-if>
+    <sc-if value="{{ isDiscussion }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ threadClosed }}" hint-placeholder-val="{{ true }}">
+        <section aria-label="Discussion threads" style="background: #FFFFFF; border-radius: 14px; padding: 8px; display: flex; flex-direction: column">
+          <sc-for list="{{ threads }}" as="t" hint-placeholder-count="9">
+            <button onClick="{{ t.pick }}" style="{{ t.style }}; background: transparent">
+              <span style="display: flex; gap: 8px; align-items: center; width: 100%"><span style="font-size: 15px; font-weight: 700; flex: 1">{{ t.title }}</span><sc-if value="{{ t.newLabel }}" hint-placeholder-val="{{ false }}"><span style="font-size: 11px; font-weight: 700; color: #FFFFFF; background: #4F46E5; border-radius: 999px; padding: 2px 7px">{{ t.newLabel }}</span></sc-if></span>
+              <span style="font-size: 12px; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%">{{ t.last }}</span>
+            </button>
+          </sc-for>
+        </section>
+      </sc-if>
+      <sc-if value="{{ threadOpen }}" hint-placeholder-val="{{ false }}">
+        <section aria-label="{{ thread.title }} discussion" style="background: #FFFFFF; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+          <button onClick="{{ thread.back }}" style="align-self: flex-start; min-height: 44px; border: none; background: none; padding: 0; color: #4338CA; font: 600 14px Inter, sans-serif; cursor: pointer">‹ All threads</button>
+          <h2 style="margin: 0; font-size: 18px">{{ thread.title }}</h2>
+          <span style="font-size: 12px; color: #475569">{{ thread.who }}</span>
+          <sc-if value="{{ thread.none }}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: 14px; color: #475569">No messages yet.</p></sc-if>
+          <sc-for list="{{ thread.msgs }}" as="m" hint-placeholder-count="3">
+            <article style="border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; flex-direction: column; gap: 4px">
+              <span style="font-size: 12px; color: #475569; display: flex; gap: 6px; align-items: center; flex-wrap: wrap"><strong style="font-size: 14px; color: #0F172A">{{ m.who }}</strong><span style="{{ m.dept.style }}"><span style="{{ m.dept.dot }}"></span>{{ m.dept.name }}</span>{{ m.when }}</span>
+              <p style="margin: 0; font-size: 14px; line-height: 1.45; white-space: pre-wrap"><sc-for list="{{ m.segs }}" as="g" hint-placeholder-count="1"><span style="{{ g.style }}">{{ g.t }}</span></sc-for></p>
+              <sc-if value="{{ m.hasAbout }}" hint-placeholder-val="{{ false }}"><button onClick="{{ m.openAbout }}" style="align-self: flex-start; min-height: 36px; padding: 0 10px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC; cursor: pointer; font: 600 12px Inter, sans-serif; color: #3730A3; text-align: left">{{ m.about }}</button></sc-if>
+            </article>
+          </sc-for>
+          <label for="new-message-phone" style="font-size: 13px; font-weight: 600; border-top: 1px solid #E2E8F0; padding-top: 10px">Message {{ thread.title }}</label>
+          <div style="position: relative; display: flex; flex-direction: column">
+            <textarea id="new-message-phone" rows="3" value="{{ thread.draft }}" onChange="{{ thread.onDraft }}" placeholder="{{ thread.placeholder }}" style="border: 1px solid #CBD5E1; border-radius: 12px; padding: 8px; font: 15px Inter, sans-serif" onKeyDown="{{ thread.mention.onKey }}" aria-autocomplete="list" aria-expanded="{{ thread.mention.open }}"></textarea>
+            <sc-if value="{{ thread.mention.open }}" hint-placeholder-val="{{ false }}"><div role="listbox" aria-label="People to mention" style="{{ thread.mention.box }}"><sc-for list="{{ thread.mention.list }}" as="p" hint-placeholder-count="3"><button role="option" aria-selected="{{ p.sel }}" onClick="{{ p.pick }}" style="{{ p.style }}"><span style="font-size: 14px; font-weight: 600">{{ p.name }}</span><span style="font-size: 12px; color: #475569">{{ p.role }}</span></button></sc-for><span style="font-size: 11px; color: #64748B; padding: 4px 10px">↑ ↓ to choose · Enter to add · Esc to close</span></div></sc-if>
+          </div>
+          <button onClick="{{ thread.post }}" style="min-height: 44px; border: none; border-radius: 12px; background: #4F46E5; color: #FFFFFF; cursor: pointer; font: 600 15px Inter, sans-serif">Post</button>
+        </section>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isActivity }}" hint-placeholder-val="{{ false }}">
+      <span style="font-size: 13px; color: #334155">{{ actCount }} across all plans</span>
+      <div role="radiogroup" aria-label="Plan" style="display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px; padding: 0 16px 4px"><sc-for list="{{ actPlans }}" as="p" hint-placeholder-count="10"><button role="radio" aria-checked="{{ p.on }}" onClick="{{ p.pick }}" style="{{ p.style }}; min-height: 44px">{{ p.label }}</button></sc-for></div>
+      <div role="radiogroup" aria-label="Department" style="display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px; padding: 0 16px 4px"><sc-for list="{{ actDepts }}" as="p" hint-placeholder-count="6"><button role="radio" aria-checked="{{ p.on }}" onClick="{{ p.pick }}" style="{{ p.style }}; min-height: 44px">{{ p.label }}</button></sc-for></div>
+      <sc-if value="{{ actNone }}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: 14px; color: #475569">Nothing yet for this plan and department.</p></sc-if>
+      <section style="background: #FFFFFF; border-radius: 14px; padding: 4px 12px; display: flex; flex-direction: column">
+        <sc-for list="{{ acts }}" as="a" hint-placeholder-count="8">
+          <div style="border-top: 1px solid #F1F5F9; padding: 8px 0; display: flex; flex-direction: column; gap: 3px">
+            <span style="font-size: 14px"><strong>{{ a.who }}</strong> {{ a.what }}</span>
+            <span style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px; color: #475569"><span style="{{ a.dept.style }}"><span style="{{ a.dept.dot }}"></span>{{ a.dept.name }}</span>{{ a.where }} · {{ a.when }}</span>
+          </div>
+        </sc-for>
+      </section>
     </sc-if>
   </main>
 </div>

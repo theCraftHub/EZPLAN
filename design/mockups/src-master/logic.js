@@ -1,7 +1,7 @@
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { view: 'overview', sub: 'office-2', open: {}, whatIf: 'none', dept: null };
+    this.state = { view: 'overview', sub: 'office-2', open: {}, whatIf: 'none', dept: null, task: null, thread: 'master', read: {}, draft: '', tdraft: '', posted: [], tposted: [], actPlan: 'all', actDept: 'all' };
   }
   renderVals() {
     var self = this, st = this.state, D = DATA;
@@ -54,7 +54,7 @@ class Component extends DCLogic {
       var pct = Math.round((done / ts.length) * 100);
       return { key: s.key, title: s.title, lead: deptChip(s.lead), needs: s.needs.map(deptChip), hasNeeds: s.needs.length > 0, start: start, end: end, when: fmt(start) + ' to ' + fmt(end), done: done, count: ts.length, pct: pct, pctLabel: pct + '%', bar: 'height: 100%; border-radius: 999px; background: #4F46E5; width: ' + pct + '%;', health: h.label + (h.n ? ' · ' + h.n + 'd late' : ''), healthStyle: chipBase + h.style,
         waits: waits.map(function (id) { return byId[id].title + ' (' + subTitle[byId[id].sub] + ')'; }), waitsLabel: waits.length ? 'Waits on ' + waits.map(function (id) { return byId[id].title; }).join(', ') : '',
-        people: people.map(function (p) { return NAME[p]; }).join(', '), open: go({ view: 'plan', sub: s.key }), late: h.label !== 'On track' };
+        people: people.map(function (p) { return NAME[p]; }).join(', '), open: go({ view: 'plan', sub: s.key, task: null }), late: h.label !== 'On track' };
     });
     var masterTasks = T.filter(function (t) { return t.sub === 'master'; });
     var milestones = ['T3', 'T2', 'T1', 'T5', 'T6'].map(function (id) {
@@ -118,18 +118,141 @@ class Component extends DCLogic {
     var axis = [];
     for (var a = t0; a < t1; a += 7 * DAY) axis.push({ label: fmt(new Date(a).toISOString().slice(0, 10)), style: 'position: absolute; top: 0; font-size: 11px; color: #64748B; left: ' + ((a - t0) / span * 100).toFixed(2) + '%;' });
 
+    // Comments and discussion. Sample messages as of the sample's "today" (Mar 8); every date they mention is the engine's.
+    // The viewer is Dana Reyes (Facilities lead). Messages from others posted today are unread.
+    var ME = 'Dana';
+    var geom = typeof IS_PHONE !== 'undefined' && IS_PHONE ? { task: [40, 7.6], thread: [40, 7.6] } : { task: [40, 7.4], thread: [128, 7.4] };
+    var PDEPT = { Kai: 'Facilities', Leo: 'Facilities', Rosa: 'Facilities', Dana: 'Facilities', Noor: 'Facilities', Ivan: 'IT', Mei: 'HR', Omar: 'Finance', Tess: 'Safety' };
+    var BYNAME = {}; Object.keys(NAME).forEach(function (k) { BYNAME[NAME[k]] = k; });
+    var COMMENTS = [
+      { task: 'T4', who: 'Ivan', at: '2027-03-05T14:20', text: 'The new closet is the old storage room behind reception. @Dana Reyes can Facilities clear it by Mar 10?' },
+      { task: 'T4', who: 'Dana', at: '2027-03-05T15:02', text: 'Yes, it will be empty by Mar 9. The front desk comes out Mar 8 to 10, so you can start Mar 10.' },
+      { task: 'T33', who: 'Ivan', at: '2027-03-08T10:05', text: 'This waits on the closet move in Reception (done Mar 18). @Mei Chen can I get a rough desk layout by Apr 14?' },
+      { task: 'T33', who: 'Mei', at: '2027-03-08T11:30', text: 'Yes. The full seating plan is due Apr 28, but you will have a rough layout by Apr 14.' },
+      { task: 'T35', who: 'Mei', at: '2027-03-08T11:32', text: 'Starting from last year\'s sales seating. @Dana Reyes are we keeping the standing desks?' },
+      { task: 'T32', who: 'Kai', at: '2027-03-04T08:15', text: 'Same light gray as Office 1. I am ordering both rooms\' paint together.' },
+      { task: 'T12', who: 'Kai', at: '2027-03-08T07:50', text: 'Done by noon today. @Rosa Diaz the sink plumbing can start this afternoon.' },
+      { task: 'T14', who: 'Omar', at: '2027-03-04T16:40', text: 'Appliances are ordered and arrive before the cabinets go in on Mar 16.' },
+      { task: 'T24', who: 'Mei', at: '2027-03-03T10:00', text: '@Rosa Diaz the accessible stall needs its drain on the left wall. I will approve the layout by Mar 22.' }
+    ].concat(st.posted);
+    var THREADS = [
+      { thread: 'master', who: 'Tess', at: '2027-03-01T16:10', about: 'T2', text: 'Asbestos survey is clear. The report is attached to the task.' },
+      { thread: 'master', who: 'Dana', at: '2027-03-03T12:00', about: 'T1', text: 'Permits approved. Every room can start.' },
+      { thread: 'master', who: 'Mei', at: '2027-03-08T09:10', about: 'T6', text: 'Move-in shows May 6 and our target is Apr 30. @Dana Reyes what would get us back on time?' },
+      { thread: 'reception', who: 'Ivan', at: '2027-03-05T14:25', about: 'T4', text: 'Heads up for Offices 1 to 3: your network cabling waits on the closet move here, Mar 10 to 18. I will post here when it is done.' },
+      { thread: 'reception', who: 'Kai', at: '2027-03-08T07:40', about: 'T7', text: 'Front desk demolition starts today and is done Mar 10.' },
+      { thread: 'kitchen', who: 'Omar', at: '2027-03-04T16:42', about: 'T11', text: 'Appliances ordered, within the approved budget.' },
+      { thread: 'kitchen', who: 'Rosa', at: '2027-03-08T12:15', about: 'T13', text: 'Sink and dishwasher plumbing under way, done Mar 12.' },
+      { thread: 'bathroom-2', who: 'Mei', at: '2027-03-03T10:05', about: 'T24', text: 'The accessible stall layout gets approved Mar 17 to 22, after the room is stripped.' },
+      { thread: 'office-2', who: 'Mei', at: '2027-03-08T11:35', about: 'T35', text: 'The sales team moves in here. IT gets a rough desk layout by Apr 14 for the cabling; the full seating plan follows Apr 28.' }
+    ].concat(st.tposted);
+    var fmtAt = function (at) { var h = +at.slice(11, 13), m = at.slice(14, 16); return fmt(at.slice(0, 10)) + ', ' + ((h + 11) % 12 + 1) + ':' + m + (h < 12 ? ' AM' : ' PM'); };
+    var MENTION = new RegExp('(@(?:' + Object.keys(BYNAME).join('|') + '))');
+    var segs = function (text) { return text.split(MENTION).filter(function (x) { return x; }).map(function (x) { return { t: x, style: MENTION.test(x) && x.charAt(0) === '@' ? 'font-weight: 600; color: #3730A3; background: #EEF2FF; border-radius: 4px; padding: 0 2px;' : '' }; }); };
+    var unread = function (m) { return m.who !== ME && m.at.slice(0, 10) === today && !m.mine; };
+    var msgView = function (m) { return { who: NAME[m.who], dept: deptChip(PDEPT[m.who]), when: fmtAt(m.at), segs: segs(m.text), mine: m.who === ME }; };
+    var commentsOf = function (id) { return COMMENTS.filter(function (c) { return c.task === id; }); };
+    // "@na" being typed at the end, as in the app's comment box.
+    var typing = function (text) { var m = /(?:^|\s)@([^\s@]{0,30}(?: [^\s@]{0,30})?)$/.exec(text); return m ? m[1] : null; };
+    // @mention autocomplete at the cursor: a small menu opens where the @ is typed, filtered as you type.
+    // Arrow keys move, Enter or Tab fills in the name, Escape closes it. geom = [columns per line, px per character].
+    var ROLE = function (n) { var k = BYNAME[n]; return PDEPT[k] + (DEPT[PDEPT[k]].who === n ? ' lead' : ''); };
+    var suggest = function (text, pool, key, geom) {
+      var part = typing(text), idxKey = key + 'Idx', offKey = key + 'Off';
+      var list = part === null || st[offKey] === text ? [] : pool.filter(function (n) { return n !== NAME[ME] && n.toLowerCase().indexOf(part.toLowerCase()) === 0 && n.toLowerCase() !== part.toLowerCase(); }).slice(0, 5);
+      var idx = Math.min(st[idxKey] || 0, Math.max(list.length - 1, 0));
+      var fill = function (n) { var o = {}; o[key] = text.replace(/@([^\s@]{0,30}(?: [^\s@]{0,30})?)$/, '@' + n + ' '); o[idxKey] = 0; self.setState(o); };
+      // Where the @ sits: count wrapped lines up to the cursor (the end of the text in this mockup).
+      var at = text.lastIndexOf('@'), before = text.slice(0, at), rows = 0, col = 0;
+      before.split('\n').forEach(function (ln, i, arr) { var wraps = Math.floor(ln.length / geom[0]); if (i < arr.length - 1) rows += wraps + 1; else { rows += wraps; col = ln.length % geom[0]; } });
+      var left = Math.min(10 + col * geom[1], geom[0] * geom[1] - 200);
+      return {
+        list: list.map(function (n, i) { return { name: n, role: ROLE(n), sel: i === idx ? 'true' : 'false', pick: function () { fill(n); },
+          style: 'display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 100%; min-height: 44px; justify-content: center; padding: 4px 10px; border: none; border-radius: 8px; cursor: pointer; text-align: left; font-family: Inter, sans-serif; color: #0F172A; background: ' + (i === idx ? '#EEF2FF' : '#FFFFFF') + ';' }; }),
+        open: list.length > 0,
+        box: 'position: absolute; z-index: 5; top: ' + (8 + (rows + 1) * 21) + 'px; left: ' + Math.max(left, 4) + 'px; width: 220px; background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 12px; box-shadow: 0 8px 24px rgba(15,23,42,0.16); padding: 4px; display: flex; flex-direction: column; gap: 2px;',
+        onKey: function (e) {
+          if (!list.length) return;
+          var o = {};
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); o[idxKey] = (idx + (e.key === 'ArrowDown' ? 1 : list.length - 1)) % list.length; self.setState(o); }
+          else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); fill(list[idx]); }
+          else if (e.key === 'Escape') { e.preventDefault(); o[offKey] = text; self.setState(o); }
+        }
+      };
+    };
+    var mentionsMe = COMMENTS.concat(THREADS).filter(function (m) { return unread(m) && m.text.indexOf('@' + NAME[ME]) >= 0 && !(m.thread && st.read[m.thread]); }).length;
+
     // The open sub-plan (inside the master).
     var cur = subs.filter(function (s) { return s.key === st.sub; })[0] || subs[0];
     var curTasks = T.filter(function (t) { return t.sub === cur.key; }).map(function (t) {
       var ext = t.deps.map(function (d) { return byId[d]; }).filter(function (o) { return o && o.sub !== cur.key; });
       var STS = { done: ['Done', 'color: #115E59; background: #CCFBF1;'], doing: ['Doing', 'color: #3730A3; background: #EEF2FF;'], todo: ['To do', 'color: #334155; background: #F1F5F9;'] }[t.st];
-      return { title: t.title, who: NAME[t.owner], dates: fmt(t.start) + (t.start === t.end ? '' : ' to ' + fmt(t.end)), chip: deptChip(t.dept), status: STS[0], statusStyle: chipBase + STS[1], ext: ext.map(function (o) { return 'Waits on ' + subTitle[o.sub] + ': ' + o.title + (o.st === 'done' ? ' (done)' : ', ' + fmt(o.end)); }), hasExt: ext.length > 0, why: t.why.replace(/T\d+ "/g, '"') };
+      var n = commentsOf(t.id).length, on = st.task === t.id;
+      return { id: t.id, open: go({ task: on ? null : t.id, draft: '' }), on: on ? 'true' : 'false', rowStyle: 'border: none; border-top: 1px solid #E2E8F0; padding: 10px 8px; margin: 0 -8px; display: flex; gap: 12px; align-items: flex-start; text-align: left; cursor: pointer; font-family: Inter, sans-serif; color: #0F172A; border-radius: 10px; background: ' + (on ? '#EEF2FF' : 'transparent') + ';',
+        comments: n ? n + ' comment' + (n === 1 ? '' : 's') : '', title: t.title, who: NAME[t.owner], dates: fmt(t.start) + (t.start === t.end ? '' : ' to ' + fmt(t.end)), chip: deptChip(t.dept), status: STS[0], statusStyle: chipBase + STS[1], ext: ext.map(function (o) { return 'Waits on ' + subTitle[o.sub] + ': ' + o.title + (o.st === 'done' ? ' (done)' : ', ' + fmt(o.end)); }), hasExt: ext.length > 0, why: t.why.replace(/T\d+ "/g, '"') };
     });
     var curDepts = [cur.lead].concat(cur.needs).map(function (c) { return { chip: c, contact: DEPT[c.name].who + ' · ' + DEPT[c.name].role }; });
 
-    var tabs = [['overview', 'Overview'], ['timeline', 'Timeline'], ['departments', 'Departments'], ['plan', 'Inside a plan']].map(function (t) {
+    // The open task's comment thread (same parts as the app's task sheet).
+    var planPeople = []; T.forEach(function (t) { if (t.sub === cur.key && planPeople.indexOf(NAME[t.owner]) < 0) planPeople.push(NAME[t.owner]); });
+    curDepts.forEach(function (d) { var w = DEPT[d.chip.name].who; if (planPeople.indexOf(w) < 0) planPeople.push(w); });
+    var openTask = st.task && byId[st.task] && byId[st.task].sub === cur.key ? curTasks.filter(function (t) { return t.id === st.task; })[0] : false;
+    var taskView = openTask ? Object.assign({}, openTask, {
+      comments: commentsOf(openTask.id).map(msgView), count: commentsOf(openTask.id).length, none: commentsOf(openTask.id).length === 0,
+      draft: st.draft, onDraft: function (e) { self.setState({ draft: e.target.value }); },
+      mention: suggest(st.draft, planPeople, 'draft', geom.task), placeholder: 'Ask or note something about ' + openTask.title + '. Type @ to mention someone.',
+      post: function () { if (!st.draft.trim()) return; self.setState({ posted: st.posted.concat([{ task: openTask.id, who: ME, at: today + 'T13:00', text: st.draft.trim(), mine: true }]), draft: '' }); },
+      close: go({ task: null }), who2: 'People on this plan and its departments\' contacts can be mentioned.'
+    }) : false;
+
+    // Discussion: one thread per plan plus the whole building.
+    var threadKeys = ['master'].concat(subs.map(function (s) { return s.key; }));
+    var threadList = threadKeys.map(function (k) {
+      var ms2 = THREADS.filter(function (m) { return m.thread === k; });
+      var last = ms2.slice().sort(function (a, b) { return a.at < b.at ? -1 : 1; }).slice(-1)[0];
+      var nNew = st.read[k] ? 0 : ms2.filter(unread).length, on = st.thread === k;
+      return { key: k, title: subTitle[k], last: last ? NAME[last.who] + ': ' + last.text : 'No messages yet.', when: last ? fmtAt(last.at) : '', nNew: nNew, newLabel: nNew ? nNew + ' new' : '',
+        pick: function () { var r = Object.assign({}, st.read); r[k] = true; self.setState({ thread: k, read: r, tdraft: '', threadOpen: true }); }, on: on ? 'true' : 'false',
+        style: 'border: none; border-top: 1px solid #E2E8F0; padding: 10px; text-align: left; cursor: pointer; font-family: Inter, sans-serif; color: #0F172A; display: flex; flex-direction: column; gap: 3px; min-height: 44px; border-radius: 10px; background: ' + (on ? '#EEF2FF' : 'transparent') + ';' };
+    });
+    var newTotal = threadList.reduce(function (a, t) { return a + t.nNew; }, 0);
+    var thDepts = st.thread === 'master' ? Object.keys(DEPT) : (function () { var s0 = D.subs.filter(function (x) { return x.key === st.thread; })[0]; return [s0.lead].concat(s0.needs); })();
+    var thPeople = []; T.forEach(function (t) { if ((st.thread === 'master' || t.sub === st.thread) && thPeople.indexOf(NAME[t.owner]) < 0) thPeople.push(NAME[t.owner]); });
+    thDepts.forEach(function (d) { if (thPeople.indexOf(DEPT[d].who) < 0) thPeople.push(DEPT[d].who); });
+    var thread = {
+      title: subTitle[st.thread], who: st.thread === 'master' ? 'Everyone on any plan in the remodel reads this thread.' : 'Everyone on ' + subTitle[st.thread] + ' reads this thread, plus the departments it needs.',
+      depts: thDepts.map(deptChip),
+      msgs: THREADS.filter(function (m) { return m.thread === st.thread; }).sort(function (a, b) { return a.at < b.at ? -1 : 1; }).map(function (m) {
+        var t = m.about && byId[m.about];
+        return Object.assign(msgView(m), { about: t ? 'About: ' + t.title + ' (' + subTitle[t.sub] + ')' : '', hasAbout: !!t,
+          openAbout: t ? (t.sub === 'master' ? go({ view: 'timeline' }) : go({ view: 'plan', sub: t.sub, task: t.id, draft: '' })) : null });
+      }),
+      draft: st.tdraft, onDraft: function (e) { self.setState({ tdraft: e.target.value }); }, mention: suggest(st.tdraft, thPeople, 'tdraft', geom.thread),
+      placeholder: 'Write to everyone on ' + subTitle[st.thread] + '. Type @ to mention someone.',
+      post: function () { if (!st.tdraft.trim()) return; self.setState({ tposted: st.tposted.concat([{ thread: st.thread, who: ME, at: today + 'T13:00', text: st.tdraft.trim(), mine: true }]), tdraft: '' }); }
+    };
+    thread.none = thread.msgs.length === 0;
+    thread.back = go({ threadOpen: false });
+
+    // Activity across all plans, written by the server for every change; filter by plan and department.
+    var acts = [];
+    T.forEach(function (t) {
+      if (t.st === 'done') acts.push({ at: t.end + 'T16:30', who: t.owner, what: 'marked ' + t.title + ' done', sub: t.sub, dept: t.dept });
+      if (t.st !== 'todo') acts.push({ at: t.start + 'T08:00', who: t.owner, what: 'started ' + t.title, sub: t.sub, dept: t.dept });
+    });
+    COMMENTS.forEach(function (c) { var t = byId[c.task]; acts.push({ at: c.at, who: c.who, what: 'commented on ' + t.title, sub: t.sub, dept: PDEPT[c.who] }); });
+    THREADS.forEach(function (m) { acts.push({ at: m.at, who: m.who, what: 'posted in the ' + subTitle[m.thread] + ' discussion', sub: m.thread, dept: PDEPT[m.who] }); });
+    var actShown = acts.filter(function (a) { return (st.actPlan === 'all' || a.sub === st.actPlan) && (st.actDept === 'all' || a.dept === st.actDept); })
+      .sort(function (a, b) { return a.at > b.at ? -1 : 1; })
+      .map(function (a) { return { who: NAME[a.who], what: a.what, where: subTitle[a.sub], dept: deptChip(a.dept), when: fmtAt(a.at) }; });
+    var pill = function (on) { return chipBase + 'min-height: 36px; padding: 0 12px; cursor: pointer; font-family: Inter, sans-serif; ' + (on ? 'border: 2px solid #0F172A; background: #FFFFFF; color: #0F172A;' : 'border: 1px solid #E2E8F0; background: #FFFFFF; color: #475569;'); };
+    var actPlans = [{ key: 'all', label: 'All plans' }].concat(threadKeys.map(function (k) { return { key: k, label: subTitle[k] }; })).map(function (p) { var on = st.actPlan === p.key; return { label: p.label, on: on ? 'true' : 'false', pick: go({ actPlan: p.key }), style: pill(on) }; });
+    var actDepts = [{ key: 'all', label: 'All departments' }].concat(Object.keys(DEPT).map(function (k) { return { key: k, label: k }; })).map(function (p) { var on = st.actDept === p.key; return { label: p.label, on: on ? 'true' : 'false', pick: go({ actDept: p.key }), style: pill(on) }; });
+
+    var tabs = [['overview', 'Overview'], ['timeline', 'Timeline'], ['departments', 'Departments'], ['plan', 'Inside a plan'], ['discussion', newTotal ? 'Discussion · ' + newTotal + ' new' : 'Discussion'], ['activity', 'Activity']].map(function (t) {
       var on = st.view === t[0];
-      return { label: t[1], on: on ? 'page' : 'false', pick: go({ view: t[0] }), style: 'min-height: 44px; padding: 0 16px; border: none; background: transparent; cursor: pointer; font: 600 15px Inter, sans-serif; border-bottom: 3px solid ' + (on ? '#4F46E5' : 'transparent') + '; color: ' + (on ? '#0F172A' : '#475569') + ';' };
+      var o = { view: t[0] }; if (t[0] === 'discussion') { o.read = Object.assign({}, st.read); o.read[st.thread] = true; }
+      return { label: t[1], on: on ? 'page' : 'false', pick: go(o), style: 'min-height: 44px; padding: 0 16px; border: none; background: transparent; cursor: pointer; font: 600 15px Inter, sans-serif; border-bottom: 3px solid ' + (on ? '#4F46E5' : 'transparent') + '; color: ' + (on ? '#0F172A' : '#475569') + ';' };
     });
     var scenarios = [
       { key: 'none', label: 'As planned', hint: 'Move-in ' + fmt(D.finish) },
@@ -151,7 +274,9 @@ class Component extends DCLogic {
     var blockerList = Object.keys(grouped).map(function (k) { var g = grouped[k]; var uniq = g.waiting.filter(function (x, i) { return g.waiting.indexOf(x) === i; }); return Object.assign({}, g, { waitingLabel: uniq.length + ' plan' + (uniq.length === 1 ? '' : 's') + ' wait: ' + uniq.join(', ') }); });
 
     return {
-      isOverview: st.view === 'overview', isTimeline: st.view === 'timeline', isDepts: st.view === 'departments', isPlan: st.view === 'plan',
+      isOverview: st.view === 'overview', isTimeline: st.view === 'timeline', isDepts: st.view === 'departments', isPlan: st.view === 'plan', isDiscussion: st.view === 'discussion', isActivity: st.view === 'activity',
+      task: taskView, noTask: !taskView, threadOpen: !!st.threadOpen, threadClosed: !st.threadOpen, threads: threadList, thread: thread, acts: actShown, actNone: actShown.length === 0, actCount: actShown.length + ' change' + (actShown.length === 1 ? '' : 's'), actPlans: actPlans, actDepts: actDepts,
+      bell: mentionsMe ? 'Notifications · ' + mentionsMe : 'Notifications', bellLabel: mentionsMe ? mentionsMe + ' new mentions' : 'No new notifications', me: NAME[ME] + ', ' + DEPT.Facilities.role,
       tabs: tabs, title: 'Northfield HQ remodel', sub: 'Master plan · 8 plans inside · Facilities leads, with IT, HR, Finance and Safety',
       kpis: [
         { k: 'Done', v: pctAll + '%', s: T.filter(function (t) { return t.st === 'done'; }).length + ' of ' + T.length + ' tasks across all plans' },
@@ -163,7 +288,7 @@ class Component extends DCLogic {
       insight: insight, scenarios: scenarios, milestones: milestones, subs: subs, blockers: blockerList,
       depts: depts, weekHead: weekHead, deptSel: depts.filter(function (d) { return d.selected; })[0] || false,
       rows: rows, axis: axis, todayLine: todayLine, targetLine: targetLine,
-      cur: cur, curTasks: curTasks, curDepts: curDepts, subPicks: subs.map(function (s) { var on = s.key === cur.key; return { label: s.title, pick: go({ sub: s.key }), style: chipBase + 'min-height: 36px; padding: 0 12px; cursor: pointer; font-family: Inter, sans-serif; ' + (on ? 'border: 2px solid #0F172A; background: #FFFFFF; color: #0F172A;' : 'border: 1px solid #E2E8F0; background: #FFFFFF; color: #475569;') }; }),
+      cur: cur, curTasks: curTasks, curDepts: curDepts, subPicks: subs.map(function (s) { var on = s.key === cur.key; return { label: s.title, pick: go({ sub: s.key, task: null }), style: chipBase + 'min-height: 36px; padding: 0 12px; cursor: pointer; font-family: Inter, sans-serif; ' + (on ? 'border: 2px solid #0F172A; background: #FFFFFF; color: #0F172A;' : 'border: 1px solid #E2E8F0; background: #FFFFFF; color: #475569;') }; }),
       back: go({ view: 'overview' }),
       deptLegend: Object.keys(DEPT).map(deptChip)
     };

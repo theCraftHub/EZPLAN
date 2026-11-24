@@ -12,7 +12,7 @@
 <style>body{margin:0}button:focus-visible{outline:3px solid #4F46E5;outline-offset:2px}</style>
 </helmet>
 <div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-direction: column; overflow: hidden">
-  <header style="background: #0F172A; color: #FFFFFF; padding: 12px 16px; font-weight: 700">EZPLAN</header>
+  <header style="background: #0F172A; color: #FFFFFF; padding: 0 8px 0 16px; min-height: 48px; font-weight: 700; display: flex; align-items: center; justify-content: space-between"><span>EZPLAN</span><span aria-label="{{ bellLabel }}" style="font-size: 13px; font-weight: 600; color: #E2E8F0; padding: 0 8px">{{ bell }}</span></header>
   <div style="padding: 14px 16px 0; display: flex; flex-direction: column; gap: 6px">
     <span style="font-size: 13px; color: #475569">All plans ›</span>
     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><h1 style="margin: 0; font-size: 22px; letter-spacing: -0.02em">{{ title }}</h1><span style="{{ masterHealthStyle }}">{{ masterHealth }}</span></div>
@@ -72,23 +72,97 @@
       <div style="display: flex; align-items: center; gap: 8px"><h2 style="margin: 0; font-size: 20px">{{ cur.title }}</h2><span style="{{ cur.healthStyle }}">{{ cur.health }}</span></div>
       <span style="font-size: 13px; color: #334155">{{ cur.when }} · {{ cur.done }} of {{ cur.count }} done</span>
       <div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{ curDepts }}" as="d" hint-placeholder-count="2"><span style="{{ d.chip.style }}"><span style="{{ d.chip.dot }}"></span>{{ d.chip.name }}</span></sc-for></div>
+      <sc-if value="{{ noTask }}" hint-placeholder-val="{{ true }}">
       <sc-for list="{{ curTasks }}" as="t" hint-placeholder-count="4">
-        <section style="background: #FFFFFF; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 4px">
-          <span style="display: flex; justify-content: space-between; gap: 6px"><span style="font-size: 15px; font-weight: 600">{{ t.title }}</span><span style="{{ t.statusStyle }}">{{ t.status }}</span></span>
+        <button onClick="{{ t.open }}" style="background: #FFFFFF; border: none; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 4px; text-align: left; cursor: pointer; font-family: Inter, sans-serif; color: #0F172A">
+          <span style="display: flex; justify-content: space-between; gap: 6px; width: 100%"><span style="font-size: 15px; font-weight: 600">{{ t.title }}</span><span style="{{ t.statusStyle }}">{{ t.status }}</span></span>
           <span style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap"><span style="{{ t.chip.style }}"><span style="{{ t.chip.dot }}"></span>{{ t.chip.name }}</span><span style="font-size: 12px; color: #334155">{{ t.who }} · {{ t.dates }}</span></span>
           <sc-for list="{{ t.ext }}" as="x" hint-placeholder-count="1"><span style="font-size: 12px; font-weight: 600; color: #9A3412">{{ x }}</span></sc-for>
-        </section>
+          <sc-if value="{{ t.comments }}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; font-weight: 600; color: #334155; background: #F1F5F9; border-radius: 999px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>{{ t.comments }}</span></sc-if>
+        </button>
       </sc-for>
+      </sc-if>
+      <sc-if value="{{ task }}" hint-placeholder-val="{{ false }}">
+        <section aria-label="{{ task.title }}" style="background: #FFFFFF; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+          <button onClick="{{ task.close }}" style="align-self: flex-start; min-height: 44px; border: none; background: none; padding: 0; color: #4338CA; font: 600 14px Inter, sans-serif; cursor: pointer">‹ All tasks in {{ cur.title }}</button>
+          <span style="display: flex; justify-content: space-between; gap: 6px"><span style="font-size: 17px; font-weight: 700">{{ task.title }}</span><span style="{{ task.statusStyle }}">{{ task.status }}</span></span>
+          <span style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap"><span style="{{ task.chip.style }}"><span style="{{ task.chip.dot }}"></span>{{ task.chip.name }}</span><span style="font-size: 12px; color: #334155">{{ task.who }} · {{ task.dates }}</span></span>
+          <sc-for list="{{ task.ext }}" as="x" hint-placeholder-count="1"><span style="font-size: 12px; font-weight: 600; color: #9A3412">{{ x }}</span></sc-for>
+          <h3 style="margin: 4px 0 0; font-size: 15px; border-top: 1px solid #E2E8F0; padding-top: 10px">Comments ({{ task.count }})</h3>
+          <sc-if value="{{ task.none }}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: 14px; color: #475569">No comments yet.</p></sc-if>
+          <sc-for list="{{ task.comments }}" as="c" hint-placeholder-count="2">
+            <div style="background: #F1F5F9; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 4px">
+              <span style="font-size: 12px; color: #475569"><strong style="color: #1E293B">{{ c.who }}</strong> · {{ c.dept.name }} · {{ c.when }}</span>
+              <p style="margin: 0; font-size: 14px; line-height: 1.45; white-space: pre-wrap"><sc-for list="{{ c.segs }}" as="g" hint-placeholder-count="1"><span style="{{ g.style }}">{{ g.t }}</span></sc-for></p>
+            </div>
+          </sc-for>
+          <label for="new-comment-phone" style="font-size: 13px; font-weight: 600">Add a comment</label>
+          <div style="position: relative; display: flex; flex-direction: column">
+            <textarea id="new-comment-phone" rows="3" value="{{ task.draft }}" onChange="{{ task.onDraft }}" placeholder="{{ task.placeholder }}" style="border: 1px solid #CBD5E1; border-radius: 12px; padding: 8px; font: 15px Inter, sans-serif" onKeyDown="{{ task.mention.onKey }}" aria-autocomplete="list" aria-expanded="{{ task.mention.open }}"></textarea>
+            <sc-if value="{{ task.mention.open }}" hint-placeholder-val="{{ false }}"><div role="listbox" aria-label="People to mention" style="{{ task.mention.box }}"><sc-for list="{{ task.mention.list }}" as="p" hint-placeholder-count="3"><button role="option" aria-selected="{{ p.sel }}" onClick="{{ p.pick }}" style="{{ p.style }}"><span style="font-size: 14px; font-weight: 600">{{ p.name }}</span><span style="font-size: 12px; color: #475569">{{ p.role }}</span></button></sc-for><span style="font-size: 11px; color: #64748B; padding: 4px 10px">↑ ↓ to choose · Enter to add · Esc to close</span></div></sc-if>
+          </div>
+          <button onClick="{{ task.post }}" style="min-height: 44px; border: none; border-radius: 12px; background: #4F46E5; color: #FFFFFF; cursor: pointer; font: 600 15px Inter, sans-serif">Post comment</button>
+        </section>
+      </sc-if>
+    </sc-if>
+    <sc-if value="{{ isDiscussion }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ threadClosed }}" hint-placeholder-val="{{ true }}">
+        <section aria-label="Discussion threads" style="background: #FFFFFF; border-radius: 14px; padding: 8px; display: flex; flex-direction: column">
+          <sc-for list="{{ threads }}" as="t" hint-placeholder-count="9">
+            <button onClick="{{ t.pick }}" style="{{ t.style }}; background: transparent">
+              <span style="display: flex; gap: 8px; align-items: center; width: 100%"><span style="font-size: 15px; font-weight: 700; flex: 1">{{ t.title }}</span><sc-if value="{{ t.newLabel }}" hint-placeholder-val="{{ false }}"><span style="font-size: 11px; font-weight: 700; color: #FFFFFF; background: #4F46E5; border-radius: 999px; padding: 2px 7px">{{ t.newLabel }}</span></sc-if></span>
+              <span style="font-size: 12px; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%">{{ t.last }}</span>
+            </button>
+          </sc-for>
+        </section>
+      </sc-if>
+      <sc-if value="{{ threadOpen }}" hint-placeholder-val="{{ false }}">
+        <section aria-label="{{ thread.title }} discussion" style="background: #FFFFFF; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+          <button onClick="{{ thread.back }}" style="align-self: flex-start; min-height: 44px; border: none; background: none; padding: 0; color: #4338CA; font: 600 14px Inter, sans-serif; cursor: pointer">‹ All threads</button>
+          <h2 style="margin: 0; font-size: 18px">{{ thread.title }}</h2>
+          <span style="font-size: 12px; color: #475569">{{ thread.who }}</span>
+          <sc-if value="{{ thread.none }}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: 14px; color: #475569">No messages yet.</p></sc-if>
+          <sc-for list="{{ thread.msgs }}" as="m" hint-placeholder-count="3">
+            <article style="border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; flex-direction: column; gap: 4px">
+              <span style="font-size: 12px; color: #475569; display: flex; gap: 6px; align-items: center; flex-wrap: wrap"><strong style="font-size: 14px; color: #0F172A">{{ m.who }}</strong><span style="{{ m.dept.style }}"><span style="{{ m.dept.dot }}"></span>{{ m.dept.name }}</span>{{ m.when }}</span>
+              <p style="margin: 0; font-size: 14px; line-height: 1.45; white-space: pre-wrap"><sc-for list="{{ m.segs }}" as="g" hint-placeholder-count="1"><span style="{{ g.style }}">{{ g.t }}</span></sc-for></p>
+              <sc-if value="{{ m.hasAbout }}" hint-placeholder-val="{{ false }}"><button onClick="{{ m.openAbout }}" style="align-self: flex-start; min-height: 36px; padding: 0 10px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC; cursor: pointer; font: 600 12px Inter, sans-serif; color: #3730A3; text-align: left">{{ m.about }}</button></sc-if>
+            </article>
+          </sc-for>
+          <label for="new-message-phone" style="font-size: 13px; font-weight: 600; border-top: 1px solid #E2E8F0; padding-top: 10px">Message {{ thread.title }}</label>
+          <div style="position: relative; display: flex; flex-direction: column">
+            <textarea id="new-message-phone" rows="3" value="{{ thread.draft }}" onChange="{{ thread.onDraft }}" placeholder="{{ thread.placeholder }}" style="border: 1px solid #CBD5E1; border-radius: 12px; padding: 8px; font: 15px Inter, sans-serif" onKeyDown="{{ thread.mention.onKey }}" aria-autocomplete="list" aria-expanded="{{ thread.mention.open }}"></textarea>
+            <sc-if value="{{ thread.mention.open }}" hint-placeholder-val="{{ false }}"><div role="listbox" aria-label="People to mention" style="{{ thread.mention.box }}"><sc-for list="{{ thread.mention.list }}" as="p" hint-placeholder-count="3"><button role="option" aria-selected="{{ p.sel }}" onClick="{{ p.pick }}" style="{{ p.style }}"><span style="font-size: 14px; font-weight: 600">{{ p.name }}</span><span style="font-size: 12px; color: #475569">{{ p.role }}</span></button></sc-for><span style="font-size: 11px; color: #64748B; padding: 4px 10px">↑ ↓ to choose · Enter to add · Esc to close</span></div></sc-if>
+          </div>
+          <button onClick="{{ thread.post }}" style="min-height: 44px; border: none; border-radius: 12px; background: #4F46E5; color: #FFFFFF; cursor: pointer; font: 600 15px Inter, sans-serif">Post</button>
+        </section>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ isActivity }}" hint-placeholder-val="{{ false }}">
+      <span style="font-size: 13px; color: #334155">{{ actCount }} across all plans</span>
+      <div role="radiogroup" aria-label="Plan" style="display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px; padding: 0 16px 4px"><sc-for list="{{ actPlans }}" as="p" hint-placeholder-count="10"><button role="radio" aria-checked="{{ p.on }}" onClick="{{ p.pick }}" style="{{ p.style }}; min-height: 44px">{{ p.label }}</button></sc-for></div>
+      <div role="radiogroup" aria-label="Department" style="display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px; padding: 0 16px 4px"><sc-for list="{{ actDepts }}" as="p" hint-placeholder-count="6"><button role="radio" aria-checked="{{ p.on }}" onClick="{{ p.pick }}" style="{{ p.style }}; min-height: 44px">{{ p.label }}</button></sc-for></div>
+      <sc-if value="{{ actNone }}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: 14px; color: #475569">Nothing yet for this plan and department.</p></sc-if>
+      <section style="background: #FFFFFF; border-radius: 14px; padding: 4px 12px; display: flex; flex-direction: column">
+        <sc-for list="{{ acts }}" as="a" hint-placeholder-count="8">
+          <div style="border-top: 1px solid #F1F5F9; padding: 8px 0; display: flex; flex-direction: column; gap: 3px">
+            <span style="font-size: 14px"><strong>{{ a.who }}</strong> {{ a.what }}</span>
+            <span style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px; color: #475569"><span style="{{ a.dept.style }}"><span style="{{ a.dept.dot }}"></span>{{ a.dept.name }}</span>{{ a.where }} · {{ a.when }}</span>
+          </div>
+        </sc-for>
+      </section>
     </sc-if>
   </main>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+var IS_PHONE = true;
 var DATA = {"today":"2027-03-08","finish":"2027-05-06","start":"2027-03-01","whatIfCabinets":{"taskId":"T14","finish":"2027-05-11","dates":{"T3":["2027-03-01","2027-03-01"],"T2":["2027-03-01","2027-03-01"],"T1":["2027-03-01","2027-03-03"],"T5":["2027-05-05","2027-05-05"],"T6":["2027-05-06","2027-05-11"],"T7":["2027-03-08","2027-03-10"],"T4":["2027-03-10","2027-03-18"],"T8":["2027-03-10","2027-03-12"],"T9":["2027-04-06","2027-04-08"],"T10":["2027-04-08","2027-04-12"],"T11":["2027-03-01","2027-03-04"],"T12":["2027-03-03","2027-03-08"],"T13":["2027-03-08","2027-03-12"],"T14":["2027-03-16","2027-03-25"],"T15":["2027-03-26","2027-03-30"],"T16":["2027-03-10","2027-03-12"],"T17":["2027-03-12","2027-03-18"],"T18":["2027-03-12","2027-03-16"],"T19":["2027-03-25","2027-03-30"],"T20":["2027-03-12","2027-03-16"],"T21":["2027-03-18","2027-03-23"],"T22":["2027-03-16","2027-03-18"],"T23":["2027-03-30","2027-04-02"],"T24":["2027-03-17","2027-03-22"],"T25":["2027-04-02","2027-04-06"],"T26":["2027-04-06","2027-04-12"],"T27":["2027-04-06","2027-04-08"],"T28":["2027-04-13","2027-04-16"],"T29":["2027-04-08","2027-04-13"],"T30":["2027-04-13","2027-04-19"],"T31":["2027-04-21","2027-04-22"],"T32":["2027-04-16","2027-04-21"],"T33":["2027-04-21","2027-04-27"],"T34":["2027-04-28","2027-04-28"],"T35":["2027-04-22","2027-05-03"],"T36":["2027-04-22","2027-04-27"],"T37":["2027-04-27","2027-05-03"],"T38":["2027-05-04","2027-05-04"]}},"whatIfNoor":{"finish":"2027-04-26","dates":{"T3":["2027-03-01","2027-03-01","Omar"],"T2":["2027-03-01","2027-03-01","Tess"],"T1":["2027-03-01","2027-03-03","Dana"],"T5":["2027-04-20","2027-04-20","Dana"],"T6":["2027-04-21","2027-04-26","Mei"],"T7":["2027-03-08","2027-03-10","Kai"],"T4":["2027-03-10","2027-03-18","Ivan"],"T8":["2027-03-10","2027-03-12","Leo"],"T9":["2027-03-24","2027-03-26","Kai"],"T10":["2027-03-26","2027-03-30","Ivan"],"T11":["2027-03-01","2027-03-04","Omar"],"T12":["2027-03-03","2027-03-08","Kai"],"T13":["2027-03-08","2027-03-12","Rosa"],"T14":["2027-03-16","2027-03-22","Kai"],"T15":["2027-03-23","2027-03-25","Tess"],"T16":["2027-03-10","2027-03-12","Kai"],"T17":["2027-03-12","2027-03-18","Rosa"],"T18":["2027-03-12","2027-03-16","Leo"],"T19":["2027-03-18","2027-03-23","Noor"],"T20":["2027-03-12","2027-03-16","Kai"],"T21":["2027-03-18","2027-03-23","Rosa"],"T22":["2027-03-16","2027-03-18","Leo"],"T23":["2027-03-24","2027-03-26","Noor"],"T24":["2027-03-17","2027-03-22","Mei"],"T25":["2027-03-22","2027-03-24","Kai"],"T26":["2027-03-24","2027-03-30","Rosa"],"T27":["2027-03-24","2027-03-26","Leo"],"T28":["2027-03-30","2027-04-02","Noor"],"T29":["2027-03-26","2027-03-31","Kai"],"T30":["2027-03-31","2027-04-06","Ivan"],"T31":["2027-04-08","2027-04-09","Kai"],"T32":["2027-03-31","2027-04-05","Kai"],"T33":["2027-04-06","2027-04-12","Ivan"],"T34":["2027-04-13","2027-04-13","Kai"],"T35":["2027-04-06","2027-04-15","Mei"],"T36":["2027-04-05","2027-04-08","Kai"],"T37":["2027-04-12","2027-04-16","Ivan"],"T38":["2027-04-19","2027-04-19","Kai"]}},"subs":[{"key":"master","title":"HQ remodel (whole building)","lead":"Facilities","needs":["Finance","Safety"],"ids":["T3","T2","T1","T5","T6"]},{"key":"reception","title":"Reception","lead":"Facilities","needs":["IT"],"ids":["T7","T4","T8","T9","T10"]},{"key":"kitchen","title":"Kitchen","lead":"Facilities","needs":["Finance","Safety"],"ids":["T11","T12","T13","T14","T15"]},{"key":"bathroom-1","title":"Bathroom 1","lead":"Facilities","needs":[],"ids":["T16","T17","T18","T19"]},{"key":"bathroom-2","title":"Bathroom 2","lead":"Facilities","needs":["HR"],"ids":["T20","T21","T22","T23","T24"]},{"key":"bathroom-3","title":"Bathroom 3","lead":"Facilities","needs":[],"ids":["T25","T26","T27","T28"]},{"key":"office-1","title":"Office 1","lead":"Facilities","needs":["IT"],"ids":["T29","T30","T31"]},{"key":"office-2","title":"Office 2","lead":"Facilities","needs":["IT","HR"],"ids":["T32","T33","T34","T35"]},{"key":"office-3","title":"Office 3","lead":"Facilities","needs":["IT"],"ids":["T36","T37","T38"]}],"people":{"Kai":40,"Leo":40,"Rosa":32,"Ivan":20,"Mei":10,"Omar":10,"Tess":16,"Dana":40},"tasks":[{"id":"T3","est":"2d","sub":"master","title":"Approve remodel budget","owner":"Omar","dept":"Finance","status":"done","start":"2027-03-01","end":"2027-03-01","critical":true,"deps":[],"why":"Starts Mar 1, the project start."},{"id":"T2","est":"3d","sub":"master","title":"Asbestos survey","owner":"Tess","dept":"Safety","status":"done","start":"2027-03-01","end":"2027-03-01","critical":true,"deps":[],"why":"Starts Mar 1, the project start."},{"id":"T1","est":"5d","sub":"master","title":"Building permits approved","owner":"Dana","dept":"Facilities","status":"progress","start":"2027-03-01","end":"2027-03-03","critical":true,"deps":["T3","T2"],"why":"Starts Mar 1, the project start."},{"id":"T5","est":"1d","sub":"master","title":"Final walkthrough","owner":"Dana","dept":"Facilities","status":"todo","start":"2027-04-30","end":"2027-04-30","critical":true,"deps":["T7","T4","T8","T9","T10","T11","T12","T13","T14","T15","T16","T17","T18","T19","T20","T21","T22","T23","T24","T25","T26","T27","T28","T29","T30","T31","T32","T33","T34","T35","T36","T37","T38"],"why":"Starts Apr 30 because it waits on T38 \"Desks and chairs, Office 3\"."},{"id":"T6","est":"1d","sub":"master","title":"Move-in day","owner":"Mei","dept":"HR","status":"todo","start":"2027-05-03","end":"2027-05-06","critical":true,"deps":["T5"],"why":"Starts May 3 because it waits on T5 \"Final walkthrough\"."},{"id":"T7","est":"2d","sub":"reception","title":"Demolish old front desk","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-03-08","end":"2027-03-10","critical":true,"deps":["T1"],"why":"Starts Mar 8 because Kai is on T12 \"Strip old kitchen\" until then."},{"id":"T4","est":"3d","sub":"reception","title":"Move network closet","owner":"Ivan","dept":"IT","status":"todo","start":"2027-03-10","end":"2027-03-18","critical":false,"deps":["T7"],"why":"Starts Mar 10 because it waits on T7 \"Demolish old front desk\"."},{"id":"T8","est":"2d","sub":"reception","title":"New reception wiring","owner":"Leo","dept":"Facilities","status":"todo","start":"2027-03-10","end":"2027-03-12","critical":false,"deps":["T7"],"why":"Starts Mar 10 because it waits on T7 \"Demolish old front desk\"."},{"id":"T9","est":"2d","sub":"reception","title":"Install desk and visitor kiosk","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-04-01","end":"2027-04-05","critical":true,"deps":["T8"],"why":"Starts Apr 1 because Kai is on T25 \"Strip Bathroom 3\" until then."},{"id":"T10","est":"1d","sub":"reception","title":"Set up visitor sign-in system","owner":"Ivan","dept":"IT","status":"todo","start":"2027-04-05","end":"2027-04-07","critical":false,"deps":["T4","T9"],"why":"Starts Apr 5 because it waits on T9 \"Install desk and visitor kiosk\"."},{"id":"T11","est":"1d","sub":"kitchen","title":"Order appliances","owner":"Omar","dept":"Finance","status":"todo","start":"2027-03-01","end":"2027-03-04","critical":false,"deps":["T3"],"why":"Starts Mar 1, the project start."},{"id":"T12","est":"3d","sub":"kitchen","title":"Strip old kitchen","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-03-03","end":"2027-03-08","critical":true,"deps":["T1"],"why":"Starts Mar 3 because it waits on T1 \"Building permits approved\"."},{"id":"T13","est":"3d","sub":"kitchen","title":"Plumbing for sink and dishwasher","owner":"Rosa","dept":"Facilities","status":"todo","start":"2027-03-08","end":"2027-03-12","critical":false,"deps":["T12"],"why":"Starts Mar 8 because it waits on T12 \"Strip old kitchen\"."},{"id":"T14","est":"4d","sub":"kitchen","title":"Install cabinets","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-03-16","end":"2027-03-22","critical":true,"deps":["T13","T11"],"why":"Starts Mar 16 because Kai is on T20 \"Strip Bathroom 2\" until then."},{"id":"T15","est":"1d","sub":"kitchen","title":"Fire safety sign-off","owner":"Tess","dept":"Safety","status":"todo","start":"2027-03-23","end":"2027-03-25","critical":false,"deps":["T14"],"why":"Starts Mar 23 because it waits on T14 \"Install cabinets\"."},{"id":"T16","est":"2d","sub":"bathroom-1","title":"Strip Bathroom 1","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-03-10","end":"2027-03-12","critical":true,"deps":["T1"],"why":"Starts Mar 10 because Kai is on T7 \"Demolish old front desk\" until then."},{"id":"T17","est":"3d","sub":"bathroom-1","title":"Rough plumbing, Bathroom 1","owner":"Rosa","dept":"Facilities","status":"todo","start":"2027-03-12","end":"2027-03-18","critical":false,"deps":["T16"],"why":"Starts Mar 12 because it waits on T16 \"Strip Bathroom 1\"."},{"id":"T18","est":"2d","sub":"bathroom-1","title":"Lights and fans, Bathroom 1","owner":"Leo","dept":"Facilities","status":"todo","start":"2027-03-12","end":"2027-03-16","critical":false,"deps":["T16"],"why":"Starts Mar 12 because it waits on T16 \"Strip Bathroom 1\"."},{"id":"T19","est":"3d","sub":"bathroom-1","title":"Tile and fixtures, Bathroom 1","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-03-22","end":"2027-03-25","critical":true,"deps":["T17","T18"],"why":"Starts Mar 22 because Kai is on T14 \"Install cabinets\" until then."},{"id":"T20","est":"2d","sub":"bathroom-2","title":"Strip Bathroom 2","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-03-12","end":"2027-03-16","critical":true,"deps":["T1"],"why":"Starts Mar 12 because Kai is on T16 \"Strip Bathroom 1\" until then."},{"id":"T21","est":"3d","sub":"bathroom-2","title":"Rough plumbing, Bathroom 2","owner":"Rosa","dept":"Facilities","status":"todo","start":"2027-03-18","end":"2027-03-23","critical":false,"deps":["T20"],"why":"Starts Mar 18 because Rosa is on T17 \"Rough plumbing, Bathroom 1\" until then."},{"id":"T22","est":"2d","sub":"bathroom-2","title":"Lights and fans, Bathroom 2","owner":"Leo","dept":"Facilities","status":"todo","start":"2027-03-16","end":"2027-03-18","critical":false,"deps":["T20"],"why":"Starts Mar 16 because it waits on T20 \"Strip Bathroom 2\"."},{"id":"T23","est":"3d","sub":"bathroom-2","title":"Tile and fixtures, Bathroom 2","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-03-25","end":"2027-03-30","critical":true,"deps":["T21","T22"],"why":"Starts Mar 25 because Kai is on T19 \"Tile and fixtures, Bathroom 1\" until then."},{"id":"T24","est":"1d","sub":"bathroom-2","title":"Accessible stall layout approved","owner":"Mei","dept":"HR","status":"todo","start":"2027-03-17","end":"2027-03-22","critical":false,"deps":["T20"],"why":"Starts Mar 17 because it waits on T20 \"Strip Bathroom 2\"."},{"id":"T25","est":"2d","sub":"bathroom-3","title":"Strip Bathroom 3","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-03-30","end":"2027-04-01","critical":true,"deps":["T1"],"why":"Starts Mar 30 because Kai is on T23 \"Tile and fixtures, Bathroom 2\" until then."},{"id":"T26","est":"3d","sub":"bathroom-3","title":"Rough plumbing, Bathroom 3","owner":"Rosa","dept":"Facilities","status":"todo","start":"2027-04-01","end":"2027-04-07","critical":false,"deps":["T25"],"why":"Starts Apr 1 because it waits on T25 \"Strip Bathroom 3\"."},{"id":"T27","est":"2d","sub":"bathroom-3","title":"Lights and fans, Bathroom 3","owner":"Leo","dept":"Facilities","status":"todo","start":"2027-04-01","end":"2027-04-05","critical":false,"deps":["T25"],"why":"Starts Apr 1 because it waits on T25 \"Strip Bathroom 3\"."},{"id":"T28","est":"3d","sub":"bathroom-3","title":"Tile and fixtures, Bathroom 3","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-04-08","end":"2027-04-13","critical":true,"deps":["T26","T27"],"why":"Starts Apr 8 because Kai is on T29 \"Walls and paint, Office 1\" until then."},{"id":"T29","est":"3d","sub":"office-1","title":"Walls and paint, Office 1","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-04-05","end":"2027-04-08","critical":true,"deps":["T1"],"why":"Starts Apr 5 because Kai is on T9 \"Install desk and visitor kiosk\" until then."},{"id":"T30","est":"2d","sub":"office-1","title":"Network cabling, Office 1","owner":"Ivan","dept":"IT","status":"todo","start":"2027-04-08","end":"2027-04-14","critical":false,"deps":["T4","T29"],"why":"Starts Apr 8 because it waits on T29 \"Walls and paint, Office 1\"."},{"id":"T31","est":"1d","sub":"office-1","title":"Desks and chairs, Office 1","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-04-16","end":"2027-04-19","critical":true,"deps":["T30"],"why":"Starts Apr 16 because Kai is on T32 \"Walls and paint, Office 2\" until then."},{"id":"T32","est":"3d","sub":"office-2","title":"Walls and paint, Office 2","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-04-13","end":"2027-04-16","critical":true,"deps":["T1"],"why":"Starts Apr 13 because Kai is on T28 \"Tile and fixtures, Bathroom 3\" until then."},{"id":"T33","est":"2d","sub":"office-2","title":"Network cabling, Office 2","owner":"Ivan","dept":"IT","status":"todo","start":"2027-04-16","end":"2027-04-22","critical":false,"deps":["T4","T32"],"why":"Starts Apr 16 because it waits on T32 \"Walls and paint, Office 2\"."},{"id":"T34","est":"1d","sub":"office-2","title":"Desks and chairs, Office 2","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-04-23","end":"2027-04-23","critical":false,"deps":["T33"],"why":"Starts Apr 23 because it waits on T33 \"Network cabling, Office 2\"."},{"id":"T35","est":"2d","sub":"office-2","title":"Seating plan for the sales team","owner":"Mei","dept":"HR","status":"todo","start":"2027-04-19","end":"2027-04-28","critical":false,"deps":["T32"],"why":"Starts Apr 19 because it waits on T32 \"Walls and paint, Office 2\"."},{"id":"T36","est":"3d","sub":"office-3","title":"Walls and paint, Office 3","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-04-19","end":"2027-04-22","critical":true,"deps":["T1"],"why":"Starts Apr 19 because Kai is on T31 \"Desks and chairs, Office 1\" until then."},{"id":"T37","est":"2d","sub":"office-3","title":"Network cabling, Office 3","owner":"Ivan","dept":"IT","status":"todo","start":"2027-04-22","end":"2027-04-28","critical":true,"deps":["T4","T36"],"why":"Starts Apr 22 because it waits on T36 \"Walls and paint, Office 3\"."},{"id":"T38","est":"1d","sub":"office-3","title":"Desks and chairs, Office 3","owner":"Kai","dept":"Facilities","status":"todo","start":"2027-04-29","end":"2027-04-29","critical":true,"deps":["T37"],"why":"Starts Apr 29 because it waits on T37 \"Network cabling, Office 3\"."}],"weekly":{"none":{"Omar":{"2027-03-01":8},"Dana":{"2027-03-01":20,"2027-04-26":8},"Kai":{"2027-03-01":20,"2027-03-08":40,"2027-03-15":40,"2027-03-22":40,"2027-03-29":40,"2027-04-05":40,"2027-04-12":40,"2027-04-19":36,"2027-04-26":8},"Rosa":{"2027-03-08":27.2,"2027-03-15":32,"2027-03-22":12.8,"2027-03-29":9.6,"2027-04-05":14.4},"Ivan":{"2027-03-08":10,"2027-03-15":14,"2027-04-05":14,"2027-04-12":12,"2027-04-19":20,"2027-04-26":10},"Leo":{"2027-03-08":20,"2027-03-15":28,"2027-03-29":12,"2027-04-05":4},"Mei":{"2027-03-15":6,"2027-03-22":2,"2027-04-19":10,"2027-04-26":6,"2027-05-03":8},"Tess":{"2027-03-22":8}},"cabinets":{"Omar":{"2027-03-01":8},"Dana":{"2027-03-01":20,"2027-05-03":8},"Kai":{"2027-03-01":20,"2027-03-08":40,"2027-03-15":40,"2027-03-22":40,"2027-03-29":40,"2027-04-05":40,"2027-04-12":40,"2027-04-19":40,"2027-04-26":20,"2027-05-03":8},"Rosa":{"2027-03-08":27.2,"2027-03-15":32,"2027-03-22":12.8,"2027-04-05":22.4,"2027-04-12":1.6},"Ivan":{"2027-03-08":10,"2027-03-15":14,"2027-04-05":6,"2027-04-12":16,"2027-04-19":12,"2027-04-26":20,"2027-05-03":2},"Leo":{"2027-03-08":20,"2027-03-15":28,"2027-04-05":16},"Mei":{"2027-03-15":6,"2027-03-22":2,"2027-04-19":4,"2027-04-26":10,"2027-05-03":6,"2027-05-10":4},"Tess":{"2027-03-22":3.2,"2027-03-29":4.8}},"noor":{"Omar":{"2027-03-01":8},"Dana":{"2027-03-01":20,"2027-04-19":8},"Kai":{"2027-03-01":20,"2027-03-08":40,"2027-03-15":40,"2027-03-22":40,"2027-03-29":40,"2027-04-05":36,"2027-04-12":8,"2027-04-19":8},"Rosa":{"2027-03-08":27.2,"2027-03-15":32,"2027-03-22":28.8,"2027-03-29":8},"Ivan":{"2027-03-08":10,"2027-03-15":14,"2027-03-22":2,"2027-03-29":16,"2027-04-05":20,"2027-04-12":18},"Leo":{"2027-03-08":20,"2027-03-15":28,"2027-03-22":16},"Mei":{"2027-03-15":6,"2027-03-22":2,"2027-04-05":8,"2027-04-12":8,"2027-04-19":6,"2027-04-26":2},"Noor":{"2027-03-15":14,"2027-03-22":34,"2027-03-29":24},"Tess":{"2027-03-22":8}}}};
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { view: 'overview', sub: 'office-2', open: {}, whatIf: 'none', dept: null };
+    this.state = { view: 'overview', sub: 'office-2', open: {}, whatIf: 'none', dept: null, task: null, thread: 'master', read: {}, draft: '', tdraft: '', posted: [], tposted: [], actPlan: 'all', actDept: 'all' };
   }
   renderVals() {
     var self = this, st = this.state, D = DATA;
@@ -141,7 +215,7 @@ class Component extends DCLogic {
       var pct = Math.round((done / ts.length) * 100);
       return { key: s.key, title: s.title, lead: deptChip(s.lead), needs: s.needs.map(deptChip), hasNeeds: s.needs.length > 0, start: start, end: end, when: fmt(start) + ' to ' + fmt(end), done: done, count: ts.length, pct: pct, pctLabel: pct + '%', bar: 'height: 100%; border-radius: 999px; background: #4F46E5; width: ' + pct + '%;', health: h.label + (h.n ? ' · ' + h.n + 'd late' : ''), healthStyle: chipBase + h.style,
         waits: waits.map(function (id) { return byId[id].title + ' (' + subTitle[byId[id].sub] + ')'; }), waitsLabel: waits.length ? 'Waits on ' + waits.map(function (id) { return byId[id].title; }).join(', ') : '',
-        people: people.map(function (p) { return NAME[p]; }).join(', '), open: go({ view: 'plan', sub: s.key }), late: h.label !== 'On track' };
+        people: people.map(function (p) { return NAME[p]; }).join(', '), open: go({ view: 'plan', sub: s.key, task: null }), late: h.label !== 'On track' };
     });
     var masterTasks = T.filter(function (t) { return t.sub === 'master'; });
     var milestones = ['T3', 'T2', 'T1', 'T5', 'T6'].map(function (id) {
@@ -205,18 +279,141 @@ class Component extends DCLogic {
     var axis = [];
     for (var a = t0; a < t1; a += 7 * DAY) axis.push({ label: fmt(new Date(a).toISOString().slice(0, 10)), style: 'position: absolute; top: 0; font-size: 11px; color: #64748B; left: ' + ((a - t0) / span * 100).toFixed(2) + '%;' });
 
+    // Comments and discussion. Sample messages as of the sample's "today" (Mar 8); every date they mention is the engine's.
+    // The viewer is Dana Reyes (Facilities lead). Messages from others posted today are unread.
+    var ME = 'Dana';
+    var geom = typeof IS_PHONE !== 'undefined' && IS_PHONE ? { task: [40, 7.6], thread: [40, 7.6] } : { task: [40, 7.4], thread: [128, 7.4] };
+    var PDEPT = { Kai: 'Facilities', Leo: 'Facilities', Rosa: 'Facilities', Dana: 'Facilities', Noor: 'Facilities', Ivan: 'IT', Mei: 'HR', Omar: 'Finance', Tess: 'Safety' };
+    var BYNAME = {}; Object.keys(NAME).forEach(function (k) { BYNAME[NAME[k]] = k; });
+    var COMMENTS = [
+      { task: 'T4', who: 'Ivan', at: '2027-03-05T14:20', text: 'The new closet is the old storage room behind reception. @Dana Reyes can Facilities clear it by Mar 10?' },
+      { task: 'T4', who: 'Dana', at: '2027-03-05T15:02', text: 'Yes, it will be empty by Mar 9. The front desk comes out Mar 8 to 10, so you can start Mar 10.' },
+      { task: 'T33', who: 'Ivan', at: '2027-03-08T10:05', text: 'This waits on the closet move in Reception (done Mar 18). @Mei Chen can I get a rough desk layout by Apr 14?' },
+      { task: 'T33', who: 'Mei', at: '2027-03-08T11:30', text: 'Yes. The full seating plan is due Apr 28, but you will have a rough layout by Apr 14.' },
+      { task: 'T35', who: 'Mei', at: '2027-03-08T11:32', text: 'Starting from last year\'s sales seating. @Dana Reyes are we keeping the standing desks?' },
+      { task: 'T32', who: 'Kai', at: '2027-03-04T08:15', text: 'Same light gray as Office 1. I am ordering both rooms\' paint together.' },
+      { task: 'T12', who: 'Kai', at: '2027-03-08T07:50', text: 'Done by noon today. @Rosa Diaz the sink plumbing can start this afternoon.' },
+      { task: 'T14', who: 'Omar', at: '2027-03-04T16:40', text: 'Appliances are ordered and arrive before the cabinets go in on Mar 16.' },
+      { task: 'T24', who: 'Mei', at: '2027-03-03T10:00', text: '@Rosa Diaz the accessible stall needs its drain on the left wall. I will approve the layout by Mar 22.' }
+    ].concat(st.posted);
+    var THREADS = [
+      { thread: 'master', who: 'Tess', at: '2027-03-01T16:10', about: 'T2', text: 'Asbestos survey is clear. The report is attached to the task.' },
+      { thread: 'master', who: 'Dana', at: '2027-03-03T12:00', about: 'T1', text: 'Permits approved. Every room can start.' },
+      { thread: 'master', who: 'Mei', at: '2027-03-08T09:10', about: 'T6', text: 'Move-in shows May 6 and our target is Apr 30. @Dana Reyes what would get us back on time?' },
+      { thread: 'reception', who: 'Ivan', at: '2027-03-05T14:25', about: 'T4', text: 'Heads up for Offices 1 to 3: your network cabling waits on the closet move here, Mar 10 to 18. I will post here when it is done.' },
+      { thread: 'reception', who: 'Kai', at: '2027-03-08T07:40', about: 'T7', text: 'Front desk demolition starts today and is done Mar 10.' },
+      { thread: 'kitchen', who: 'Omar', at: '2027-03-04T16:42', about: 'T11', text: 'Appliances ordered, within the approved budget.' },
+      { thread: 'kitchen', who: 'Rosa', at: '2027-03-08T12:15', about: 'T13', text: 'Sink and dishwasher plumbing under way, done Mar 12.' },
+      { thread: 'bathroom-2', who: 'Mei', at: '2027-03-03T10:05', about: 'T24', text: 'The accessible stall layout gets approved Mar 17 to 22, after the room is stripped.' },
+      { thread: 'office-2', who: 'Mei', at: '2027-03-08T11:35', about: 'T35', text: 'The sales team moves in here. IT gets a rough desk layout by Apr 14 for the cabling; the full seating plan follows Apr 28.' }
+    ].concat(st.tposted);
+    var fmtAt = function (at) { var h = +at.slice(11, 13), m = at.slice(14, 16); return fmt(at.slice(0, 10)) + ', ' + ((h + 11) % 12 + 1) + ':' + m + (h < 12 ? ' AM' : ' PM'); };
+    var MENTION = new RegExp('(@(?:' + Object.keys(BYNAME).join('|') + '))');
+    var segs = function (text) { return text.split(MENTION).filter(function (x) { return x; }).map(function (x) { return { t: x, style: MENTION.test(x) && x.charAt(0) === '@' ? 'font-weight: 600; color: #3730A3; background: #EEF2FF; border-radius: 4px; padding: 0 2px;' : '' }; }); };
+    var unread = function (m) { return m.who !== ME && m.at.slice(0, 10) === today && !m.mine; };
+    var msgView = function (m) { return { who: NAME[m.who], dept: deptChip(PDEPT[m.who]), when: fmtAt(m.at), segs: segs(m.text), mine: m.who === ME }; };
+    var commentsOf = function (id) { return COMMENTS.filter(function (c) { return c.task === id; }); };
+    // "@na" being typed at the end, as in the app's comment box.
+    var typing = function (text) { var m = /(?:^|\s)@([^\s@]{0,30}(?: [^\s@]{0,30})?)$/.exec(text); return m ? m[1] : null; };
+    // @mention autocomplete at the cursor: a small menu opens where the @ is typed, filtered as you type.
+    // Arrow keys move, Enter or Tab fills in the name, Escape closes it. geom = [columns per line, px per character].
+    var ROLE = function (n) { var k = BYNAME[n]; return PDEPT[k] + (DEPT[PDEPT[k]].who === n ? ' lead' : ''); };
+    var suggest = function (text, pool, key, geom) {
+      var part = typing(text), idxKey = key + 'Idx', offKey = key + 'Off';
+      var list = part === null || st[offKey] === text ? [] : pool.filter(function (n) { return n !== NAME[ME] && n.toLowerCase().indexOf(part.toLowerCase()) === 0 && n.toLowerCase() !== part.toLowerCase(); }).slice(0, 5);
+      var idx = Math.min(st[idxKey] || 0, Math.max(list.length - 1, 0));
+      var fill = function (n) { var o = {}; o[key] = text.replace(/@([^\s@]{0,30}(?: [^\s@]{0,30})?)$/, '@' + n + ' '); o[idxKey] = 0; self.setState(o); };
+      // Where the @ sits: count wrapped lines up to the cursor (the end of the text in this mockup).
+      var at = text.lastIndexOf('@'), before = text.slice(0, at), rows = 0, col = 0;
+      before.split('\n').forEach(function (ln, i, arr) { var wraps = Math.floor(ln.length / geom[0]); if (i < arr.length - 1) rows += wraps + 1; else { rows += wraps; col = ln.length % geom[0]; } });
+      var left = Math.min(10 + col * geom[1], geom[0] * geom[1] - 200);
+      return {
+        list: list.map(function (n, i) { return { name: n, role: ROLE(n), sel: i === idx ? 'true' : 'false', pick: function () { fill(n); },
+          style: 'display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 100%; min-height: 44px; justify-content: center; padding: 4px 10px; border: none; border-radius: 8px; cursor: pointer; text-align: left; font-family: Inter, sans-serif; color: #0F172A; background: ' + (i === idx ? '#EEF2FF' : '#FFFFFF') + ';' }; }),
+        open: list.length > 0,
+        box: 'position: absolute; z-index: 5; top: ' + (8 + (rows + 1) * 21) + 'px; left: ' + Math.max(left, 4) + 'px; width: 220px; background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 12px; box-shadow: 0 8px 24px rgba(15,23,42,0.16); padding: 4px; display: flex; flex-direction: column; gap: 2px;',
+        onKey: function (e) {
+          if (!list.length) return;
+          var o = {};
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); o[idxKey] = (idx + (e.key === 'ArrowDown' ? 1 : list.length - 1)) % list.length; self.setState(o); }
+          else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); fill(list[idx]); }
+          else if (e.key === 'Escape') { e.preventDefault(); o[offKey] = text; self.setState(o); }
+        }
+      };
+    };
+    var mentionsMe = COMMENTS.concat(THREADS).filter(function (m) { return unread(m) && m.text.indexOf('@' + NAME[ME]) >= 0 && !(m.thread && st.read[m.thread]); }).length;
+
     // The open sub-plan (inside the master).
     var cur = subs.filter(function (s) { return s.key === st.sub; })[0] || subs[0];
     var curTasks = T.filter(function (t) { return t.sub === cur.key; }).map(function (t) {
       var ext = t.deps.map(function (d) { return byId[d]; }).filter(function (o) { return o && o.sub !== cur.key; });
       var STS = { done: ['Done', 'color: #115E59; background: #CCFBF1;'], doing: ['Doing', 'color: #3730A3; background: #EEF2FF;'], todo: ['To do', 'color: #334155; background: #F1F5F9;'] }[t.st];
-      return { title: t.title, who: NAME[t.owner], dates: fmt(t.start) + (t.start === t.end ? '' : ' to ' + fmt(t.end)), chip: deptChip(t.dept), status: STS[0], statusStyle: chipBase + STS[1], ext: ext.map(function (o) { return 'Waits on ' + subTitle[o.sub] + ': ' + o.title + (o.st === 'done' ? ' (done)' : ', ' + fmt(o.end)); }), hasExt: ext.length > 0, why: t.why.replace(/T\d+ "/g, '"') };
+      var n = commentsOf(t.id).length, on = st.task === t.id;
+      return { id: t.id, open: go({ task: on ? null : t.id, draft: '' }), on: on ? 'true' : 'false', rowStyle: 'border: none; border-top: 1px solid #E2E8F0; padding: 10px 8px; margin: 0 -8px; display: flex; gap: 12px; align-items: flex-start; text-align: left; cursor: pointer; font-family: Inter, sans-serif; color: #0F172A; border-radius: 10px; background: ' + (on ? '#EEF2FF' : 'transparent') + ';',
+        comments: n ? n + ' comment' + (n === 1 ? '' : 's') : '', title: t.title, who: NAME[t.owner], dates: fmt(t.start) + (t.start === t.end ? '' : ' to ' + fmt(t.end)), chip: deptChip(t.dept), status: STS[0], statusStyle: chipBase + STS[1], ext: ext.map(function (o) { return 'Waits on ' + subTitle[o.sub] + ': ' + o.title + (o.st === 'done' ? ' (done)' : ', ' + fmt(o.end)); }), hasExt: ext.length > 0, why: t.why.replace(/T\d+ "/g, '"') };
     });
     var curDepts = [cur.lead].concat(cur.needs).map(function (c) { return { chip: c, contact: DEPT[c.name].who + ' · ' + DEPT[c.name].role }; });
 
-    var tabs = [['overview', 'Overview'], ['timeline', 'Timeline'], ['departments', 'Departments'], ['plan', 'Inside a plan']].map(function (t) {
+    // The open task's comment thread (same parts as the app's task sheet).
+    var planPeople = []; T.forEach(function (t) { if (t.sub === cur.key && planPeople.indexOf(NAME[t.owner]) < 0) planPeople.push(NAME[t.owner]); });
+    curDepts.forEach(function (d) { var w = DEPT[d.chip.name].who; if (planPeople.indexOf(w) < 0) planPeople.push(w); });
+    var openTask = st.task && byId[st.task] && byId[st.task].sub === cur.key ? curTasks.filter(function (t) { return t.id === st.task; })[0] : false;
+    var taskView = openTask ? Object.assign({}, openTask, {
+      comments: commentsOf(openTask.id).map(msgView), count: commentsOf(openTask.id).length, none: commentsOf(openTask.id).length === 0,
+      draft: st.draft, onDraft: function (e) { self.setState({ draft: e.target.value }); },
+      mention: suggest(st.draft, planPeople, 'draft', geom.task), placeholder: 'Ask or note something about ' + openTask.title + '. Type @ to mention someone.',
+      post: function () { if (!st.draft.trim()) return; self.setState({ posted: st.posted.concat([{ task: openTask.id, who: ME, at: today + 'T13:00', text: st.draft.trim(), mine: true }]), draft: '' }); },
+      close: go({ task: null }), who2: 'People on this plan and its departments\' contacts can be mentioned.'
+    }) : false;
+
+    // Discussion: one thread per plan plus the whole building.
+    var threadKeys = ['master'].concat(subs.map(function (s) { return s.key; }));
+    var threadList = threadKeys.map(function (k) {
+      var ms2 = THREADS.filter(function (m) { return m.thread === k; });
+      var last = ms2.slice().sort(function (a, b) { return a.at < b.at ? -1 : 1; }).slice(-1)[0];
+      var nNew = st.read[k] ? 0 : ms2.filter(unread).length, on = st.thread === k;
+      return { key: k, title: subTitle[k], last: last ? NAME[last.who] + ': ' + last.text : 'No messages yet.', when: last ? fmtAt(last.at) : '', nNew: nNew, newLabel: nNew ? nNew + ' new' : '',
+        pick: function () { var r = Object.assign({}, st.read); r[k] = true; self.setState({ thread: k, read: r, tdraft: '', threadOpen: true }); }, on: on ? 'true' : 'false',
+        style: 'border: none; border-top: 1px solid #E2E8F0; padding: 10px; text-align: left; cursor: pointer; font-family: Inter, sans-serif; color: #0F172A; display: flex; flex-direction: column; gap: 3px; min-height: 44px; border-radius: 10px; background: ' + (on ? '#EEF2FF' : 'transparent') + ';' };
+    });
+    var newTotal = threadList.reduce(function (a, t) { return a + t.nNew; }, 0);
+    var thDepts = st.thread === 'master' ? Object.keys(DEPT) : (function () { var s0 = D.subs.filter(function (x) { return x.key === st.thread; })[0]; return [s0.lead].concat(s0.needs); })();
+    var thPeople = []; T.forEach(function (t) { if ((st.thread === 'master' || t.sub === st.thread) && thPeople.indexOf(NAME[t.owner]) < 0) thPeople.push(NAME[t.owner]); });
+    thDepts.forEach(function (d) { if (thPeople.indexOf(DEPT[d].who) < 0) thPeople.push(DEPT[d].who); });
+    var thread = {
+      title: subTitle[st.thread], who: st.thread === 'master' ? 'Everyone on any plan in the remodel reads this thread.' : 'Everyone on ' + subTitle[st.thread] + ' reads this thread, plus the departments it needs.',
+      depts: thDepts.map(deptChip),
+      msgs: THREADS.filter(function (m) { return m.thread === st.thread; }).sort(function (a, b) { return a.at < b.at ? -1 : 1; }).map(function (m) {
+        var t = m.about && byId[m.about];
+        return Object.assign(msgView(m), { about: t ? 'About: ' + t.title + ' (' + subTitle[t.sub] + ')' : '', hasAbout: !!t,
+          openAbout: t ? (t.sub === 'master' ? go({ view: 'timeline' }) : go({ view: 'plan', sub: t.sub, task: t.id, draft: '' })) : null });
+      }),
+      draft: st.tdraft, onDraft: function (e) { self.setState({ tdraft: e.target.value }); }, mention: suggest(st.tdraft, thPeople, 'tdraft', geom.thread),
+      placeholder: 'Write to everyone on ' + subTitle[st.thread] + '. Type @ to mention someone.',
+      post: function () { if (!st.tdraft.trim()) return; self.setState({ tposted: st.tposted.concat([{ thread: st.thread, who: ME, at: today + 'T13:00', text: st.tdraft.trim(), mine: true }]), tdraft: '' }); }
+    };
+    thread.none = thread.msgs.length === 0;
+    thread.back = go({ threadOpen: false });
+
+    // Activity across all plans, written by the server for every change; filter by plan and department.
+    var acts = [];
+    T.forEach(function (t) {
+      if (t.st === 'done') acts.push({ at: t.end + 'T16:30', who: t.owner, what: 'marked ' + t.title + ' done', sub: t.sub, dept: t.dept });
+      if (t.st !== 'todo') acts.push({ at: t.start + 'T08:00', who: t.owner, what: 'started ' + t.title, sub: t.sub, dept: t.dept });
+    });
+    COMMENTS.forEach(function (c) { var t = byId[c.task]; acts.push({ at: c.at, who: c.who, what: 'commented on ' + t.title, sub: t.sub, dept: PDEPT[c.who] }); });
+    THREADS.forEach(function (m) { acts.push({ at: m.at, who: m.who, what: 'posted in the ' + subTitle[m.thread] + ' discussion', sub: m.thread, dept: PDEPT[m.who] }); });
+    var actShown = acts.filter(function (a) { return (st.actPlan === 'all' || a.sub === st.actPlan) && (st.actDept === 'all' || a.dept === st.actDept); })
+      .sort(function (a, b) { return a.at > b.at ? -1 : 1; })
+      .map(function (a) { return { who: NAME[a.who], what: a.what, where: subTitle[a.sub], dept: deptChip(a.dept), when: fmtAt(a.at) }; });
+    var pill = function (on) { return chipBase + 'min-height: 36px; padding: 0 12px; cursor: pointer; font-family: Inter, sans-serif; ' + (on ? 'border: 2px solid #0F172A; background: #FFFFFF; color: #0F172A;' : 'border: 1px solid #E2E8F0; background: #FFFFFF; color: #475569;'); };
+    var actPlans = [{ key: 'all', label: 'All plans' }].concat(threadKeys.map(function (k) { return { key: k, label: subTitle[k] }; })).map(function (p) { var on = st.actPlan === p.key; return { label: p.label, on: on ? 'true' : 'false', pick: go({ actPlan: p.key }), style: pill(on) }; });
+    var actDepts = [{ key: 'all', label: 'All departments' }].concat(Object.keys(DEPT).map(function (k) { return { key: k, label: k }; })).map(function (p) { var on = st.actDept === p.key; return { label: p.label, on: on ? 'true' : 'false', pick: go({ actDept: p.key }), style: pill(on) }; });
+
+    var tabs = [['overview', 'Overview'], ['timeline', 'Timeline'], ['departments', 'Departments'], ['plan', 'Inside a plan'], ['discussion', newTotal ? 'Discussion · ' + newTotal + ' new' : 'Discussion'], ['activity', 'Activity']].map(function (t) {
       var on = st.view === t[0];
-      return { label: t[1], on: on ? 'page' : 'false', pick: go({ view: t[0] }), style: 'min-height: 44px; padding: 0 16px; border: none; background: transparent; cursor: pointer; font: 600 15px Inter, sans-serif; border-bottom: 3px solid ' + (on ? '#4F46E5' : 'transparent') + '; color: ' + (on ? '#0F172A' : '#475569') + ';' };
+      var o = { view: t[0] }; if (t[0] === 'discussion') { o.read = Object.assign({}, st.read); o.read[st.thread] = true; }
+      return { label: t[1], on: on ? 'page' : 'false', pick: go(o), style: 'min-height: 44px; padding: 0 16px; border: none; background: transparent; cursor: pointer; font: 600 15px Inter, sans-serif; border-bottom: 3px solid ' + (on ? '#4F46E5' : 'transparent') + '; color: ' + (on ? '#0F172A' : '#475569') + ';' };
     });
     var scenarios = [
       { key: 'none', label: 'As planned', hint: 'Move-in ' + fmt(D.finish) },
@@ -238,7 +435,9 @@ class Component extends DCLogic {
     var blockerList = Object.keys(grouped).map(function (k) { var g = grouped[k]; var uniq = g.waiting.filter(function (x, i) { return g.waiting.indexOf(x) === i; }); return Object.assign({}, g, { waitingLabel: uniq.length + ' plan' + (uniq.length === 1 ? '' : 's') + ' wait: ' + uniq.join(', ') }); });
 
     return {
-      isOverview: st.view === 'overview', isTimeline: st.view === 'timeline', isDepts: st.view === 'departments', isPlan: st.view === 'plan',
+      isOverview: st.view === 'overview', isTimeline: st.view === 'timeline', isDepts: st.view === 'departments', isPlan: st.view === 'plan', isDiscussion: st.view === 'discussion', isActivity: st.view === 'activity',
+      task: taskView, noTask: !taskView, threadOpen: !!st.threadOpen, threadClosed: !st.threadOpen, threads: threadList, thread: thread, acts: actShown, actNone: actShown.length === 0, actCount: actShown.length + ' change' + (actShown.length === 1 ? '' : 's'), actPlans: actPlans, actDepts: actDepts,
+      bell: mentionsMe ? 'Notifications · ' + mentionsMe : 'Notifications', bellLabel: mentionsMe ? mentionsMe + ' new mentions' : 'No new notifications', me: NAME[ME] + ', ' + DEPT.Facilities.role,
       tabs: tabs, title: 'Northfield HQ remodel', sub: 'Master plan · 8 plans inside · Facilities leads, with IT, HR, Finance and Safety',
       kpis: [
         { k: 'Done', v: pctAll + '%', s: T.filter(function (t) { return t.st === 'done'; }).length + ' of ' + T.length + ' tasks across all plans' },
@@ -250,7 +449,7 @@ class Component extends DCLogic {
       insight: insight, scenarios: scenarios, milestones: milestones, subs: subs, blockers: blockerList,
       depts: depts, weekHead: weekHead, deptSel: depts.filter(function (d) { return d.selected; })[0] || false,
       rows: rows, axis: axis, todayLine: todayLine, targetLine: targetLine,
-      cur: cur, curTasks: curTasks, curDepts: curDepts, subPicks: subs.map(function (s) { var on = s.key === cur.key; return { label: s.title, pick: go({ sub: s.key }), style: chipBase + 'min-height: 36px; padding: 0 12px; cursor: pointer; font-family: Inter, sans-serif; ' + (on ? 'border: 2px solid #0F172A; background: #FFFFFF; color: #0F172A;' : 'border: 1px solid #E2E8F0; background: #FFFFFF; color: #475569;') }; }),
+      cur: cur, curTasks: curTasks, curDepts: curDepts, subPicks: subs.map(function (s) { var on = s.key === cur.key; return { label: s.title, pick: go({ sub: s.key, task: null }), style: chipBase + 'min-height: 36px; padding: 0 12px; cursor: pointer; font-family: Inter, sans-serif; ' + (on ? 'border: 2px solid #0F172A; background: #FFFFFF; color: #0F172A;' : 'border: 1px solid #E2E8F0; background: #FFFFFF; color: #475569;') }; }),
       back: go({ view: 'overview' }),
       deptLegend: Object.keys(DEPT).map(deptChip)
     };

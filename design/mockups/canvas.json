@@ -234,7 +234,7 @@
    "x": 1990,
    "y": 4100,
    "w": 340,
-   "text": "Sample: Northfield HQ remodel, 8 plans inside (Reception, Kitchen, Bathrooms 1 to 3, Offices 1 to 3) run by Facilities with IT, HR, Finance and Safety. Every date comes from the real scheduling engine, counting each person's hours across all plans. Try: the carpenter what-if on Overview, Departments (Kai is booked solid), open a plan on Timeline, Inside a plan: Office 2.",
+   "text": "Sample: Northfield HQ remodel, 8 plans inside (Reception, Kitchen, Bathrooms 1 to 3, Offices 1 to 3) run by Facilities with IT, HR, Finance and Safety. Every date comes from the real scheduling engine, counting each person's hours across all plans. Try: the carpenter what-if on Overview, Departments (Kai is booked solid), open a plan on Timeline, Inside a plan: click Network cabling for its comments and type @ to mention someone, Discussion (one thread per plan plus the whole building), Activity filtered by plan or department.",
    "fill": "teal"
   }
  },
