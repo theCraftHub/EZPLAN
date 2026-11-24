@@ -86,6 +86,7 @@ function ContactUs({ me, itOnly, onSent }: { me: Me; itOnly: string | null; onSe
     <Card aria-label={`Contact ${BRAND.name} support`} className="flex flex-col gap-3">
       <h2 className="m-0 text-lg font-bold">Contact {BRAND.name} support</h2>
       {itOnly && topic !== "safety" && <Notice>Your company asks you to go through {itOnly} first. Your request goes to them, and they'll pass it on to us if needed.</Notice>}
+      {topic === "safety" && <Notice>Safety reports come straight to {BRAND.name}'s safety team. If you're part of a company workspace, its managers are told that a report was filed, but not who filed it or what it says.</Notice>}
       <form className="flex flex-col gap-3" onSubmit={(e) => { e.preventDefault(); void send(); }}>
         <label className="flex flex-col gap-1.5 text-sm font-semibold">What is it about?
           <select value={topic} onChange={(e) => setTopic(e.target.value as TicketTopic)} className={field}>
@@ -256,7 +257,7 @@ function ContactForm({ ws, name, current }: { ws: string; name: string | null; c
         <fieldset className="m-0 flex flex-col gap-2 border-0 p-0 sm:col-span-2">
           <legend className="mb-1 p-0 text-sm font-semibold">Requests to {BRAND.name} support</legend>
           <label className="flex min-h-11 items-center gap-3 text-[15px]"><input type="radio" name={`route-${ws}`} checked={c.route === "direct"} onChange={() => setC({ ...c, route: "direct" })} className="h-5 w-5" /> People contact {BRAND.name} support directly</label>
-          <label className="flex min-h-11 items-center gap-3 text-[15px]"><input type="radio" name={`route-${ws}`} checked={c.route === "it_only"} onChange={() => setC({ ...c, route: "it_only" })} className="h-5 w-5" /> Through our team only (requests come to you first; safety reports still reach us directly)</label>
+          <label className="flex min-h-11 items-center gap-3 text-[15px]"><input type="radio" name={`route-${ws}`} checked={c.route === "it_only"} onChange={() => setC({ ...c, route: "it_only" })} className="h-5 w-5" /> Through our team only (requests come to you first; safety reports still reach us directly, and you're only told one was filed)</label>
         </fieldset>
         {msg && <div className="sm:col-span-2"><Notice tone={msg.tone}>{msg.text}</Notice></div>}
         <Button type="submit" className="self-start">Save contact</Button>

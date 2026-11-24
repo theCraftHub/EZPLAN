@@ -4,7 +4,7 @@
  * plan on that request; every view is logged and the grant can be revoked at any time.
  */
 import type { Hono } from "hono";
-import { exportPlan, freeModeration } from "@ezplan/shared";
+import { BRAND, exportPlan, freeModeration } from "@ezplan/shared";
 import type { Clock, Db, ServerConfig, User } from "./ports";
 import { notify } from "./notify";
 import { loadRoom } from "./room";
@@ -128,6 +128,14 @@ export function registerSupportRoutes(app: Hono<{ Variables: { user: User } }>, 
       ...(planId && b?.sharePlan === true ? [{ sql: `INSERT INTO support_access_grants (id, ticket_id, plan_id, granted_by, expires_at) VALUES (?, ?, ?, ?, ?)`, params: [crypto.randomUUID(), id, planId, user.id, now + GRANT_DAYS * DAY] }] : []),
     ]);
     if (topic === "safety") {
+      // The reporter's own company is told a report was filed, with no name, text or link to it (owner decision, Nov 24).
+      // Only workspaces the reporter belongs to: a guest reporting another company's plan never alerts that company.
+      // A report about a plan in one of their workspaces goes to that one; otherwise to each workspace they belong to.
+      const homes = (await myWorkspaces(user.id)).filter((w) => w.role).map((w) => w.id);
+      for (const home of plan && homes.includes(plan.workspace_id) ? [plan.workspace_id] : homes) {
+        const managers = await db.all<{ user_id: string }>(`SELECT user_id FROM members WHERE workspace_id = ? AND role = 'manager'`, [home]);
+        for (const m of managers) await notify(db, now, { userId: m.user_id, kind: "safety", text: `A safety report was filed from your workspace. ${BRAND.name}'s safety team is reviewing it.`, link: "/help" }, user.id);
+      }
       await db.run(`INSERT INTO safety_holds (id, plan_id, user_id, feature, category, excerpt, status, created_at) VALUES (?, NULL, ?, 'abuse', 'abuse report', ?, 'held', ?)`, [crypto.randomUUID(), user.id, `${subject}\n${body}`.slice(0, 600), now]);
     }
     if (via === "it" && wsId) {

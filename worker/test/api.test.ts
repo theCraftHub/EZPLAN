@@ -56,6 +56,7 @@ const factory: HostFactory = {
     let mf = make();
     await mf.ready;
     return {
+      async sql(statement, params = []) { await (await mf.getD1Database("DB")).prepare(statement).bind(...params).run(); },
       async live(path, { user, origin }) {
         const headers: Record<string, string> = { upgrade: "websocket" };
         if (user) headers["x-test-user"] = user;

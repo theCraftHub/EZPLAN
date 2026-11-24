@@ -107,6 +107,24 @@ export function supportContract(hostName: string, factory: HostFactory) {
       expect(s.body.via).toBe("direct");
       const q = (await req("GET", "/api/admin/safety", undefined, OWNER)).body.items;
       expect(q.some((i: { feature: string; excerpt: string }) => i.feature === "abuse" && i.excerpt.startsWith("Abusive plan shared with me"))).toBe(true);
+      // Sam is a guest on Alex's plan, not in Alex's company: Alex isn't told about Sam's report, even one about Alex's plan.
+      const safetyNotice = async (who: string) => (await req("GET", "/api/notifications", undefined, who)).body.items.find((n: { kind: string }) => n.kind === "safety"); // same test clock as other notices
+      expect(await safetyNotice(ALEX)).toBeUndefined();
+      await req("POST", "/api/support/tickets", { topic: "safety", subject: "Abusive plan shared with me", body: "It says to harm someone.", planId: plan }, SAM);
+      expect(await safetyNotice(ALEX)).toBeUndefined();
+
+      // Kim works in Alex's company (company workspaces come with the admin console; seeded here). Alex, a manager, hears
+      // that a report was filed, and nothing else: no name, no text, no way to open it.
+      await host.sql!(`INSERT INTO members (workspace_id, user_id, role) VALUES (?, 'u-kim', 'editor')`, [ws]);
+      const k = await req("POST", "/api/support/tickets", { topic: "safety", subject: "Abusive comments from a coworker", body: "Kim gets harassed in comments." }, KIM);
+      expect(k.body.via).toBe("direct");
+      const told = await safetyNotice(ALEX);
+      expect(told).toMatchObject({ kind: "safety", link: "/help" });
+      expect(told.text).toMatch(/^A safety report was filed from your workspace\./);
+      for (const secret of ["Kim", "Abusive", "harass", "coworker", k.body.id]) expect(JSON.stringify(told)).not.toContain(secret);
+      expect((await req("GET", `/api/support/tickets/${k.body.id}`, undefined, ALEX)).status).toBe(404);
+      expect((await req("GET", "/api/support/tickets", undefined, ALEX)).body.company.some((t: { subject: string }) => t.subject.startsWith("Abusive"))).toBe(false);
+      expect(await safetyNotice(KIM)).toBeUndefined(); // the reporter isn't told about their own report
     });
   });
 }

@@ -20,6 +20,9 @@ test("company contact, a request to support with plan access, a reply from our t
   await alex.getByRole("link", { name: "Help" }).first().click();
   await expect(alex.getByRole("region", { name: "Your company's support" }).getByRole("link", { name: "Help desk (help.rivera.example)" })).toBeVisible();
   const form = alex.getByRole("region", { name: /Contact .* support/ });
+  await form.getByLabel("What is it about?").selectOption({ label: "Report abuse or a safety problem" });
+  await expect(form.getByText(/its managers are told that a report was filed, but not who filed it or what it says/)).toBeVisible();
+  await form.getByLabel("What is it about?").selectOption({ label: "Something isn't working" });
   await form.getByLabel("Subject").fill(`Dates look wrong (${info.project.name})`);
   await form.getByLabel("What happened?").fill("The finish moved a week.");
   await form.getByLabel("Which plan (optional)").selectOption({ label: title });
