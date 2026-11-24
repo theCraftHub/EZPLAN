@@ -120,7 +120,7 @@ export function supportContract(hostName: string, factory: HostFactory) {
       expect(k.body.via).toBe("direct");
       const told = await safetyNotice(ALEX);
       expect(told).toMatchObject({ kind: "safety", link: "/help" });
-      expect(told.text).toMatch(/^A safety report was filed from your workspace\./);
+      expect(told.text).toMatch(/^Our system flagged behavior in your workspace that needs follow-up from .+'s safety team\. If your company needs to take any steps, we'll contact you\.$/);
       for (const secret of ["Kim", "Abusive", "harass", "coworker", k.body.id]) expect(JSON.stringify(told)).not.toContain(secret);
       expect((await req("GET", `/api/support/tickets/${k.body.id}`, undefined, ALEX)).status).toBe(404);
       expect((await req("GET", "/api/support/tickets", undefined, ALEX)).body.company.some((t: { subject: string }) => t.subject.startsWith("Abusive"))).toBe(false);

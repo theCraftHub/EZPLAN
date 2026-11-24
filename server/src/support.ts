@@ -134,7 +134,7 @@ export function registerSupportRoutes(app: Hono<{ Variables: { user: User } }>, 
       const homes = (await myWorkspaces(user.id)).filter((w) => w.role).map((w) => w.id);
       for (const home of plan && homes.includes(plan.workspace_id) ? [plan.workspace_id] : homes) {
         const managers = await db.all<{ user_id: string }>(`SELECT user_id FROM members WHERE workspace_id = ? AND role = 'manager'`, [home]);
-        for (const m of managers) await notify(db, now, { userId: m.user_id, kind: "safety", text: `A safety report was filed from your workspace. ${BRAND.name}'s safety team is reviewing it.`, link: "/help" }, user.id);
+        for (const m of managers) await notify(db, now, { userId: m.user_id, kind: "safety", text: `Our system flagged behavior in your workspace that needs follow-up from ${BRAND.name}'s safety team. If your company needs to take any steps, we'll contact you.`, link: "/help" }, user.id);
       }
       await db.run(`INSERT INTO safety_holds (id, plan_id, user_id, feature, category, excerpt, status, created_at) VALUES (?, NULL, ?, 'abuse', 'abuse report', ?, 'held', ?)`, [crypto.randomUUID(), user.id, `${subject}\n${body}`.slice(0, 600), now]);
     }
