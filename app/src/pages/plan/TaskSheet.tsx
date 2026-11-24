@@ -37,7 +37,7 @@ export function TaskSheet({ task, plan, math, canEdit, edit, onClose, options, o
     <Dialog.Root open onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-30 bg-black/40" />
-        <Dialog.Content className="fixed inset-x-0 bottom-0 z-40 flex max-h-[92dvh] flex-col gap-4 overflow-y-auto rounded-t-3xl bg-surface p-5 pb-[calc(20px+env(safe-area-inset-bottom))] shadow-xl lg:inset-y-0 lg:right-0 lg:left-auto lg:max-h-none lg:w-[440px] lg:rounded-none">
+        <Dialog.Content onEscapeKeyDown={(e) => { if ((document.activeElement as HTMLElement | null)?.getAttribute("aria-expanded") === "true") e.preventDefault(); /* Escape closes an open @mention list first */ }} className="fixed inset-x-0 bottom-0 z-40 flex max-h-[92dvh] flex-col gap-4 overflow-y-auto rounded-t-3xl bg-surface p-5 pb-[calc(20px+env(safe-area-inset-bottom))] shadow-xl lg:inset-y-0 lg:right-0 lg:left-auto lg:max-h-none lg:w-[440px] lg:rounded-none">
           <div className="flex items-start gap-3">
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <span className="text-xs font-bold text-muted">{task.id} · {task.milestone ? "Milestone" : STATUS[task.status].label}</span>

@@ -3,15 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { Send } from "lucide-react";
 import { api, ApiError, type TaskComments } from "../../lib/api";
 import { Button, Notice } from "../../ui/kit";
+import { MentionBox } from "../../ui/MentionBox";
 import { usePlanCtx } from "./PlanContext";
 
 const when = (ms: number) => new Date(ms).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-
-/** The "@na" being typed at the end of the text, if any. */
-function typingMention(text: string): string | null {
-  const m = /(?:^|\s)@([^\s@]{0,30}(?: [^\s@]{0,30})?)$/.exec(text);
-  return m ? m[1]! : null;
-}
 
 export function Comments({ taskId, title }: { taskId: string; title: string }) {
   const { planId, tick } = usePlanCtx();
@@ -29,12 +24,6 @@ export function Comments({ taskId, title }: { taskId: string; title: string }) {
     setError("");
     setBusy(true);
     try { await f(); load(); return true; } catch (e) { setError(e instanceof ApiError ? e.message : "That didn't save. Try again."); return false; } finally { setBusy(false); }
-  };
-  const partial = typingMention(text);
-  const suggestions = partial === null || !data ? [] : data.people.filter((p) => p.toLowerCase().startsWith(partial.toLowerCase()) && p.toLowerCase() !== partial.toLowerCase()).slice(0, 5);
-  const pick = (name: string) => {
-    setText((t) => t.replace(/@([^\s@]{0,30}(?: [^\s@]{0,30})?)$/, `@${name} `));
-    box.current?.focus();
   };
 
   if (!data) return null;
@@ -68,12 +57,7 @@ export function Comments({ taskId, title }: { taskId: string; title: string }) {
       {data.canComment ? (
         <form className="flex flex-col gap-2" onSubmit={(e) => { e.preventDefault(); if (text.trim()) void run(() => api.addComment(planId, taskId, text)).then((ok) => ok && setText("")); }}>
           <label className="text-sm font-semibold" htmlFor={`new-comment-${taskId}`}>Add a comment</label>
-          <textarea ref={box} id={`new-comment-${taskId}`} rows={3} maxLength={2000} value={text} onChange={(e) => setText(e.target.value)} placeholder={`Ask or note something about ${title}. Type @ to mention someone.`} className="rounded-xl border border-line bg-surface p-2 text-[15px]" />
-          {suggestions.length > 0 && (
-            <div role="listbox" aria-label="People to mention" className="flex flex-wrap gap-2">
-              {suggestions.map((p) => <button key={p} type="button" role="option" aria-selected={false} onClick={() => pick(p)} className="min-h-9 rounded-full bg-primary-soft px-3 text-sm font-semibold text-primary-ink">@{p}</button>)}
-            </div>
-          )}
+          <MentionBox ref={box} id={`new-comment-${taskId}`} rows={3} maxLength={2000} value={text} onValue={setText} people={data.people} placeholder={`Ask or note something about ${title}. Type @ to mention someone.`} className="rounded-xl border border-line bg-surface p-2 text-[15px]" />
           <Button type="submit" className="self-start" disabled={busy || !text.trim()}><Send aria-hidden size={16} /> Post comment</Button>
         </form>
       ) : (

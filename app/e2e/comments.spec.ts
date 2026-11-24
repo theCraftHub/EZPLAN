@@ -39,6 +39,25 @@ test("Sam (commenter) comments and mentions Alex; Alex sees it live; Sam can't c
   await expect(samSheet.getByRole("listitem", { name: "Comment by Sam Okoye" })).toContainText("<b>today</b>"); // shown as text
   await expect(samSheet.getByRole("button", { name: "Edit" })).toBeVisible();
 
+  // Suggestions open at the cursor and work from the keyboard; Escape closes them, not the sheet.
+  await box.pressSequentially("Also @");
+  const menu = samSheet.getByRole("listbox", { name: "People to mention" });
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole("option", { name: "@Sam Okoye" })).toHaveCount(0); // not suggested to themselves
+  if (process.env.SHOTS) await sam.screenshot({ path: `e2e/.results/shots/${test.info().project.name}-i-mention-menu.png` });
+  const [boxAt, menuAt] = [(await box.boundingBox())!, (await menu.boundingBox())!];
+  expect(menuAt.y).toBeGreaterThan(boxAt.y);
+  expect(menuAt.y).toBeLessThan(boxAt.y + boxAt.height); // opens inside the box, under the line being typed
+  await box.press("Escape");
+  await expect(menu).toBeHidden();
+  await expect(samSheet).toBeVisible();
+  await box.pressSequentially("A");
+  await expect(menu.getByRole("option", { name: "@Alex Rivera" })).toHaveAttribute("aria-selected", "true");
+  await box.press("Enter");
+  await expect(box).toHaveValue("Also @Alex Rivera ");
+  await expect(menu).toBeHidden();
+  await box.fill("");
+
   // Alex sees it without reloading, and the row shows a count.
   await expect(alexSheet.getByRole("listitem", { name: "Comment by Sam Okoye" })).toContainText("Which supplier? @Alex Rivera please confirm");
   await alexSheet.getByRole("button", { name: "Close" }).click();

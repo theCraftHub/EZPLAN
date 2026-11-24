@@ -60,7 +60,8 @@ export function registerCollabRoutes(app: Hono<{ Variables: { user: User } }>, d
     );
     return c.json({
       canComment: canComment(a.role),
-      people: (await planPeople(db, id)).map((p) => p.name),
+      // Who can be @mentioned, for the suggestions as you type; you aren't suggested to yourself.
+      people: [...new Set((await planPeople(db, id)).filter((p) => p.userId !== user.id).map((p) => p.name))],
       comments: rows.map((r) => ({
         id: r.id,
         author: r.name,

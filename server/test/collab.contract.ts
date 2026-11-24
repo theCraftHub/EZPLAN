@@ -67,7 +67,8 @@ export function collabContract(hostName: string, factory: HostFactory) {
       a.close();
 
       const list = (await comments("T2", SAM)).body;
-      expect(list.people).toEqual(expect.arrayContaining(["Alex", "Sam Okoye", "Kim"]));
+      expect(list.people).toEqual(expect.arrayContaining(["Alex", "Kim"]));
+      expect(list.people).not.toContain("Sam Okoye"); // not suggested to themselves
       expect(list.comments[0]).toMatchObject({ author: "Alex", body: "<b>@Sam Okoye</b> can you check with @Alex? cc nobody@example.com", mine: false, canEdit: false, canDelete: false });
       const cid = list.comments[0].id;
       expect((await req("PATCH", `/api/plans/${id}/tasks/T2/comments/${cid}`, { body: "mine now" }, SAM)).status).toBe(403);
