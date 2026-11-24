@@ -108,8 +108,14 @@ export interface PlanSummary {
   workspace_id: string;
   updated_at: number;
   shared?: boolean;
-  summary: { percent: number; doneCount: number; countedTasks: number; overdueCount: number; finish: string; health: string; nextMilestone: { title: string; date: string } | null } | null;
+  summary: { percent: number; doneCount: number; countedTasks: number; overdueCount: number; finish: string; health: string; nextMilestone: { title: string; date: string } | null; baselineVarianceDays: number | null } | null;
+  statusUpdate?: UpdateState;
 }
+
+export type Rag = "green" | "amber" | "red";
+/** The latest status update and whether one is due (more than 7 days). */
+export interface UpdateState { last: { rag: Rag; headline: string; at: number } | null; overdue: boolean }
+export interface StatusUpdate { id: string; rag: Rag; headline: string; sections: { title: string; text: string }[]; source: "ai" | "template"; author: string; createdAt: number }
 
 export interface PlanDetail {
   id: string;
@@ -121,6 +127,7 @@ export interface PlanDetail {
   workWeek: WorkWeek;
   today: string;
   check: PlanCheckResult;
+  statusUpdate: UpdateState;
 }
 
 export interface ImportPreview {
@@ -185,6 +192,9 @@ export const api = {
   aiCheck: (planId: string) => call<{ review: AiReview; hidden: number; usage: AiUsage }>(`/api/plans/${encodeURIComponent(planId)}/ai/check`, { method: "POST", body: "{}" }),
   suppress: (planId: string, kind: SuggestionKind, text: string, taskIds: string[]) => call<{ id: string }>(`/api/plans/${encodeURIComponent(planId)}/ai/suppressions`, { method: "POST", body: JSON.stringify({ kind, text, taskIds }) }),
   unsuppress: (planId: string, id: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/ai/suppressions/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  setBaseline: (planId: string) => call<{ version: number; baselineSet: string; finish: string; savedVersion: number | null }>(`/api/plans/${encodeURIComponent(planId)}/baseline`, { method: "POST", body: "{}" }),
+  statusUpdates: (planId: string) => call<{ canPost: boolean; overdue: boolean; dueEveryDays: number; items: StatusUpdate[] }>(`/api/plans/${encodeURIComponent(planId)}/status-updates`),
+  postStatusUpdate: (planId: string, u: { rag: Rag; headline: string; sections: { title: string; text: string }[]; source: "ai" | "template" }) => call<{ id: string }>(`/api/plans/${encodeURIComponent(planId)}/status-updates`, { method: "POST", body: JSON.stringify(u) }),
   report: (planId: string, ai: boolean, since?: string) => call<{ facts: StatusFacts; text: ReportText; source: "ai" | "template"; note?: string }>(`/api/plans/${encodeURIComponent(planId)}/report`, { method: "POST", body: JSON.stringify({ ai, ...(since ? { since } : {}) }) }),
   myAi: () => call<{ enabled: boolean; workspaces: ({ workspaceId: string; name: string } & AiUsage)[] }>("/api/me/ai"),
   creditRequests: (ws: string) => call<{ canManage: boolean; approvers: string[]; requests: CreditRequest[] }>(`/api/workspaces/${encodeURIComponent(ws)}/ai/requests`),

@@ -29,7 +29,9 @@ export type Op =
   | { kind: "setPhaseField"; phaseId: string; field: "title" | "description"; value: string | undefined }
   | { kind: "setPlanField"; field: PlanField; value: string | undefined }
   /** Server only (Version history restore): never accepted from a client (see opSchema.ts). */
-  | { kind: "replacePlan"; plan: Plan };
+  | { kind: "replacePlan"; plan: Plan }
+  /** Server only: saves each task's scheduled dates as its baseline. The server works the dates out itself. */
+  | { kind: "setBaseline"; on: string; dates: Record<string, { start: string; end: string }> };
 
 export type PlanField = "title" | "goal" | "doneWhen";
 
@@ -82,6 +84,15 @@ export function applyOp(state: Pick<RoomState, "plan" | "trash" | "restoredForRe
   if (op.kind === "replacePlan") {
     state.plan = structuredClone(op.plan);
     state.restoredForReview = [];
+    return op;
+  }
+  if (op.kind === "setBaseline") {
+    for (const task of state.plan.phases.flatMap((p) => p.tasks)) {
+      const d = op.dates[task.id];
+      if (d) task.planned = { start: d.start, end: d.end };
+      else delete task.planned;
+    }
+    state.plan.baselineSet = op.on;
     return op;
   }
   if (op.kind === "setPlanField") {

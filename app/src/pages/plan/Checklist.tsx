@@ -48,7 +48,7 @@ function PhaseCard({ phase, index, plan, math, today, canEdit, edit, onOpen }: {
           const comments = counts[t.id] ?? 0;
           const s = math.schedule.tasks.get(t.id);
           const waits = t.depends.filter((d) => !["done", "skipped"].includes(math.byId.get(d.id)?.status ?? "done")).map((d) => math.byId.get(d.id)?.title ?? d.id);
-          return <TaskRow key={t.id} t={t} when={s ? { start: s.start, end: s.end, overdue: s.overdue } : null} waits={waits} comments={comments} canEdit={canEdit} edit={edit} onOpen={onOpen} />;
+          return <TaskRow key={t.id} t={t} when={s ? { start: s.start, end: s.end, overdue: s.overdue } : null} waits={waits} slip={math.variance.get(t.id) ?? 0} comments={comments} canEdit={canEdit} edit={edit} onOpen={onOpen} />;
         })}
       </ul>
       {canEdit && <QuickAdd phaseId={phase.id} plan={plan} today={today} edit={edit} />}
@@ -56,10 +56,10 @@ function PhaseCard({ phase, index, plan, math, today, canEdit, edit, onOpen }: {
   );
 }
 
-type RowProps = { t: Task; when: { start: string; end: string; overdue: boolean } | null; waits: string[]; comments: number; canEdit: boolean; edit: (op: Op) => void; onOpen: (id: string) => void };
+type RowProps = { t: Task; when: { start: string; end: string; overdue: boolean } | null; waits: string[]; slip: number; comments: number; canEdit: boolean; edit: (op: Op) => void; onOpen: (id: string) => void };
 
 /** One task. Only re-renders when what it shows changed, so a tap stays instant on big plans. */
-const TaskRow = memo(function TaskRow({ t, when: s, waits, comments, canEdit, edit, onOpen }: RowProps) {
+const TaskRow = memo(function TaskRow({ t, when: s, waits, slip, comments, canEdit, edit, onOpen }: RowProps) {
   const finished = t.status === "done" || t.status === "skipped";
   const by = t.status === "done" ? t.done : t.status === "skipped" ? t.skipped : undefined;
   const chip = "inline-flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-xs font-semibold text-ink-2";
@@ -78,6 +78,7 @@ const TaskRow = memo(function TaskRow({ t, when: s, waits, comments, canEdit, ed
           {est(t) && !t.milestone && <span className={chip}>{est(t)}</span>}
           {waits.length > 0 && !finished && <span className={chip}><Link2 aria-hidden size={12} /> <span className="max-w-[14rem] truncate">waits on {waits[0]}{waits.length > 1 ? ` +${waits.length - 1}` : ""}</span></span>}
           {s?.overdue && !finished && <span className="rounded-full bg-warn-soft px-2 py-0.5 text-xs font-bold text-warn">Overdue</span>}
+          {slip !== 0 && !finished && <span title="Working days this task's finish moved against the baseline" className={`rounded-full px-2 py-0.5 text-xs font-bold ${slip > 0 ? "bg-warn-soft text-warn" : "bg-good-soft text-good"}`}>{slip > 0 ? `+${slip}d` : `${slip}d`} vs baseline</span>}
           {t.notes.length > 0 && <MessageSquareText aria-label="Has notes" size={14} className="text-muted" />}
           {comments > 0 && <span className={chip} aria-label={`${comments} comment${comments === 1 ? "" : "s"}`}><MessageCircle aria-hidden size={12} /> {comments}</span>}
           {by && <span className="text-xs font-semibold text-good">{t.status === "done" ? "Done" : "Skipped"}{by.by ? ` by ${by.by}` : ""} · {shortDate(by.date)}</span>}
@@ -85,7 +86,7 @@ const TaskRow = memo(function TaskRow({ t, when: s, waits, comments, canEdit, ed
       </button>
     </li>
   );
-}, (a, b) => a.comments === b.comments && a.canEdit === b.canEdit && a.edit === b.edit && a.onOpen === b.onOpen && JSON.stringify([a.t, a.when, a.waits]) === JSON.stringify([b.t, b.when, b.waits]));
+}, (a, b) => a.comments === b.comments && a.slip === b.slip && a.canEdit === b.canEdit && a.edit === b.edit && a.onOpen === b.onOpen && JSON.stringify([a.t, a.when, a.waits]) === JSON.stringify([b.t, b.when, b.waits]));
 
 function QuickAdd({ phaseId, plan, today, edit }: { phaseId: string; plan: Plan; today: string; edit: (op: Op) => void }) {
   const [text, setText] = useState("");

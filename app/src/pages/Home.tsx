@@ -1,3 +1,4 @@
+import { UpdateOverdue } from "../ui/StatusUpdate";
 import { useEffect, useState } from "react";
 import { CalendarClock, Flag, Plus } from "lucide-react";
 import { api, type Me, type PlanSummary } from "../lib/api";
@@ -43,6 +44,7 @@ export function Home({ me }: { me: Me }) {
                     <span className="text-[17px] leading-snug font-bold">{p.title}</span>
                     <span className="flex flex-wrap gap-1.5">
                       {p.summary && <HealthChip value={p.state === "review" ? "On hold" : p.summary.health} />}
+                      <UpdateOverdue state={p.statusUpdate} />
                       {p.shared && <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary-ink">Shared with you</span>}
                     </span>
                   </div>

@@ -149,6 +149,14 @@ export const MIGRATIONS: Migration[] = [
       `ALTER TABLE support_messages ADD COLUMN author_info TEXT`,
     ],
   },
+  {
+    id: 12,
+    name: "status updates (red / amber / green, headline, sections) per plan",
+    statements: [
+      `CREATE TABLE status_updates (id TEXT PRIMARY KEY, plan_id TEXT NOT NULL REFERENCES plans(id), rag TEXT NOT NULL CHECK (rag IN ('green', 'amber', 'red')), headline TEXT NOT NULL, sections TEXT NOT NULL, source TEXT NOT NULL, author_id TEXT NOT NULL REFERENCES users(id), created_at INTEGER NOT NULL)`,
+      `CREATE INDEX status_updates_plan ON status_updates(plan_id, created_at)`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

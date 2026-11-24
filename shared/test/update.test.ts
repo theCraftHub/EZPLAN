@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { allTasks, changesToOps, diffPlans, newRoom, parseOp, parsePlan, serverApply, updatePrompt, whatChanged, type Op, type Plan } from "../src";
+import { allTasks, baselineVariance, Calendar, changesToOps, diffPlans, levelPlan, newRoom, parseOp, parsePlan, serverApply, updatePrompt, whatChanged, type Op, type Plan } from "../src";
 
 const gala = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "gala.ezplan"), "utf8")).plan;
 const DAY = "2026-12-08";
@@ -118,5 +118,24 @@ describe("new edits: phases, plan fields, restore from Trash, replace (server on
     expect(parseOp({ kind: "setPlanField", field: "title", value: "" })).not.toBeNull(); // allowed, but a plan keeps its title
     expect(apply(gala, [{ kind: "setPlanField", field: "title", value: "" }]).title).toBe(gala.title);
     expect(apply(gala, [{ kind: "replacePlan", plan: { ...gala, title: "Restored" } }]).title).toBe("Restored");
+  });
+});
+
+describe("baseline (server only)", () => {
+  it("saves planned dates, drops stale ones, records the day, refuses clients, and slips show per task", () => {
+    const [first, second] = allTasks(gala);
+    const dates = { [first!.id]: { start: "2027-01-04", end: "2027-01-05" }, [second!.id]: { start: "2027-01-06", end: "2027-01-08" } };
+    const withStale = apply(gala, [{ kind: "setBaseline", on: "2027-01-01", dates: { [allTasks(gala)[2]!.id]: { start: "2027-01-01", end: "2027-01-01" } } }]);
+    const after = apply(withStale, [{ kind: "setBaseline", on: "2027-01-04", dates }]);
+    expect(after.baselineSet).toBe("2027-01-04");
+    expect(allTasks(after).find((t) => t.id === first!.id)!.planned).toEqual(dates[first!.id]);
+    expect(allTasks(after)[2]!.planned).toBeUndefined(); // a new baseline replaces the old one
+    expect(parseOp({ kind: "setBaseline", on: "2027-01-04", dates })).toBeNull(); // only the server sets it
+
+    const schedule = levelPlan(after, { today: "2027-01-04" });
+    const v = baselineVariance(after, schedule, { today: "2027-01-04" });
+    expect([...v.keys()].sort()).toEqual([first!.id, second!.id].sort());
+    const end = schedule.tasks.get(first!.id)!.end;
+    expect(v.get(first!.id)).toBe(new Calendar().workdaysBetween("2027-01-05", end));
   });
 });

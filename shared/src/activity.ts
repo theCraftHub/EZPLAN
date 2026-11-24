@@ -6,7 +6,7 @@
 import type { Op } from "./ops";
 import { allTasks, type Plan, type Task } from "./schema";
 
-export type ActivityKind = "status" | "edit" | "add" | "move" | "delete" | "restore" | "phase" | "plan" | "replace" | "comment" | "sharing" | "update" | "report" | "safety";
+export type ActivityKind = "status" | "edit" | "add" | "move" | "delete" | "restore" | "phase" | "plan" | "replace" | "comment" | "sharing" | "update" | "report" | "safety" | "baseline" | "status-update";
 
 export interface ActivityLine {
   kind: ActivityKind;
@@ -63,6 +63,8 @@ export function describeOp(op: Op, before: Task | undefined, after: Plan, who: s
       return { kind: "plan", summary: `${who} changed ${PLAN_FIELD_WORD[op.field] ?? op.field}` };
     case "replacePlan":
       return { kind: "replace", summary: `${who} restored an earlier version of the plan` };
+    case "setBaseline":
+      return { kind: "baseline", summary: `${who} set the baseline (planned dates as of ${op.on})` };
     default:
       return null;
   }

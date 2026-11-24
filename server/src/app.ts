@@ -35,6 +35,7 @@ import { isPlatformAdmin, registerSafetyRoutes } from "./safety";
 
 import { canEdit, type Role } from "./roles";
 import { recordActivity } from "./activity";
+import { registerStatusUpdateRoutes, updateState } from "./statusUpdates";
 import { registerCollabRoutes } from "./comments";
 import { notify, registerNotificationRoutes, unreadCount, userForName } from "./notify";
 import { registerSupportRoutes, supportOpen } from "./support";
@@ -195,6 +196,7 @@ export function createApp(ports: Ports) {
   registerSafetyRoutes(app, { db, clock, config });
   registerNotificationRoutes(app, { db, clock });
   registerSupportRoutes(app, { db, clock, config, access, ...(ports.mail ? { mail: ports.mail } : {}) });
+  registerStatusUpdateRoutes(app, { db, clock, access, notFound });
   registerSafetyCaseRoutes(app, { db, clock, config, ...(ports.mail ? { mail: ports.mail } : {}) });
   registerCollabRoutes(app, {
     db, clock, rooms, access, notFound,
@@ -376,7 +378,8 @@ export function createApp(ports: Ports) {
           ...p,
           shared: Number(shared) === 1,
           title: room.plan.title,
-          summary: { percent: progress.percent, doneCount: progress.doneCount, countedTasks: progress.countedTasks, overdueCount: progress.overdueCount, finish: schedule.finish, health: progress.suggestedHealth, nextMilestone: next ?? null },
+          summary: { percent: progress.percent, doneCount: progress.doneCount, countedTasks: progress.countedTasks, overdueCount: progress.overdueCount, finish: schedule.finish, health: progress.suggestedHealth, nextMilestone: next ?? null, baselineVarianceDays: progress.baselineVarianceDays },
+          statusUpdate: await updateState(db, clock.now(), p.id),
         };
       }),
     );
@@ -406,6 +409,7 @@ export function createApp(ports: Ports) {
       // The app recomputes dates as edits arrive; it uses the server's day, not the device's clock.
       today,
       restoredForReview: room.restoredForReview,
+      statusUpdate: await updateState(db, clock.now(), id),
       schedule: {
         projectStart: schedule.projectStart,
         finish: schedule.finish,
@@ -503,6 +507,26 @@ export function createApp(ports: Ports) {
     if (r.status === "missing") return c.json(notFound, 404);
     await recordActivity(db, id, user, { kind: "replace", summary: `${user.name} restored version ${v} of the plan` }, clock.now());
     return c.json({ version: r.version, savedVersion: saved });
+  });
+
+  // Set baseline: today's scheduled dates become every task's planned dates. The server works the
+  // dates out with the same engine (never trusting the browser), saves a version first so it can be
+  // undone from Version history, and every open device gets the change live.
+  app.post("/api/plans/:id/baseline", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    if (!canEdit(a.role)) return c.json({ error: "You can view this plan but not change it." }, 403);
+    const room = await loadRoom(db, id);
+    if (!room) return c.json(notFound, 404);
+    const today = clock.today();
+    const schedule = levelPlan(room.plan, { workWeek: parseWorkWeek(a.work_week), today, people: await loadPeople(id) });
+    const dates = Object.fromEntries([...schedule.tasks].map(([tid, t]) => [tid, { start: t.start, end: t.end }]));
+    const saved = await saveVersion(id, room.plan.baselineSet ? `Before replacing the baseline from ${room.plan.baselineSet}` : "Before setting the baseline", user.id);
+    const r = await rooms.apply(id, { opId: `baseline-${crypto.randomUUID().slice(0, 8)}`, clientId: "baseline", op: { kind: "setBaseline", on: today, dates } }, { userId: user.id, name: user.name });
+    if (r.status === "missing") return c.json(notFound, 404);
+    return c.json({ version: r.version, baselineSet: today, finish: schedule.finish, savedVersion: saved });
   });
 
   // ---------------------------------------------------------------- sharing a plan

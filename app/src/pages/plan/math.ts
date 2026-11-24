@@ -1,6 +1,6 @@
 /** Dates, progress and Plan Check, recomputed in the browser with the same engine as the server. */
 import { useMemo } from "react";
-import { allTasks, checkPlan, explainStart, levelPlan, progressOf, type PersonAvailability, type Plan, type WorkWeek } from "@ezplan/shared";
+import { allTasks, baselineVariance, checkPlan, explainStart, levelPlan, progressOf, type PersonAvailability, type Plan, type WorkWeek } from "@ezplan/shared";
 
 export function usePlanMath(plan: Plan | null, ctx: { workWeek: WorkWeek; today: string; people: Record<string, PersonAvailability> } | null) {
   return useMemo(() => {
@@ -21,6 +21,8 @@ export function usePlanMath(plan: Plan | null, ctx: { workWeek: WorkWeek; today:
       .map((t) => ({ task: t, date: schedule.tasks.get(t.id)?.end ?? schedule.finish }))
       .sort((a, b) => a.date.localeCompare(b.date))[0];
     const why = (id: string) => explainStart(schedule, id, plan);
-    return { schedule, progress, check, ready, nextMilestone, byId, why };
+    // Working days each task's finish moved against its baseline (+ later, - earlier).
+    const variance = baselineVariance(plan, schedule, opts);
+    return { schedule, progress, check, ready, nextMilestone, byId, why, variance };
   }, [plan, ctx]);
 }

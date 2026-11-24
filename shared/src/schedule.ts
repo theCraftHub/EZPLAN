@@ -221,6 +221,20 @@ export interface Progress {
   suggestedHealth: Health;
 }
 
+/**
+ * Each task's slip against its baseline: working days its scheduled finish is later (+) or
+ * earlier (-) than its planned finish. Tasks without a baseline are left out.
+ */
+export function baselineVariance(plan: Plan, schedule: Schedule, opts: ScheduleOptions = {}): Map<string, number> {
+  const cal = new Calendar(calendarOf(opts));
+  const out = new Map<string, number>();
+  for (const t of allTasks(plan)) {
+    const end = schedule.tasks.get(t.id)?.end;
+    if (t.planned && end) out.set(t.id, cal.workdaysBetween(t.planned.end, end));
+  }
+  return out;
+}
+
 export function progressOf(plan: Plan, schedule: Schedule, opts: ScheduleOptions = {}): Progress {
   const cal = new Calendar(calendarOf(opts));
   const today = opts.today ?? todayIso();
