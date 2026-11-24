@@ -1,3 +1,4 @@
+import { SafetyCasePage } from "./pages/SafetyCases";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, type Me } from "./lib/api";
 import { match, RouterProvider, useRouter } from "./lib/router";
@@ -25,6 +26,8 @@ function Routes({ me, onSignOut, onMe }: { me: Me; onSignOut: () => void; onMe: 
   const inv = match("/invite/:token", path);
   if (inv) return <Invite token={inv.token!} />;
   if (match("/help", path)) return <HelpPage me={me} />;
+  const casePage = match("/help/cases/:id", path);
+  if (casePage) return <SafetyCasePage key={casePage.id} id={casePage.id!} />;
   const reqPage = match("/help/requests/:id", path);
   if (reqPage) return <RequestPage key={reqPage.id} id={reqPage.id!} />;
   if (match("/admin/support", path)) return <SupportInbox onCount={(n) => onMe({ ...me, supportOpen: n })} />;

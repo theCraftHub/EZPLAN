@@ -107,24 +107,82 @@ export function supportContract(hostName: string, factory: HostFactory) {
       expect(s.body.via).toBe("direct");
       const q = (await req("GET", "/api/admin/safety", undefined, OWNER)).body.items;
       expect(q.some((i: { feature: string; excerpt: string }) => i.feature === "abuse" && i.excerpt.startsWith("Abusive plan shared with me"))).toBe(true);
-      // Sam is a guest on Alex's plan, not in Alex's company: Alex isn't told about Sam's report, even one about Alex's plan.
-      const safetyNotice = async (who: string) => (await req("GET", "/api/notifications", undefined, who)).body.items.find((n: { kind: string }) => n.kind === "safety"); // same test clock as other notices
-      expect(await safetyNotice(ALEX)).toBeUndefined();
+      // Sam is a guest on Alex's plan, not in Alex's company: no case for Alex, even about Alex's plan.
       await req("POST", "/api/support/tickets", { topic: "safety", subject: "Abusive plan shared with me", body: "It says to harm someone.", planId: plan }, SAM);
-      expect(await safetyNotice(ALEX)).toBeUndefined();
+      expect((await req("GET", "/api/safety-cases", undefined, ALEX)).body.items).toEqual([]);
+      expect((await req("GET", "/api/notifications", undefined, ALEX)).body.items.some((n: { kind: string }) => n.kind === "safety")).toBe(false);
+    });
 
-      // Kim works in Alex's company (company workspaces come with the admin console; seeded here). Alex, a manager, hears
-      // that a report was filed, and nothing else: no name, no text, no way to open it.
+    it("safety cases: the reporter's company follows up with our team in the app and by email, without learning who reported", async () => {
+      // Kim works in Alex's company (company workspaces come with the admin console; seeded here).
       await host.sql!(`INSERT INTO members (workspace_id, user_id, role) VALUES (?, 'u-kim', 'editor')`, [ws]);
       const k = await req("POST", "/api/support/tickets", { topic: "safety", subject: "Abusive comments from a coworker", body: "Kim gets harassed in comments." }, KIM);
       expect(k.body.via).toBe("direct");
-      const told = await safetyNotice(ALEX);
-      expect(told).toMatchObject({ kind: "safety", link: "/help" });
-      expect(told.text).toMatch(/^Our system flagged behavior in your workspace that needs follow-up from .+'s safety team\. If your company needs to take any steps, we'll contact you\.$/);
-      for (const secret of ["Kim", "Abusive", "harass", "coworker", k.body.id]) expect(JSON.stringify(told)).not.toContain(secret);
+
+      // Alex (a manager) is told, in the bell and in Help, with the notice and nothing else.
+      const told = (await req("GET", "/api/notifications", undefined, ALEX)).body.items.find((n: { kind: string }) => n.kind === "safety");
+      expect(told.text).toMatch(/^Our system flagged behavior within your workspace that requires follow-up by .+'s safety team\. Further communication will follow in this thread if your company needs to take any steps\.$/);
+      const caseId = /^\/help\/cases\/(.+)$/.exec(told.link)![1]!;
+      expect((await req("GET", "/api/safety-cases", undefined, ALEX)).body.items).toMatchObject([{ id: caseId, status: "open" }]);
+      const seen = (await req("GET", `/api/safety-cases/${caseId}`, undefined, ALEX)).body;
+      expect(seen).toMatchObject({ as: "manager", case: { reportId: null }, messages: [{ author: expect.stringMatching(/safety team$/), fromStaff: true, via: "system" }] });
+      for (const secret of ["Kim", "kim@", "Abusive", "harass", "coworker", k.body.id]) expect(JSON.stringify([told, seen])).not.toContain(secret);
+      expect(seen.messages[0].emails).toBeUndefined(); // delivery details are for our team
+
+      // The reporter, outsiders and Alex can't open what they shouldn't.
+      expect((await req("GET", `/api/safety-cases/${caseId}`, undefined, KIM)).status).toBe(404);
+      expect((await req("GET", "/api/safety-cases", undefined, KIM)).body.items).toEqual([]);
+      expect((await req("GET", `/api/safety-cases/${caseId}`, undefined, SAM)).status).toBe(404);
       expect((await req("GET", `/api/support/tickets/${k.body.id}`, undefined, ALEX)).status).toBe(404);
-      expect((await req("GET", "/api/support/tickets", undefined, ALEX)).body.company.some((t: { subject: string }) => t.subject.startsWith("Abusive"))).toBe(false);
-      expect(await safetyNotice(KIM)).toBeUndefined(); // the reporter isn't told about their own report
+      expect((await req("POST", `/api/safety-cases/${caseId}/status`, { status: "closed" }, ALEX)).status).toBe(404);
+
+      // The first email starts the thread; sending is off, so it waits in the outbox.
+      const staff = (await req("GET", `/api/safety-cases/${caseId}`, undefined, OWNER)).body;
+      expect(staff).toMatchObject({ as: "staff", emailOff: true, case: { reportId: k.body.id }, messages: [{ emails: [{ to: "alex@example.com", status: "off" }] }] });
+      const out = async (to: string) => (await host.sql!(`SELECT subject, body, reply_to, headers FROM email_outbox WHERE case_id = ? AND to_addr = ? ORDER BY created_at, rowid`, [caseId, to]));
+      const [first] = await out("alex@example.com");
+      expect(JSON.parse(first!.headers)).toEqual({ "Message-ID": expect.stringMatching(new RegExp(`^<case-${caseId}@reply\\.`)) });
+      expect(first!.reply_to).toMatch(new RegExp(`^case-${caseId}-[0-9a-f]{20}@reply\\.`));
+      expect(first!.body).toContain(`/help/cases/${caseId}`);
+      expect(first!.body).not.toContain(k.body.id);
+
+      // Alex answers in the app: our team is told and emailed, in the same thread.
+      expect((await req("POST", `/api/safety-cases/${caseId}/messages`, { body: "Which team is this about?" }, ALEX)).status).toBe(200);
+      expect((await req("GET", "/api/notifications", undefined, OWNER)).body.items.find((n: { kind: string }) => n.kind === "safety")).toMatchObject({ link: `/help/cases/${caseId}` });
+      const [toUs] = await out("owner@example.com");
+      expect(JSON.parse(toUs!.headers)).toMatchObject({ "In-Reply-To": JSON.parse(first!.headers)["Message-ID"], References: JSON.parse(first!.headers)["Message-ID"] });
+      expect(toUs!.body).toContain(`/help/requests/${k.body.id}`); // the original report, for our team only
+
+      // Our team replies in the app; Alex sees "safety team", not the staff member's name.
+      await req("POST", `/api/safety-cases/${caseId}/messages`, { body: "Please remove the account u-123 from Office 2." }, OWNER);
+      expect((await req("GET", `/api/safety-cases/${caseId}`, undefined, ALEX)).body.messages.at(-1)).toMatchObject({ author: expect.stringMatching(/safety team$/), body: "Please remove the account u-123 from Office 2." });
+
+      // Alex replies by email: only the new text is kept, and it lands in the case.
+      const inbound = (body: unknown, secret = "test-inbound-secret") => host.fetch("/inbound/email", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${secret}` }, body: JSON.stringify(body) });
+      const address = (await out("alex@example.com")).at(-1)!.reply_to as string;
+      const email = { from: "Alex <Alex@Example.com>", to: [address], subject: "Re: follow-up", text: "Done, access removed.\n\nOn Mon, Jan 4, 2027 at 12:00 PM safety wrote:\n> ## Reply above this line ##\n> Please remove the account" };
+      expect((await inbound(email, "wrong")).status).toBe(401);
+      const ok = await inbound(email);
+      expect(ok.status).toBe(200);
+      expect(await ok.json()).toMatchObject({ accepted: true });
+      expect((await req("GET", `/api/safety-cases/${caseId}`, undefined, OWNER)).body.messages.at(-1)).toMatchObject({ author: "Alex", via: "email", body: "Done, access removed." });
+
+      // Forged replies are dropped: someone else using Alex's address, or a changed token.
+      for (const forged of [{ ...email, from: "mallory@example.com" }, { ...email, to: [address.replace(/-([0-9a-f]{20})@/, "-00000000000000000000@")] }, { ...email, to: ["somebody@example.com"] }]) {
+        const r = await inbound(forged);
+        expect(r.status).toBe(202);
+        expect(await r.json()).toMatchObject({ accepted: false });
+      }
+      expect((await req("GET", `/api/safety-cases/${caseId}`, undefined, OWNER)).body.messages).toHaveLength(4);
+
+      // Our team closes the case; a later reply reopens it so nothing is lost.
+      expect((await req("POST", `/api/safety-cases/${caseId}/status`, { status: "closed" }, OWNER)).status).toBe(200);
+      expect((await req("GET", "/api/safety-cases", undefined, ALEX)).body.items[0].status).toBe("closed");
+      await inbound({ ...email, text: "One more thing." });
+      expect((await req("GET", `/api/safety-cases/${caseId}`, undefined, ALEX)).body.case.status).toBe("open");
+
+      // A private workspace has nobody else to tell: Sam's own report about nothing in particular opens no case.
+      expect((await host.sql!(`SELECT COUNT(*) AS n FROM safety_cases`))[0]!.n).toBe(1);
     });
   });
 }

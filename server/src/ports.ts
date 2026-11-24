@@ -92,6 +92,8 @@ export interface ServerConfig {
   platformAdmins?: string[];
   /** Monthly AI allowances (per person) and pool (per workspace). */
   aiLimits?: AiLimits;
+  /** Email: the sender, the domain replies come back to, and the inbound webhook's secret. Defaults from publicUrl. */
+  email?: { from?: string; replyDomain?: string; inboundSecret?: string };
 }
 
 export interface AiLimits {
@@ -119,6 +121,8 @@ export interface Ports {
   testAuth?: boolean;
   /** The AI engine; absent means AI features are off and everything else works. */
   ai?: import("./ai/engine").AiEngine;
+  /** Sends email (Resend in the cloud, SMTP self-hosted); absent means emails stay in the outbox, unsent. */
+  mail?: import("./mail").Mailer;
 }
 
 export const systemClock: Clock = {

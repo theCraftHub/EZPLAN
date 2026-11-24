@@ -36,6 +36,14 @@ export interface TicketThread {
   views: { by: string; at: number }[];
 }
 
+export interface SafetyCaseRow { id: string; workspace: string; status: "open" | "closed"; lastFrom: string | null; updatedAt: number }
+export interface SafetyCase {
+  as: "staff" | "manager";
+  case: { id: string; workspace: string; status: "open" | "closed"; createdAt: number; reportId: string | null };
+  messages: { id: string; author: string; fromStaff: boolean; via: "app" | "email" | "system"; body: string; createdAt: number; emails?: { to: string; status: "off" | "sent" | "failed" }[] }[];
+  emailOff: boolean;
+}
+
 export interface Notifications {
   unread: number;
   due: { planId: string; planTitle: string; taskId: string; title: string; due: string; overdue: boolean }[];
@@ -204,6 +212,10 @@ export const api = {
   ticketStatus: (id: string, status: "open" | "waiting" | "solved") => call<{ ok: true }>(`/api/support/tickets/${encodeURIComponent(id)}/status`, { method: "POST", body: JSON.stringify({ status }) }),
   forwardTicket: (id: string) => call<{ ok: true }>(`/api/support/tickets/${encodeURIComponent(id)}/forward`, { method: "POST", body: "{}" }),
   revokeGrant: (id: string) => call<{ ok: true }>(`/api/support/grants/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  safetyCases: () => call<{ items: SafetyCaseRow[] }>("/api/safety-cases"),
+  safetyCase: (id: string) => call<SafetyCase>(`/api/safety-cases/${encodeURIComponent(id)}`),
+  replySafetyCase: (id: string, body: string) => call<{ ok: true }>(`/api/safety-cases/${encodeURIComponent(id)}/messages`, { method: "POST", body: JSON.stringify({ body }) }),
+  safetyCaseStatus: (id: string, status: "open" | "closed") => call<{ ok: true }>(`/api/safety-cases/${encodeURIComponent(id)}/status`, { method: "POST", body: JSON.stringify({ status }) }),
   supportInbox: () => call<{ open: number; items: (TicketRow & { email: string })[] }>("/api/admin/support"),
   supportPlan: (ticketId: string) => call<{ planId: string; title: string; until: number; text: string }>(`/api/admin/support/tickets/${encodeURIComponent(ticketId)}/plan`),
   logout: () => call<{ ok: true }>("/auth/logout", { method: "POST", body: "{}" }),

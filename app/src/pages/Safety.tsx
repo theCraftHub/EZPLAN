@@ -4,6 +4,7 @@ import { ShieldAlert } from "lucide-react";
 import { api, ApiError, type SafetyItem } from "../lib/api";
 import { Link } from "../lib/router";
 import { Button, Card, Notice, PageTitle, Spinner } from "../ui/kit";
+import { SafetyCaseList } from "./SafetyCases";
 
 const FEATURE: Record<string, string> = { check: "AI Plan Check", report: "Status report", abuse: "Report from a person", moderation: "Screening a new plan" };
 const OUTCOME: Record<string, string> = { released: "Released", kept: "Kept held", suspended: "Account suspended" };
@@ -22,6 +23,7 @@ export function SafetyPage({ onCount }: { onCount: (n: number) => void }) {
   return (
     <>
       <PageTitle title="Safety review" sub="Plans held because the AI declined them twice, or because screening flagged them. Only the flagged part is shown." />
+      <SafetyCaseList title="Company follow-ups" />
       {open.length === 0 && <Notice tone="good">Nothing waiting for review.</Notice>}
       {open.map((i) => <Held key={i.id} item={i} onDone={() => void load()} />)}
       {done.length > 0 && (

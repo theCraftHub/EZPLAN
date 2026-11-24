@@ -26,7 +26,7 @@ export const PEOPLE: Record<string, { sub: string; name: string; email: string }
 };
 
 const fake = await FakeOidc.create(() => Date.now(), `http://127.0.0.1:${idPort}`);
-const { app, rooms } = createSelfHost({
+const { app: site, rooms, db } = createSelfHost({
   dataDir: mkdtempSync(join(tmpdir(), "e2e-")),
   config: { defaultWorkWeek: DEFAULT_WORK_WEEK, publicUrl, providers: [fake.provider({ label: "Test ID" })], secureCookies: false, platformAdmins: ["pat@example.com"] },
   // A fixed "today" keeps dates in screenshots and assertions stable; real time for sign-in tokens.
@@ -36,6 +36,25 @@ const { app, rooms } = createSelfHost({
   // A scripted AI engine (no network); real AI needs ANTHROPIC_API_KEY on a real server.
   testAi: true,
 });
+/**
+ * Test-only: puts someone into another person's workspace as an editor, the way a company admin
+ * will once the admin console exists (POST /e2e/join { person, intoWorkspaceOf }; ?leave=1 undoes it, so other tests aren't affected). Browser tests only.
+ */
+const app = {
+  fetch: async (req: Request) => {
+    const url = new URL(req.url);
+    if (req.method === "POST" && url.pathname === "/e2e/join") {
+      const b = (await req.json()) as { person: string; intoWorkspaceOf: string };
+      const ws = await db.first<{ workspace_id: string }>(`SELECT m.workspace_id FROM members m JOIN users u ON u.id = m.user_id WHERE u.email = ? AND m.role = 'manager'`, [b.intoWorkspaceOf]);
+      const who = await db.first<{ id: string }>(`SELECT id FROM users WHERE email = ?`, [b.person]);
+      if (!ws || !who) return new Response("unknown person", { status: 404 });
+      if (url.searchParams.get("leave")) await db.run(`DELETE FROM members WHERE workspace_id = ? AND user_id = ? AND role = 'editor'`, [ws.workspace_id, who.id]);
+      else await db.run(`INSERT OR IGNORE INTO members (workspace_id, user_id, role) VALUES (?, ?, 'editor')`, [ws.workspace_id, who.id]);
+      return Response.json({ ok: true });
+    }
+    return site.fetch(req);
+  },
+} as unknown as typeof site;
 startServer({ app, rooms, port, onListen: (p) => console.log(`site on ${p}`) });
 
 createServer(async (req, res) => {

@@ -52,7 +52,7 @@ const factory: HostFactory = {
           );
         });
       },
-      async sql(statement, params = []) { await server.db.run(statement, params as Parameters<typeof server.db.run>[1]); },
+      async sql(statement, params = []) { return server.db.all(statement, params as Parameters<typeof server.db.run>[1]); },
       fetch(path, init = {}, user, cookie) {
         const headers = new Headers(init.headers);
         if (user) headers.set("x-test-user", user);

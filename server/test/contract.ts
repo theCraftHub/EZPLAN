@@ -16,7 +16,7 @@ export interface TestHost {
   restart(): Promise<void>;
   stop(): Promise<void>;
   /** Test-only: runs one SQL statement on the host's database, for states no API makes yet (a coworker in a company workspace). */
-  sql?(statement: string, params?: unknown[]): Promise<void>;
+  sql?(statement: string, params?: unknown[]): Promise<Record<string, any>[]>;
   /** Opens a live connection (WebSocket), or returns the refusal status. */
   live?: import("./live.contract").LiveOpen;
 }

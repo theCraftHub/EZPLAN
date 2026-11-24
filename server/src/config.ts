@@ -8,6 +8,8 @@
  *   PLATFORM_ADMINS  comma-separated emails of the owner's team (safety review queue, support inbox)
  *   AI_MONTHLY_CHECKS, AI_MONTHLY_REPORTS  per-person monthly AI allowance (default 100 and 30)
  *   AI_POOL_CHECKS, AI_POOL_REPORTS, AI_POOL_MAX  per-workspace monthly pool and top-up ceiling
+ *   MAIL_FROM, MAIL_REPLY_DOMAIN  email sender and the domain replies come back to (default: from PUBLIC_URL)
+ *   INBOUND_EMAIL_SECRET      turns on replies by email: the email provider posts received mail to /inbound/email with it
  *   ANTHROPIC_API_KEY, AI_MODEL, AI_REPORT_MODEL  the built-in AI (read by each host; AI is off without a key)
  */
 import { DEFAULT_WORK_WEEK } from "@ezplan/shared";
@@ -41,6 +43,9 @@ export function configFromEnv(env: Record<string, string | undefined>): ServerCo
     providers,
     ...(allowed && allowed.length ? { allowedEmails: allowed } : {}),
     secureCookies: env.SECURE_COOKIES !== "0",
+    ...(env.MAIL_FROM || env.MAIL_REPLY_DOMAIN || env.INBOUND_EMAIL_SECRET
+      ? { email: { ...(env.MAIL_FROM ? { from: env.MAIL_FROM.trim() } : {}), ...(env.MAIL_REPLY_DOMAIN ? { replyDomain: env.MAIL_REPLY_DOMAIN.trim().toLowerCase() } : {}), ...(env.INBOUND_EMAIL_SECRET ? { inboundSecret: env.INBOUND_EMAIL_SECRET.trim() } : {}) } }
+      : {}),
     ...(env.PLATFORM_ADMINS ? { platformAdmins: env.PLATFORM_ADMINS.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean) } : {}),
     aiLimits: {
       checksPerPerson: num(env.AI_MONTHLY_CHECKS, DEFAULT_AI_LIMITS.checksPerPerson),

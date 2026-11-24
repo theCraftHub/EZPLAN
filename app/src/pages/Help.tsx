@@ -10,6 +10,7 @@ import { api, ApiError, type HelpInfo, type Me, type PlanSummary, type SupportCo
 import { recentErrors } from "../lib/errors";
 import { Link, useRouter } from "../lib/router";
 import { Button, Card, Notice, PageTitle, Spinner } from "../ui/kit";
+import { SafetyCaseList } from "./SafetyCases";
 
 export const TOPIC: Record<TicketTopic, string> = { problem: "Something isn't working", question: "A question", billing: "Billing", account: "My account or sign-in", safety: "Report abuse or a safety problem" };
 const STATUS: Record<string, string> = { open: "Open", waiting: "Waiting for you", solved: "Solved" };
@@ -32,6 +33,7 @@ export function HelpPage({ me }: { me: Me }) {
       <ContactUs me={me} itOnly={itOnly ? itOnly.contact!.team : null} onSent={load} />
       <Requests title="Your requests" rows={tickets.mine} empty="You haven't asked for help yet." />
       {tickets.company.length > 0 && <Requests title="Requests from your team" rows={tickets.company} empty="" />}
+      <SafetyCaseList />
       <Card aria-label="Security" className="flex flex-col gap-1">
         <h2 className="m-0 flex items-center gap-2 text-lg font-bold"><ShieldCheck aria-hidden size={20} /> Found a security problem?</h2>
         <p className="m-0 text-sm text-ink-2">{BRAND.securityEmail ? <>Email <a className="font-semibold text-primary underline" href={`mailto:${BRAND.securityEmail}`}>{BRAND.securityEmail}</a>. Please don't post details anywhere public.</> : <>Send a request below with the topic "Report abuse or a safety problem". A dedicated security address is coming.</>}</p>
@@ -86,7 +88,7 @@ function ContactUs({ me, itOnly, onSent }: { me: Me; itOnly: string | null; onSe
     <Card aria-label={`Contact ${BRAND.name} support`} className="flex flex-col gap-3">
       <h2 className="m-0 text-lg font-bold">Contact {BRAND.name} support</h2>
       {itOnly && topic !== "safety" && <Notice>Your company asks you to go through {itOnly} first. Your request goes to them, and they'll pass it on to us if needed.</Notice>}
-      {topic === "safety" && <Notice>Safety reports come straight to {BRAND.name}'s safety team. If you're part of a company workspace, its managers are told only that our safety team is following up on something in their workspace, not who reported it or what it says.</Notice>}
+      {topic === "safety" && <Notice>Safety reports come straight to {BRAND.name}'s safety team. If you're part of a company workspace, its managers are told only that our safety team is following up on something in their workspace, never who reported it or what it says.</Notice>}
       <form className="flex flex-col gap-3" onSubmit={(e) => { e.preventDefault(); void send(); }}>
         <label className="flex flex-col gap-1.5 text-sm font-semibold">What is it about?
           <select value={topic} onChange={(e) => setTopic(e.target.value as TicketTopic)} className={field}>

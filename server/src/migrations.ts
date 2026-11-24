@@ -128,6 +128,19 @@ export const MIGRATIONS: Migration[] = [
       `CREATE TABLE support_access_log (id TEXT PRIMARY KEY, grant_id TEXT NOT NULL REFERENCES support_access_grants(id), staff_id TEXT NOT NULL, viewed_at INTEGER NOT NULL)`,
     ],
   },
+  {
+    id: 10,
+    name: "safety cases with companies, the email outbox, server secrets",
+    statements: [
+      `CREATE TABLE safety_cases (id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL REFERENCES workspaces(id), report_id TEXT NOT NULL REFERENCES support_tickets(id), reporter_id TEXT NOT NULL, status TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, closed_at INTEGER)`,
+      `CREATE INDEX safety_cases_ws ON safety_cases(workspace_id, status, updated_at)`,
+      `CREATE TABLE safety_case_messages (id TEXT PRIMARY KEY, case_id TEXT NOT NULL REFERENCES safety_cases(id), author_id TEXT, author_name TEXT NOT NULL, from_staff INTEGER NOT NULL, via TEXT NOT NULL, body TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+      `CREATE INDEX safety_case_messages_case ON safety_case_messages(case_id, created_at)`,
+      `CREATE TABLE email_outbox (id TEXT PRIMARY KEY, to_addr TEXT NOT NULL, subject TEXT NOT NULL, body TEXT NOT NULL, reply_to TEXT NOT NULL, headers TEXT NOT NULL, case_id TEXT, message_id TEXT, status TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+      `CREATE INDEX email_outbox_case ON email_outbox(case_id, created_at)`,
+      `CREATE TABLE server_secrets (name TEXT PRIMARY KEY, value TEXT NOT NULL)`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

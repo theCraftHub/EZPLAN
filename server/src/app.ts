@@ -38,6 +38,7 @@ import { recordActivity } from "./activity";
 import { registerCollabRoutes } from "./comments";
 import { notify, registerNotificationRoutes, unreadCount, userForName } from "./notify";
 import { registerSupportRoutes, supportOpen } from "./support";
+import { registerInboundEmail, registerSafetyCaseRoutes } from "./safetyCases";
 
 const ROLE_WORD: Record<string, string> = { editor: "an Editor", commenter: "a Commenter", viewer: "a Viewer" };
 const suspendedMessage = "This account is suspended after a safety review. Contact support if you think this is a mistake.";
@@ -112,6 +113,9 @@ export function createApp(ports: Ports) {
   });
 
   // ---------------------------------------------------------------- the API needs a signed-in person
+
+  // Replies by email come from the email provider, not a signed-in person.
+  registerInboundEmail(app as unknown as Hono, { db, clock, config, ...(ports.mail ? { mail: ports.mail } : {}) }, ensureReady);
 
   app.use("/api/*", async (c, next) => {
     await ensureReady();
@@ -190,7 +194,8 @@ export function createApp(ports: Ports) {
   registerAiAdminRoutes(app, { db, clock, config }, ai);
   registerSafetyRoutes(app, { db, clock, config });
   registerNotificationRoutes(app, { db, clock });
-  registerSupportRoutes(app, { db, clock, config, access });
+  registerSupportRoutes(app, { db, clock, config, access, ...(ports.mail ? { mail: ports.mail } : {}) });
+  registerSafetyCaseRoutes(app, { db, clock, config, ...(ports.mail ? { mail: ports.mail } : {}) });
   registerCollabRoutes(app, {
     db, clock, rooms, access, notFound,
     // Mentions first; then the task's owner (when their name is linked to an account) hears about it once.
