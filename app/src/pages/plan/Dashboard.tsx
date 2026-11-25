@@ -2,7 +2,7 @@
  * The desktop Overview (step J2): widgets each person can hide and reorder, saved to their account.
  * Every number comes from the same engine as the rest of the plan page. Phones keep the compact Overview.
  */
-import { useEffect, useMemo, useState, type DragEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, CalendarClock, Eye, EyeOff, GripVertical, LayoutGrid, Route, TriangleAlert, Users } from "lucide-react";
 import { fromDay, toDay, type Op, type PersonAvailability, type Plan, type WorkWeek } from "@ezplan/shared";
 import { api, type UpdateState } from "../../lib/api";
@@ -13,86 +13,170 @@ import type { usePlanMath } from "./math";
 import { Baseline, LatestUpdate, UpNext } from "./OverviewCards";
 import { PlanCheck } from "./PlanCheck";
 import { useTeamData } from "./teamData";
+import { pack } from "./pack";
 
 type Math = NonNullable<ReturnType<typeof usePlanMath>>;
 type Props = { plan: Plan; math: Math; today: string; canEdit: boolean; edit: (op: Op) => void; planId: string; version: number; statusUpdate: UpdateState; people: Record<string, PersonAvailability>; workWeek: WorkWeek };
 
+/** Each widget's default width (of 12 columns) and the widths it can take. */
 export const WIDGETS = [
-  { id: "kpis", title: "Key numbers", wide: true },
-  { id: "milestones", title: "Milestones", wide: true },
-  { id: "update", title: "Latest status update", wide: false },
-  { id: "baseline", title: "Baseline", wide: false },
-  { id: "critical", title: "Critical path", wide: false },
-  { id: "lookahead", title: "Next two weeks", wide: false },
-  { id: "workload", title: "Workload", wide: false },
-  { id: "upnext", title: "Up next", wide: false },
-  { id: "check", title: "Plan Check", wide: false },
-  { id: "activity", title: "Recent activity", wide: false },
+  { id: "kpis", title: "Key numbers", w: 12, sizes: [8, 12] },
+  { id: "milestones", title: "Milestones", w: 12, sizes: [6, 8, 12] },
+  { id: "update", title: "Latest status update", w: 6, sizes: [4, 6, 8, 12] },
+  { id: "baseline", title: "Baseline", w: 6, sizes: [4, 6, 8, 12] },
+  { id: "critical", title: "Critical path", w: 6, sizes: [4, 6, 8, 12] },
+  { id: "lookahead", title: "Next two weeks", w: 6, sizes: [4, 6, 8, 12] },
+  { id: "workload", title: "Workload", w: 6, sizes: [4, 6, 8, 12] },
+  { id: "upnext", title: "Up next", w: 6, sizes: [4, 6, 8, 12] },
+  { id: "check", title: "Plan Check", w: 6, sizes: [4, 6, 8, 12] },
+  { id: "activity", title: "Recent activity", w: 6, sizes: [4, 6, 8, 12] },
 ] as const;
 type WidgetId = (typeof WIDGETS)[number]["id"];
-type Layout = { order: WidgetId[]; hidden: WidgetId[] };
+type Layout = { order: WidgetId[]; hidden: WidgetId[]; sizes: Partial<Record<WidgetId, number>> };
 const PREF = "overview.widgets";
-const DEFAULT: Layout = { order: WIDGETS.map((w) => w.id), hidden: [] };
+const DEFAULT: Layout = { order: WIDGETS.map((w) => w.id), hidden: [], sizes: {} };
+const COLS = 12;
+const GAP = 16;
+const SIZE_WORD: Record<number, string> = { 4: "Third", 6: "Half", 8: "Two thirds", 12: "Full" };
+const SIZE_MARK: Record<number, string> = { 4: "⅓", 6: "½", 8: "⅔", 12: "Full" };
+const spec = (id: WidgetId) => WIDGETS.find((x) => x.id === id)!;
 
-/** A saved layout, made safe: unknown ids dropped, new widgets added at the end. */
+/** A saved layout, made safe: unknown ids and widths dropped, new widgets added at the end. */
 export function normalizeLayout(v: unknown): Layout {
   const ids = new Set<string>(WIDGETS.map((w) => w.id));
-  const raw = (v && typeof v === "object" ? v : {}) as { order?: unknown; hidden?: unknown };
+  const raw = (v && typeof v === "object" ? v : {}) as { order?: unknown; hidden?: unknown; sizes?: unknown };
   const order = (Array.isArray(raw.order) ? raw.order : []).filter((x): x is WidgetId => typeof x === "string" && ids.has(x));
   const uniq = order.filter((x, i) => order.indexOf(x) === i);
   const hidden = (Array.isArray(raw.hidden) ? raw.hidden : []).filter((x): x is WidgetId => typeof x === "string" && ids.has(x));
-  return { order: [...uniq, ...DEFAULT.order.filter((x) => !uniq.includes(x))], hidden };
+  const sizes: Layout["sizes"] = {};
+  if (raw.sizes && typeof raw.sizes === "object") for (const [k, n] of Object.entries(raw.sizes)) if (ids.has(k) && (spec(k as WidgetId).sizes as readonly number[]).includes(n as number)) sizes[k as WidgetId] = n as number;
+  return { order: [...uniq, ...DEFAULT.order.filter((x) => !uniq.includes(x))], hidden, sizes };
 }
 
+/**
+ * Widgets keep their natural height and the width each person picks; the packer (pack.ts) places
+ * them so smaller ones fill the gaps beside taller ones. While dragging, the others reflow live.
+ */
 export function Dashboard(p: Props) {
   const [layout, setLayout] = useState<Layout>(DEFAULT);
   const [editing, setEditing] = useState(false);
   const [dragging, setDragging] = useState<WidgetId | null>(null);
+  const [draft, setDraft] = useState<WidgetId[] | null>(null);
+  const [width, setWidth] = useState(0);
+  const [heights, setHeights] = useState<Record<string, number>>({});
+  const area = useRef<HTMLDivElement>(null);
+  const observer = useRef<ResizeObserver | null>(null);
+  const lastOver = useRef("");
   useEffect(() => void api.getPref(PREF).then((r) => setLayout(normalizeLayout(r.value))).catch(() => {}), []);
+
+  // The area's width, and each widget's natural height, drive the packing.
+  useLayoutEffect(() => {
+    const el = area.current;
+    if (!el) return;
+    setWidth(el.clientWidth);
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  useLayoutEffect(() => {
+    observer.current = new ResizeObserver((entries) => {
+      setHeights((h) => {
+        let next = h;
+        for (const e of entries) {
+          const id = (e.target as HTMLElement).dataset.widget!;
+          const px = Math.round((e.target as HTMLElement).offsetHeight);
+          if (Math.abs((h[id] ?? -99) - px) > 1) next = { ...next, [id]: px };
+        }
+        return next;
+      });
+    });
+    return () => observer.current?.disconnect();
+  }, []);
+  const watch = (el: HTMLDivElement | null) => { if (el) observer.current?.observe(el); };
+
   const save = (next: Layout) => { setLayout(next); void api.setPref(PREF, next).catch(() => {}); };
   const move = (id: WidgetId, to: number) => {
     const order = layout.order.filter((x) => x !== id);
     order.splice(Math.max(0, Math.min(order.length, to)), 0, id);
     save({ ...layout, order });
   };
-  const shown = layout.order.filter((id) => !layout.hidden.includes(id));
-  const visible = editing ? layout.order : shown;
+  const order = draft ?? layout.order;
+  const visible = editing ? order : order.filter((id) => !layout.hidden.includes(id));
+  const sizeOf = (id: WidgetId) => layout.sizes[id] ?? spec(id).w;
+  const { boxes, height } = useMemo(() => pack(visible.filter((id) => editing || heights[id] !== 0).map((id) => ({ id, w: sizeOf(id), h: heights[id] ?? 240 })), COLS, GAP), [visible.join(), JSON.stringify(layout.sizes), heights, editing]); // eslint-disable-line react-hooks/exhaustive-deps
+  const col = (width - GAP * (COLS - 1)) / COLS;
+
+  // Live reorder while dragging: drop before or after the widget under the pointer (reading order).
+  const over = (e: DragEvent, target: WidgetId) => {
+    if (!dragging) return;
+    e.preventDefault();
+    if (target === dragging) return;
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const dy = e.clientY - (r.top + r.height / 2);
+    const after = dy > r.height / 4 || (Math.abs(dy) <= r.height / 4 && e.clientX > r.left + r.width / 2);
+    const key = `${target}:${after}`;
+    if (key === lastOver.current) return;
+    lastOver.current = key;
+    const next = order.filter((x) => x !== dragging);
+    next.splice(next.indexOf(target) + (after ? 1 : 0), 0, dragging);
+    if (next.join() !== order.join()) setDraft(next);
+  };
+  const finish = () => {
+    if (draft && draft.join() !== layout.order.join()) save({ ...layout, order: draft });
+    setDraft(null);
+    setDragging(null);
+    lastOver.current = "";
+  };
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-end gap-2">
-        {editing && <span className="mr-auto text-sm text-ink-2">Drag widgets, or use the arrows, to reorder. Hidden widgets stay here, faded, until you show them. Saved for you only.</span>}
+        {editing && <span className="mr-auto max-w-2xl text-sm text-ink-2">Drag a widget and the others move to fill the space. Pick each widget's width; heights follow what's in it. Hidden widgets stay here, faded, until you show them. Saved for you only.</span>}
         {editing && <Button variant="secondary" onClick={() => save(DEFAULT)}>Reset layout</Button>}
         <Button variant={editing ? "primary" : "secondary"} onClick={() => setEditing(!editing)} aria-pressed={editing}><LayoutGrid aria-hidden size={18} /> {editing ? "Done" : "Customize"}</Button>
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        {visible.map((id, i) => {
-          const w = WIDGETS.find((x) => x.id === id)!;
+      <div ref={area} className="relative" style={{ height }} onDragOver={(e) => dragging && e.preventDefault()} onDrop={(e) => { e.preventDefault(); finish(); }}>
+        {width > 0 && visible.filter((id) => !boxes.some((b) => b.id === id)).map((id) => (
+          // Empty right now (e.g. no activity yet): kept mounted, unplaced, so it can appear when it has content.
+          <div key={id} data-widget={id} ref={watch} className="invisible absolute" style={{ width: (sizeOf(id) * col + (sizeOf(id) - 1) * GAP) }}><Widget id={id} {...p} /></div>
+        ))}
+        {width > 0 && boxes.map((b) => {
+          const id = b.id as WidgetId;
+          const w = spec(id);
+          const i = layout.order.indexOf(id);
           const hidden = layout.hidden.includes(id);
+          const place = { left: b.x * (col + GAP), top: b.y, width: b.w * col + (b.w - 1) * GAP };
           const body = <Widget id={id} {...p} />;
-          if (!editing) return <div key={id} className={w.wide ? "col-span-2" : ""}>{body}</div>;
           return (
-            <section
-              key={id}
-              aria-label={`${w.title} widget`}
-              draggable
-              onDragStart={(e: DragEvent) => { setDragging(id); e.dataTransfer.effectAllowed = "move"; }}
-              onDragOver={(e: DragEvent) => { if (dragging && dragging !== id) e.preventDefault(); }}
-              onDrop={(e: DragEvent) => { e.preventDefault(); if (dragging) move(dragging, layout.order.indexOf(id)); setDragging(null); }}
-              onDragEnd={() => setDragging(null)}
-              className={`flex flex-col gap-2 rounded-2xl p-2 outline-2 outline-dashed ${dragging === id ? "outline-primary" : "outline-line"} ${w.wide ? "col-span-2" : ""}`}
-            >
-              <div className="flex flex-wrap items-center gap-2 px-1">
-                <GripVertical aria-hidden size={18} className="cursor-grab text-muted" />
-                <strong className="flex-1 text-sm">{w.title}{hidden ? " (hidden)" : ""}</strong>
-                <button aria-label={`Move ${w.title} up`} disabled={i === 0} onClick={() => move(id, i - 1)} className="flex h-10 w-10 items-center justify-center rounded-lg ring-1 ring-line disabled:opacity-40"><ArrowUp aria-hidden size={16} /></button>
-                <button aria-label={`Move ${w.title} down`} disabled={i === visible.length - 1} onClick={() => move(id, i + 1)} className="flex h-10 w-10 items-center justify-center rounded-lg ring-1 ring-line disabled:opacity-40"><ArrowDown aria-hidden size={16} /></button>
-                <button onClick={() => save({ ...layout, hidden: hidden ? layout.hidden.filter((x) => x !== id) : [...layout.hidden, id] })} className="flex min-h-10 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold ring-1 ring-line">
-                  {hidden ? <><Eye aria-hidden size={16} /> Show {w.title}</> : <><EyeOff aria-hidden size={16} /> Hide {w.title}</>}
-                </button>
-              </div>
-              <div className={hidden ? "pointer-events-none opacity-40" : ""}>{body}</div>
-            </section>
+            <div key={id} data-widget={id} ref={watch} style={place} className={`absolute ${editing ? "motion-safe:transition-[left,top,width] motion-safe:duration-200" : ""} ${dragging === id ? "opacity-50" : ""}`}>
+              {!editing ? body : (
+                <section
+                  aria-label={`${w.title} widget`}
+                  draggable
+                  onDragStart={(e: DragEvent) => { setDragging(id); setDraft(layout.order); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", w.title); }}
+                  onDragOver={(e: DragEvent) => over(e, id)}
+                  onDrop={(e: DragEvent) => { e.preventDefault(); e.stopPropagation(); finish(); }}
+                  onDragEnd={finish}
+                  className={`flex flex-col gap-2 rounded-2xl p-2 outline-2 outline-dashed ${dragging === id ? "outline-primary" : "outline-line"}`}
+                >
+                  <div className="flex flex-wrap items-center gap-2 px-1">
+                    <GripVertical aria-hidden size={18} className="cursor-grab text-muted" />
+                    <strong className="min-w-0 flex-1 text-sm">{w.title}{hidden ? " (hidden)" : ""}</strong>
+                    <span role="group" aria-label={`Width of ${w.title}`} className="flex overflow-hidden rounded-lg ring-1 ring-line">
+                      {w.sizes.map((n) => (
+                        <button key={n} aria-pressed={sizeOf(id) === n} aria-label={`${SIZE_WORD[n]} width`} onClick={() => save({ ...layout, sizes: { ...layout.sizes, [id]: n } })} className={`h-10 min-w-10 px-2 text-sm font-semibold ${sizeOf(id) === n ? "bg-primary text-white dark:text-ground" : "text-ink-2"}`}>{SIZE_MARK[n]}</button>
+                      ))}
+                    </span>
+                    <button aria-label={`Move ${w.title} up`} disabled={i === 0} onClick={() => move(id, i - 1)} className="flex h-10 w-10 items-center justify-center rounded-lg ring-1 ring-line disabled:opacity-40"><ArrowUp aria-hidden size={16} /></button>
+                    <button aria-label={`Move ${w.title} down`} disabled={i === layout.order.length - 1} onClick={() => move(id, i + 1)} className="flex h-10 w-10 items-center justify-center rounded-lg ring-1 ring-line disabled:opacity-40"><ArrowDown aria-hidden size={16} /></button>
+                    <button aria-label={hidden ? `Show ${w.title}` : `Hide ${w.title}`} onClick={() => save({ ...layout, hidden: hidden ? layout.hidden.filter((x) => x !== id) : [...layout.hidden, id] })} className="flex h-10 w-10 items-center justify-center rounded-lg ring-1 ring-line">
+                      {hidden ? <Eye aria-hidden size={16} /> : <EyeOff aria-hidden size={16} />}
+                    </button>
+                  </div>
+                  <div className={hidden ? "pointer-events-none opacity-40" : ""}>{body}</div>
+                </section>
+              )}
+            </div>
           );
         })}
       </div>

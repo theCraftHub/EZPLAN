@@ -30,10 +30,23 @@ test("desktop dashboard: widgets with real numbers; hide and reorder, kept after
   for (let i = 0; i < 4; i++) await page.getByRole("button", { name: "Move Critical path up" }).click();
   await expect(page.getByRole("button", { name: "Move Critical path up" })).toBeDisabled(); // it's first
   await expect(page.getByRole("button", { name: "Done", exact: true })).toBeVisible();
-  if (process.env.SHOTS) await page.screenshot({ path: shot("customize") });
   await page.setViewportSize({ width: 1440, height: 2400 }); // resizing the window keeps customize mode
   await expect(page.getByRole("button", { name: "Done", exact: true })).toBeVisible(); // still customizing
   await page.setViewportSize(info.project.use.viewport!);
+
+  // The space beside the half-width Critical path fills with the next half-width widget, not blank.
+  const box = async (name: string) => (await page.getByRole("region", { name: `${name} widget` }).boundingBox())!;
+  await expect.poll(async () => { const [c, b] = [await box("Critical path"), await box("Latest status update")]; return Math.abs(b.y - c.y) < 2 && b.x > c.x + c.width - 2; }, { message: "the status update sits beside Critical path" }).toBe(true);
+  if (process.env.SHOTS) { await page.waitForTimeout(400); await page.screenshot({ path: shot("customize") }); }
+
+  // Wider: Critical path goes full width, so the status update moves below it.
+  await page.getByRole("group", { name: "Width of Critical path" }).getByRole("button", { name: "Full width" }).click();
+  await expect.poll(async () => (await box("Latest status update")).y > (await box("Critical path")).y + (await box("Critical path")).height - 2).toBe(true);
+  await page.getByRole("group", { name: "Width of Critical path" }).getByRole("button", { name: "Half width" }).click();
+
+  // Drag Up next onto Key numbers: it takes that place in the order, and the others reflow.
+  await page.getByRole("region", { name: "Up next widget" }).dragTo(page.getByRole("region", { name: "Key numbers widget" }), { targetPosition: { x: 20, y: 10 } });
+  await expect.poll(async () => (await box("Up next")).y < (await box("Key numbers")).y).toBe(true);
   await page.getByRole("button", { name: "Done", exact: true }).click();
   await expect(page.getByRole("region", { name: "Workload" })).toHaveCount(0);
 
@@ -41,8 +54,8 @@ test("desktop dashboard: widgets with real numbers; hide and reorder, kept after
   await page.reload();
   await expect(page.getByRole("region", { name: "Critical path" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Workload" })).toHaveCount(0);
-  const first = await page.locator("main [aria-label]").filter({ has: page.getByRole("heading") }).first().getAttribute("aria-label");
-  expect(first).toBe("Critical path");
+  const first = await page.locator("main [data-widget]:not(.invisible)").first().getAttribute("data-widget");
+  expect(first).toBe("critical");
 
   // Reset brings everything back.
   await page.getByRole("button", { name: "Customize" }).click();
