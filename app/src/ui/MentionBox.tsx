@@ -50,6 +50,7 @@ export const MentionBox = forwardRef<HTMLTextAreaElement, Props>(function Mentio
   const [closedAt, setClosedAt] = useState<string | null>(null); // Escape closes it until the text changes
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const menu = useRef<HTMLDivElement>(null);
+  const caretAfter = useRef<{ value: string; at: number } | null>(null);
 
   const typed = mentionAt(value, cursor);
   const names = typed && closedAt !== value ? mentionMatches(people, typed.query) : [];
@@ -71,16 +72,21 @@ export const MentionBox = forwardRef<HTMLTextAreaElement, Props>(function Mentio
     if (!typed) return;
     const next = `${value.slice(0, typed.start)}@${name} ${value.slice(cursor)}`;
     const at = typed.start + name.length + 2;
-    onValue(next);
+    caretAfter.current = { value: next, at };
+    setCursor(at);
     setActive(0);
-    requestAnimationFrame(() => {
-      const el = box.current;
-      if (!el) return;
-      el.focus();
-      el.setSelectionRange(at, at);
-      setCursor(at);
-    });
+    onValue(next);
   };
+  // Put the cursor after the inserted name in the same render that shows it, before any more typing
+  // can land (a later frame let fast typing split words, e.g. "please" → "ease … pl").
+  useLayoutEffect(() => {
+    const el = box.current;
+    const want = caretAfter.current;
+    if (!el || !want || el.value !== want.value) return;
+    caretAfter.current = null;
+    el.focus();
+    el.setSelectionRange(want.at, want.at);
+  }, [value]);
 
   return (
     <div className="relative flex flex-col">
