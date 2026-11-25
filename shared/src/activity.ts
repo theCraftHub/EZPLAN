@@ -6,7 +6,7 @@
 import type { Op } from "./ops";
 import { allTasks, type Plan, type Task } from "./schema";
 
-export type ActivityKind = "status" | "edit" | "add" | "move" | "delete" | "restore" | "phase" | "plan" | "replace" | "comment" | "sharing" | "update" | "report" | "safety" | "baseline" | "status-update";
+export type ActivityKind = "status" | "edit" | "add" | "move" | "delete" | "restore" | "phase" | "plan" | "replace" | "comment" | "sharing" | "update" | "report" | "safety" | "baseline" | "status-update" | "raid";
 
 export interface ActivityLine {
   kind: ActivityKind;

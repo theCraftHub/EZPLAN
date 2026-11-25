@@ -37,6 +37,7 @@ import { canEdit, type Role } from "./roles";
 import { recordActivity } from "./activity";
 import { registerStatusUpdateRoutes, updateState } from "./statusUpdates";
 import { registerPrefRoutes } from "./prefs";
+import { raidOpen, registerRaidRoutes } from "./raid";
 import { registerCollabRoutes } from "./comments";
 import { notify, registerNotificationRoutes, unreadCount, userForName } from "./notify";
 import { registerSupportRoutes, supportOpen } from "./support";
@@ -199,6 +200,7 @@ export function createApp(ports: Ports) {
   registerSupportRoutes(app, { db, clock, config, access, ...(ports.mail ? { mail: ports.mail } : {}) });
   registerStatusUpdateRoutes(app, { db, clock, access, notFound });
   registerPrefRoutes(app, { db, clock });
+  registerRaidRoutes(app, { db, clock, access, notFound });
   registerSafetyCaseRoutes(app, { db, clock, config, ...(ports.mail ? { mail: ports.mail } : {}) });
   registerCollabRoutes(app, {
     db, clock, rooms, access, notFound,
@@ -412,6 +414,7 @@ export function createApp(ports: Ports) {
       today,
       restoredForReview: room.restoredForReview,
       statusUpdate: await updateState(db, clock.now(), id),
+      raidOpen: await raidOpen(db, id),
       schedule: {
         projectStart: schedule.projectStart,
         finish: schedule.finish,

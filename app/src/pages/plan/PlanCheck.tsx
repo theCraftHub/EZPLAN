@@ -72,7 +72,7 @@ export function PlanCheck({ planId, plan, math, canEdit, edit }: { planId: strin
   const aiItems: Item[] = r
     ? [
         ...r.missingSteps.map((m, i) => ({ key: `ms:${i}:${m.title}`, kind: "missingStep" as const, text: m.title, why: m.why, taskIds: m.afterTaskId ? [m.afterTaskId] : [], tone: "warn" as const, accept: { label: "Add this step", run: () => addStep(m.title, m.afterTaskId, m.phaseId) } })),
-        ...r.risks.map((x, i) => ({ key: `rk:${i}:${x.title}`, kind: "risk" as const, text: x.title, why: x.mitigation, taskIds: x.taskIds, tone: "bad" as const })),
+        ...r.risks.map((x, i) => ({ key: `rk:${i}:${x.title}`, kind: "risk" as const, text: x.title, why: x.mitigation, taskIds: x.taskIds, tone: "bad" as const, accept: { label: "Add to risk log", run: () => void api.addRaid(planId, { kind: "risk", title: x.title.slice(0, 200), detail: `From the AI check. What to do: ${x.mitigation}`.slice(0, 4000), likelihood: 3, impact: 3, taskIds: x.taskIds }).catch(() => {}) } })),
         ...r.suggestions.map((s, i) => ({ key: `sg:${i}:${s.change}`, kind: "suggestion" as const, text: `${s.taskId ? `${math.byId.get(s.taskId)?.title ?? s.taskId}: ` : ""}${s.change}`, why: s.why, taskIds: s.taskId ? [s.taskId] : [], tone: "info" as const })),
       ].filter((it) => !gone.has(it.key))
     : [];
@@ -139,7 +139,7 @@ function Suggestion({ it, canEdit, onAccept, onDismiss }: { it: Item; canEdit: b
       <span><span className="font-semibold">{it.text}</span>{it.why ? <span> {it.why}</span> : null}</span>
       {canEdit && (
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          {onAccept && <button onClick={onAccept} className="min-h-10 rounded-lg bg-surface px-3 font-semibold text-ink ring-1 ring-line">Add this step</button>}
+          {onAccept && <button onClick={onAccept} className="min-h-10 rounded-lg bg-surface px-3 font-semibold text-ink ring-1 ring-line">{it.accept?.label ?? "Add this step"}</button>}
           <button onClick={() => onDismiss(remember)} className="min-h-10 rounded-lg px-1 font-semibold underline underline-offset-4">Dismiss</button>
           <label className="flex min-h-10 items-center gap-1.5 text-xs"><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-4 w-4" /> Don't suggest this on this project again</label>
         </span>

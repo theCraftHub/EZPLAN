@@ -162,6 +162,14 @@ export const MIGRATIONS: Migration[] = [
     name: "per-person settings (dashboard layout)",
     statements: [`CREATE TABLE user_prefs (user_id TEXT NOT NULL REFERENCES users(id), key TEXT NOT NULL, value TEXT NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY (user_id, key))`],
   },
+  {
+    id: 14,
+    name: "risk log (risks, assumptions, issues, decisions) per plan",
+    statements: [
+      `CREATE TABLE raid_items (id TEXT PRIMARY KEY, plan_id TEXT NOT NULL REFERENCES plans(id), kind TEXT NOT NULL CHECK (kind IN ('risk', 'assumption', 'issue', 'decision')), title TEXT NOT NULL, detail TEXT NOT NULL, owner TEXT, likelihood INTEGER, impact INTEGER, status TEXT NOT NULL CHECK (status IN ('open', 'closed')), due TEXT, task_ids TEXT NOT NULL, created_by TEXT NOT NULL REFERENCES users(id), created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
+      `CREATE INDEX raid_items_plan ON raid_items(plan_id, status, updated_at)`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

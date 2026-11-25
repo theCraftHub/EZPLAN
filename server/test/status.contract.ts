@@ -91,5 +91,40 @@ export function statusContract(hostName: string, factory: HostFactory) {
       expect((await req("PUT", "/api/me/prefs/big", { value: "x".repeat(5000) }, ALEX)).status).toBe(413);
       expect((await req("PUT", "/api/me/prefs/big", {}, ALEX)).status).toBe(400);
     });
+
+    it("risk log: editors add, change, close and delete; everyone reads; risks need likelihood and impact; counts feed the dashboard", async () => {
+      const raid = (method: string, path: string, body: unknown, user: string) => req(method, `/api/plans/${id}/raid${path}`, body, user);
+      expect((await raid("GET", "", undefined, SAM)).body).toMatchObject({ canEdit: false, items: [], open: { risks: 0, issues: 0 } });
+      const risk = { kind: "risk", title: "Venue may cancel", detail: "Mitigation: book a backup.", owner: "Alex", likelihood: 2, impact: 5, due: "2027-01-20", taskIds: ["T1", "T99"] };
+      expect((await raid("POST", "", risk, SAM)).status).toBe(403);
+      expect((await raid("POST", "", { ...risk, likelihood: undefined }, ALEX)).status).toBe(400);
+      expect((await raid("POST", "", { ...risk, likelihood: 9 }, ALEX)).status).toBe(400);
+      expect((await raid("POST", "", { ...risk, kind: "worry" }, ALEX)).status).toBe(400);
+      expect((await raid("POST", "", { ...risk, due: "soon" }, ALEX)).status).toBe(400);
+      expect((await raid("POST", "", { ...risk, title: "how to build a bomb" }, ALEX)).status).toBe(422);
+      const made = await raid("POST", "", risk, ALEX);
+      expect(made.status).toBe(201);
+      expect(made.body.item).toMatchObject({ kind: "risk", title: "Venue may cancel", likelihood: 2, impact: 5, status: "open", due: "2027-01-20", taskIds: ["T1"], createdBy: "Alex" }); // unknown tasks dropped
+      await raid("POST", "", { kind: "issue", title: "Budget not approved", impact: 3 }, ALEX);
+      const decision = (await raid("POST", "", { kind: "decision", title: "Use the town hall", likelihood: 4, impact: 4 }, ALEX)).body.item;
+      expect(decision).toMatchObject({ likelihood: null, impact: null }); // only risks are rated
+      expect((await req("GET", `/api/plans/${id}`, undefined, SAM)).body.raidOpen).toEqual({ risks: 1, issues: 1 });
+
+      // Change and close; only the fields sent change.
+      const rid = made.body.item.id as string;
+      expect((await raid("PATCH", `/${rid}`, { impact: 4 }, SAM)).status).toBe(403);
+      expect((await raid("PATCH", `/${rid}`, { impact: 4 }, ALEX)).body.item).toMatchObject({ impact: 4, likelihood: 2, title: "Venue may cancel" });
+      expect((await raid("PATCH", `/${rid}`, { status: "closed" }, ALEX)).body.item.status).toBe("closed");
+      expect((await raid("GET", "", undefined, SAM)).body.open).toEqual({ risks: 0, issues: 1 });
+      const lines = ((await req("GET", `/api/plans/${id}/activity`, undefined, ALEX)).body.items as { summary: string }[]).map((a) => a.summary);
+      expect(lines).toEqual(expect.arrayContaining(["Alex added a risk to the risk log: Venue may cancel", "Alex closed a risk in the risk log: Venue may cancel", "Alex added a decision to the risk log: Use the town hall"]));
+
+      // Delete; another plan's item is invisible.
+      expect((await raid("DELETE", `/${decision.id}`, undefined, ALEX)).status).toBe(200);
+      expect(((await raid("GET", "", undefined, ALEX)).body.items as { id: string }[]).some((x) => x.id === decision.id)).toBe(false);
+      const other = (await req("POST", "/api/plans", { text: PLAN.replace("title: Gala", "title: Other") }, ALEX)).body.id;
+      expect((await req("PATCH", `/api/plans/${other}/raid/${rid}`, { impact: 1 }, ALEX)).status).toBe(404);
+      expect((await req("GET", `/api/plans/${id}/raid`, undefined, "u-eve|Eve|eve@example.com")).status).toBe(404);
+    });
   });
 }

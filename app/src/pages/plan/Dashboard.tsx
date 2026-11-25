@@ -8,6 +8,7 @@ import { fromDay, toDay, type Op, type PersonAvailability, type Plan, type WorkW
 import { api, type UpdateState } from "../../lib/api";
 import { plural, shortDate } from "../../lib/format";
 import { Button, Card, ProgressRing } from "../../ui/kit";
+import { Link } from "../../lib/router";
 import { RecentActivity } from "./Activity";
 import type { usePlanMath } from "./math";
 import { Baseline, LatestUpdate, UpNext } from "./OverviewCards";
@@ -16,7 +17,7 @@ import { useTeamData } from "./teamData";
 import { pack } from "./pack";
 
 type Math = NonNullable<ReturnType<typeof usePlanMath>>;
-type Props = { plan: Plan; math: Math; today: string; canEdit: boolean; edit: (op: Op) => void; planId: string; version: number; statusUpdate: UpdateState; people: Record<string, PersonAvailability>; workWeek: WorkWeek };
+type Props = { plan: Plan; math: Math; today: string; canEdit: boolean; edit: (op: Op) => void; planId: string; version: number; statusUpdate: UpdateState; people: Record<string, PersonAvailability>; workWeek: WorkWeek; raidOpen: { risks: number; issues: number } };
 
 /** Each widget's default width (of 12 columns) and the widths it can take. */
 export const WIDGETS = [
@@ -199,18 +200,19 @@ function Widget({ id, ...p }: Props & { id: WidgetId }): ReactNode {
   }
 }
 
-function Kpis({ math }: Props) {
+function Kpis({ math, raidOpen, planId }: Props) {
   const { progress, schedule, check } = math;
   const v = progress.baselineVarianceDays;
   const forecast = progress.forecastFinish ?? schedule.finish;
   const item = "flex flex-col gap-1";
   return (
     <Card aria-label="Key numbers">
-      <dl className="m-0 grid grid-cols-5 gap-4">
+      <dl className="m-0 grid grid-cols-3 gap-4 xl:grid-cols-6">
         <div className="flex items-center gap-3"><ProgressRing percent={progress.percent} size={56} /><div className={item}><dt className="text-sm text-muted">Progress</dt><dd className="m-0 text-[15px] font-semibold">{progress.doneCount} of {plural(progress.countedTasks, "task")} done</dd></div></div>
         <div className={item}><dt className="text-sm text-muted">Vs baseline</dt><dd className={`m-0 text-lg font-bold ${v && v > 0 ? "text-warn" : v && v < 0 ? "text-good" : ""}`}>{v === null ? "No baseline" : v === 0 ? "On time" : v > 0 ? `${v}d late` : `${-v}d early`}</dd></div>
         <div className={item}><dt className="flex items-center gap-1 text-sm text-muted"><CalendarClock aria-hidden size={15} /> Forecast finish</dt><dd className={`m-0 text-lg font-bold ${forecast > schedule.finish ? "text-warn" : ""}`}>{shortDate(forecast)}</dd>{forecast > schedule.finish && <dd className="m-0 text-xs text-ink-2">Planned {shortDate(schedule.finish)}</dd>}</div>
         <div className={item}><dt className="flex items-center gap-1 text-sm text-muted"><TriangleAlert aria-hidden size={15} /> Overdue</dt><dd className={`m-0 text-lg font-bold ${progress.overdueCount ? "text-warn" : ""}`}>{progress.overdueCount ? plural(progress.overdueCount, "task") : "Nothing"}</dd></div>
+        <div className={item}><dt className="text-sm text-muted">Open risks and issues</dt><dd className={`m-0 text-lg font-bold ${raidOpen.risks + raidOpen.issues ? "text-warn" : ""}`}><Link to={`/p/${planId}/risks`} className="underline decoration-1 underline-offset-4">{raidOpen.risks + raidOpen.issues ? `${raidOpen.risks} risk${raidOpen.risks === 1 ? "" : "s"}, ${raidOpen.issues} issue${raidOpen.issues === 1 ? "" : "s"}` : "None open"}</Link></dd></div>
         <div className={item}><dt className="text-sm text-muted">Plan Check</dt><dd className="m-0 text-lg font-bold">{check.score} / 100</dd></div>
       </dl>
     </Card>

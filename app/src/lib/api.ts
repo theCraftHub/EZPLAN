@@ -112,6 +112,9 @@ export interface PlanSummary {
   statusUpdate?: UpdateState;
 }
 
+export type RaidKind = "risk" | "assumption" | "issue" | "decision";
+export interface RaidItem { id: string; kind: RaidKind; title: string; detail: string; owner: string | null; likelihood: number | null; impact: number | null; status: "open" | "closed"; due: string | null; taskIds: string[]; createdBy: string; createdAt: number; updatedAt: number }
+type RaidInput = Partial<Pick<RaidItem, "kind" | "title" | "detail" | "owner" | "likelihood" | "impact" | "status" | "due" | "taskIds">>;
 export type Rag = "green" | "amber" | "red";
 /** The latest status update and whether one is due (more than 7 days). */
 export interface UpdateState { last: { rag: Rag; headline: string; at: number } | null; overdue: boolean }
@@ -128,6 +131,7 @@ export interface PlanDetail {
   today: string;
   check: PlanCheckResult;
   statusUpdate: UpdateState;
+  raidOpen: { risks: number; issues: number };
 }
 
 export interface ImportPreview {
@@ -194,6 +198,10 @@ export const api = {
   unsuppress: (planId: string, id: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/ai/suppressions/${encodeURIComponent(id)}`, { method: "DELETE" }),
   getPref: (key: string) => call<{ value: unknown }>(`/api/me/prefs/${encodeURIComponent(key)}`),
   setPref: (key: string, value: unknown) => call<{ ok: true }>(`/api/me/prefs/${encodeURIComponent(key)}`, { method: "PUT", body: JSON.stringify({ value }) }),
+  raid: (planId: string) => call<{ canEdit: boolean; items: RaidItem[]; open: { risks: number; issues: number } }>(`/api/plans/${encodeURIComponent(planId)}/raid`),
+  addRaid: (planId: string, v: RaidInput) => call<{ item: RaidItem }>(`/api/plans/${encodeURIComponent(planId)}/raid`, { method: "POST", body: JSON.stringify(v) }),
+  updateRaid: (planId: string, itemId: string, v: RaidInput) => call<{ item: RaidItem }>(`/api/plans/${encodeURIComponent(planId)}/raid/${encodeURIComponent(itemId)}`, { method: "PATCH", body: JSON.stringify(v) }),
+  deleteRaid: (planId: string, itemId: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/raid/${encodeURIComponent(itemId)}`, { method: "DELETE" }),
   setBaseline: (planId: string) => call<{ version: number; baselineSet: string; finish: string; savedVersion: number | null }>(`/api/plans/${encodeURIComponent(planId)}/baseline`, { method: "POST", body: "{}" }),
   statusUpdates: (planId: string) => call<{ canPost: boolean; overdue: boolean; dueEveryDays: number; items: StatusUpdate[] }>(`/api/plans/${encodeURIComponent(planId)}/status-updates`),
   postStatusUpdate: (planId: string, u: { rag: Rag; headline: string; sections: { title: string; text: string }[]; source: "ai" | "template" }) => call<{ id: string }>(`/api/plans/${encodeURIComponent(planId)}/status-updates`, { method: "POST", body: JSON.stringify(u) }),

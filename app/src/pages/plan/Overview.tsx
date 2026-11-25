@@ -13,9 +13,9 @@ import { PlanCheck } from "./PlanCheck";
 type Math = NonNullable<ReturnType<typeof usePlanMath>>;
 
 /** The plan's home: where are we, what's next, are we on track. Phones get this compact page; desktops the dashboard. */
-export function Overview({ plan, math, today, canEdit, edit, planId, version, statusUpdate, people, workWeek }: { plan: Plan; math: Math; today: string; canEdit: boolean; edit: (op: Op) => void; planId: string; version: number; statusUpdate: UpdateState; people: Record<string, PersonAvailability>; workWeek: WorkWeek }) {
+export function Overview({ plan, math, today, canEdit, edit, planId, version, statusUpdate, people, workWeek, raidOpen }: { plan: Plan; math: Math; today: string; canEdit: boolean; edit: (op: Op) => void; planId: string; version: number; statusUpdate: UpdateState; people: Record<string, PersonAvailability>; workWeek: WorkWeek; raidOpen: { risks: number; issues: number } }) {
   const desktop = useIsDesktop();
-  if (desktop) return <Dashboard plan={plan} math={math} today={today} canEdit={canEdit} edit={edit} planId={planId} version={version} statusUpdate={statusUpdate} people={people} workWeek={workWeek} />;
+  if (desktop) return <Dashboard plan={plan} math={math} today={today} canEdit={canEdit} edit={edit} planId={planId} version={version} statusUpdate={statusUpdate} people={people} workWeek={workWeek} raidOpen={raidOpen} />;
   const { progress, schedule } = math;
   const late = progress.forecastFinish && progress.forecastFinish > schedule.finish;
   const kpi = "flex flex-col gap-1";
