@@ -62,8 +62,8 @@ export async function masterContext(db: Db, planId: string, userId: string, acce
   const row = await planRow(db, planId);
   if (!row) return null;
   if (row.kind === "master") {
-    const n = Number((await db.first<{ n: number }>(`SELECT COUNT(*) AS n FROM plans WHERE master_id = ?`, [row.id]))?.n ?? 0);
-    return { id: row.id, isMaster: true, key: MASTER_KEY, title: row.title, plans: n, canOpenMaster: true, view: null };
+    const m = await loadMaster(db, row.id);
+    return { id: row.id, isMaster: true, key: MASTER_KEY, title: row.title, plans: m ? m.subs.length : 0, canOpenMaster: true, view: m ? { parts: m.parts, people: m.people } : null };
   }
   if (!row.master_id) return null;
   const m = await loadMaster(db, row.master_id);

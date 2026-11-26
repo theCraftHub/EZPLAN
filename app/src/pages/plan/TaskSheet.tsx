@@ -14,6 +14,7 @@ type Math = NonNullable<ReturnType<typeof usePlanMath>>;
 export function TaskSheet({ task, plan, math, canEdit, edit, onClose, options, optionsLoading }: { task: Task; plan: Plan; math: Math; canEdit: boolean; edit: (op: Op) => void; onClose: () => void; options?: { person: string; finish: string; finishChange: number; moved: number; fits: boolean }[]; optionsLoading?: boolean }) {
   const [title, setTitle] = useState(task.title);
   const [owner, setOwner] = useState(task.owner ?? "");
+  const [dept, setDept] = useState(task.dept ?? "");
   const [due, setDue] = useState(task.due ?? "");
   const [estimate, setEstimate] = useState(task.estimate ? `${task.estimate.amount}${task.estimate.unit}` : "");
   const [notes, setNotes] = useState(task.notes.join("\n"));
@@ -26,6 +27,7 @@ export function TaskSheet({ task, plan, math, canEdit, edit, onClose, options, o
     const set = (field: Extract<Op, { kind: "setField" }>["field"], value: unknown) => edit({ kind: "setField", taskId: task.id, field, value });
     if (title.trim() && title.trim() !== task.title) set("title", title.trim());
     if ((owner.trim() || null) !== (task.owner ?? null)) set("owner", owner.trim() || null);
+    if ((dept.trim() || null) !== (task.dept ?? null)) set("dept", dept.trim() || null);
     if ((due || null) !== (task.due ?? null)) set("due", due || null);
     if (!estBad && JSON.stringify(est ?? null) !== JSON.stringify(task.estimate ?? null)) set("estimate", est ?? null);
     const n = notes.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -63,6 +65,7 @@ export function TaskSheet({ task, plan, math, canEdit, edit, onClose, options, o
               </label>
             )}
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Due by<input type="date" value={due} onChange={(e) => setDue(e.target.value)} disabled={!canEdit} className={field} /></label>
+            <label className="flex flex-col gap-1.5 text-sm font-semibold">Department<input value={dept} onChange={(e) => setDept(e.target.value)} placeholder="e.g. IT" maxLength={60} disabled={!canEdit} className={field} /></label>
           </div>
           {canEdit && !task.milestone && (options || optionsLoading) && (
             <section aria-label="Best people for this task" className="flex flex-col gap-2">

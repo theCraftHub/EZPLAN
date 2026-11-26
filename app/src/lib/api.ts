@@ -1,5 +1,5 @@
 /** Calls to our own server. Every change is JSON, which the server requires (blocks cross-site forms). */
-import type { AiReview, Op, PersonAvailability, Plan, PlanCheckResult, ReportText, StatusFacts, SuggestionKind, WorkWeek } from "@rakuplan/shared";
+import type { AiReview, MasterPart, Op, PersonAvailability, Plan, PlanCheckResult, ReportText, StatusFacts, SuggestionKind, WorkWeek } from "@rakuplan/shared";
 
 export class ApiError extends Error {
   constructor(readonly status: number, message: string, readonly body: unknown) {
@@ -110,6 +110,10 @@ export interface PlanSummary {
   shared?: boolean;
   summary: { percent: number; doneCount: number; countedTasks: number; overdueCount: number; finish: string; health: string; nextMilestone: { title: string; date: string } | null; baselineVarianceDays: number | null } | null;
   statusUpdate?: UpdateState;
+  /** A master plan: how many plans are inside. */
+  master?: { plans: number };
+  /** The master plan this plan sits in. */
+  masterId?: string;
 }
 
 export type RaidKind = "risk" | "assumption" | "issue" | "decision";
@@ -132,7 +136,35 @@ export interface PlanDetail {
   check: PlanCheckResult;
   statusUpdate: UpdateState;
   raidOpen: { risks: number; issues: number };
+  /** Set when the plan is a master plan or sits inside one. */
+  master: MasterContext | null;
 }
+
+export interface MasterContext {
+  id: string;
+  isMaster: boolean;
+  key: string;
+  title: string;
+  plans: number;
+  canOpenMaster: boolean;
+  lead?: string | null;
+  needs?: string[];
+  /** The master as this plan's people may see it (others in outline), for live dates. */
+  view: { parts: MasterPart[]; people: Record<string, PersonAvailability> } | null;
+}
+
+export interface MasterData {
+  id: string;
+  title: string;
+  canEdit: boolean;
+  today: string;
+  workWeek: WorkWeek;
+  people: Record<string, PersonAvailability>;
+  parts: { key: string; planId: string; title: string; plan: Plan; lead: string | null; needs: string[] }[];
+  departments: { name: string; contact: string | null; role: string | null }[];
+}
+export interface MasterThread { scope: string; title: string; count: number; last: { author: string; body: string; at: number } | null }
+export interface MasterMessage { id: string; author: string; body: string; about: string | null; at: number }
 
 export interface ImportPreview {
   plan: Plan;
@@ -202,6 +234,16 @@ export const api = {
   addRaid: (planId: string, v: RaidInput) => call<{ item: RaidItem }>(`/api/plans/${encodeURIComponent(planId)}/raid`, { method: "POST", body: JSON.stringify(v) }),
   updateRaid: (planId: string, itemId: string, v: RaidInput) => call<{ item: RaidItem }>(`/api/plans/${encodeURIComponent(planId)}/raid/${encodeURIComponent(itemId)}`, { method: "PATCH", body: JSON.stringify(v) }),
   deleteRaid: (planId: string, itemId: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/raid/${encodeURIComponent(itemId)}`, { method: "DELETE" }),
+  master: (id: string) => call<MasterData>(`/api/masters/${encodeURIComponent(id)}`),
+  createMaster: (title: string, planIds: string[], start?: string) => call<{ id: string; keys: Record<string, string> }>("/api/masters", { method: "POST", body: JSON.stringify({ title, planIds, ...(start ? { start } : {}) }) }),
+  addToMaster: (id: string, planId: string) => call<{ key: string }>(`/api/masters/${encodeURIComponent(id)}/plans`, { method: "POST", body: JSON.stringify({ planId }) }),
+  removeFromMaster: (id: string, planId: string) => call<{ ok: true }>(`/api/masters/${encodeURIComponent(id)}/plans/${encodeURIComponent(planId)}`, { method: "DELETE" }),
+  setPlanDepartments: (id: string, planId: string, lead: string | null, needs: string[]) => call<{ ok: true }>(`/api/masters/${encodeURIComponent(id)}/plans/${encodeURIComponent(planId)}/departments`, { method: "PUT", body: JSON.stringify({ lead, needs }) }),
+  setDepartmentContact: (id: string, name: string, contact: string, role: string) => call<{ ok: true }>(`/api/masters/${encodeURIComponent(id)}/departments/${encodeURIComponent(name)}`, { method: "PUT", body: JSON.stringify({ contact, role }) }),
+  masterActivity: (id: string) => call<{ items: { id: string; planId: string; key: string; plan: string; actor: string; kind: string; taskId: string | null; summary: string; at: number }[] }>(`/api/masters/${encodeURIComponent(id)}/activity`),
+  masterThreads: (id: string) => call<{ threads: MasterThread[] }>(`/api/masters/${encodeURIComponent(id)}/threads`),
+  masterThread: (id: string, scope: string) => call<{ messages: MasterMessage[]; people: { id: string; name: string }[] }>(`/api/masters/${encodeURIComponent(id)}/threads/${encodeURIComponent(scope)}`),
+  postMasterThread: (id: string, scope: string, body: string, about?: string) => call<{ id: string }>(`/api/masters/${encodeURIComponent(id)}/threads/${encodeURIComponent(scope)}`, { method: "POST", body: JSON.stringify({ body, ...(about ? { about } : {}) }) }),
   setBaseline: (planId: string) => call<{ version: number; baselineSet: string; finish: string; savedVersion: number | null }>(`/api/plans/${encodeURIComponent(planId)}/baseline`, { method: "POST", body: "{}" }),
   statusUpdates: (planId: string) => call<{ canPost: boolean; overdue: boolean; dueEveryDays: number; items: StatusUpdate[] }>(`/api/plans/${encodeURIComponent(planId)}/status-updates`),
   postStatusUpdate: (planId: string, u: { rag: Rag; headline: string; sections: { title: string; text: string }[]; source: "ai" | "template" }) => call<{ id: string }>(`/api/plans/${encodeURIComponent(planId)}/status-updates`, { method: "POST", body: JSON.stringify(u) }),

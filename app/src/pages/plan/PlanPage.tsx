@@ -34,7 +34,7 @@ const TABS = [
 
 export function PlanPage({ me, id, view }: { me: Me; id: string; view: string }) {
   const room = usePlanRoom(id, me);
-  const ctx = useMemo(() => (room.detail ? { workWeek: room.detail.workWeek, today: room.detail.today, people: room.detail.people } : null), [room.detail]);
+  const ctx = useMemo(() => (room.detail ? { workWeek: room.detail.workWeek, today: room.detail.today, people: room.detail.people, master: room.detail.master?.view ? { key: room.detail.master.key, ...room.detail.master.view } : null } : null), [room.detail]);
   // Taps show at once; dates, progress and Plan Check catch up a moment later on big plans.
   const settled = useDeferredValue(room.plan);
   const math = usePlanMath(settled, ctx);
@@ -50,7 +50,12 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
   return (
     <PlanContext.Provider value={planCtx}>
       <header className="flex flex-col gap-3 print:hidden">
-        <Link to="/" className="inline-flex min-h-10 items-center gap-1 self-start text-sm font-semibold text-muted hover:text-ink"><ArrowLeft aria-hidden size={16} /> All plans</Link>
+        {room.detail.master?.canOpenMaster ? (
+          <Link to={`/m/${room.detail.master.id}`} className="inline-flex min-h-10 items-center gap-1 self-start text-sm font-semibold text-muted hover:text-ink"><ArrowLeft aria-hidden size={16} /> {room.detail.master.title}{room.detail.master.isMaster ? "" : ` › ${room.plan.title}`}</Link>
+        ) : (
+          <Link to="/" className="inline-flex min-h-10 items-center gap-1 self-start text-sm font-semibold text-muted hover:text-ink"><ArrowLeft aria-hidden size={16} /> All plans</Link>
+        )}
+        {room.detail.master && <span className="self-start rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary-ink">{room.detail.master.isMaster ? `Whole-building tasks of the master plan ${room.detail.master.title}` : `Part of the master plan ${room.detail.master.title}`}</span>}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h1 className="m-0 text-[26px] leading-tight font-bold tracking-tight">{room.plan.title}</h1>
           <HealthChip value={math.progress.suggestedHealth} />

@@ -1,3 +1,4 @@
+import { MasterPage } from "./pages/MasterPage";
 import { SafetyCasePage } from "./pages/SafetyCases";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, type Me } from "./lib/api";
@@ -26,6 +27,8 @@ function Routes({ me, onSignOut, onMe }: { me: Me; onSignOut: () => void; onMe: 
   const inv = match("/invite/:token", path);
   if (inv) return <Invite token={inv.token!} />;
   if (match("/help", path)) return <HelpPage me={me} />;
+  const mp = match("/m/:id", path) ?? match("/m/:id/:view", path);
+  if (mp && ["", "timeline", "departments", "discussion", "activity"].includes(mp.view ?? "")) return <MasterPage key={mp.id} id={mp.id!} view={mp.view ?? ""} />;
   const casePage = match("/help/cases/:id", path);
   if (casePage) return <SafetyCasePage key={casePage.id} id={casePage.id!} />;
   const reqPage = match("/help/requests/:id", path);

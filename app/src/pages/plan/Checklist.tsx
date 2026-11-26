@@ -47,7 +47,8 @@ function PhaseCard({ phase, index, plan, math, today, canEdit, edit, onOpen }: {
         {phase.tasks.map((t) => {
           const comments = counts[t.id] ?? 0;
           const s = math.schedule.tasks.get(t.id);
-          const waits = t.depends.filter((d) => !["done", "skipped"].includes(math.byId.get(d.id)?.status ?? "done")).map((d) => math.byId.get(d.id)?.title ?? d.id);
+          // Waits on other plans first: they're the ones you can't see or move from here.
+          const waits = t.depends.filter((d) => math.waiting(d.id)).sort((a, b) => Number(b.id.includes("/")) - Number(a.id.includes("/"))).map((d) => math.dep(d.id)?.title ?? d.id);
           return <TaskRow key={t.id} t={t} when={s ? { start: s.start, end: s.end, overdue: s.overdue } : null} waits={waits} slip={math.variance.get(t.id) ?? 0} comments={comments} canEdit={canEdit} edit={edit} onOpen={onOpen} />;
         })}
       </ul>
@@ -74,6 +75,7 @@ const TaskRow = memo(function TaskRow({ t, when: s, waits, slip, comments, canEd
         <span className={`text-[15px] leading-snug font-semibold ${finished ? "text-muted line-through decoration-1" : ""}`}>{t.title}</span>
         <span className="flex flex-wrap items-center gap-1.5">
           {t.owner && <span className={chip}>{t.owner}</span>}
+          {t.dept && <span className={`${chip} ring-1 ring-line`} aria-label={`Department: ${t.dept}`}>{t.dept}</span>}
           {s && <span className="text-xs text-muted">{t.milestone ? shortDate(s.end) : `${shortDate(s.start)} to ${shortDate(s.end)}`}</span>}
           {est(t) && !t.milestone && <span className={chip}>{est(t)}</span>}
           {waits.length > 0 && !finished && <span className={chip}><Link2 aria-hidden size={12} /> <span className="max-w-[14rem] truncate">waits on {waits[0]}{waits.length > 1 ? ` +${waits.length - 1}` : ""}</span></span>}

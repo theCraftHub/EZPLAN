@@ -1,7 +1,7 @@
 import { UpdateOverdue } from "../ui/StatusUpdate";
 import { useEffect, useState } from "react";
-import { CalendarClock, Flag, Plus } from "lucide-react";
-import { api, type Me, type PlanSummary } from "../lib/api";
+import { CalendarClock, Flag, Layers, Plus } from "lucide-react";
+import { api, ApiError, type Me, type PlanSummary } from "../lib/api";
 import { shortDate, plural } from "../lib/format";
 import { Link, useRouter } from "../lib/router";
 import { Button, Card, HealthChip, Notice, PageTitle, ProgressRing, Spinner } from "../ui/kit";
@@ -11,6 +11,7 @@ export function Home({ me }: { me: Me }) {
   const { go } = useRouter();
   const [plans, setPlans] = useState<PlanSummary[] | null>(null);
   const [error, setError] = useState("");
+  const [grouping, setGrouping] = useState(false);
   useEffect(() => {
     api.plans().then((r) => setPlans(r.plans)).catch((e: Error) => setError(e.message));
   }, []);
@@ -22,8 +23,9 @@ export function Home({ me }: { me: Me }) {
       <PageTitle
         title={`Hi ${first}`}
         sub={plans ? (active.length ? `${plural(active.length, "active plan")}${overdue ? ` · ${plural(overdue, "task")} overdue` : ""}` : "No plans yet") : " "}
-        actions={<Button onClick={() => go("/new")}><Plus aria-hidden size={18} /> New plan</Button>}
+        actions={<span className="flex flex-wrap gap-2">{plans && plans.filter((x) => !x.master && !x.masterId && !x.shared).length > 0 && <Button variant="secondary" onClick={() => setGrouping(!grouping)} aria-expanded={grouping}><Layers aria-hidden size={18} /> New master plan</Button>}<Button onClick={() => go("/new")}><Plus aria-hidden size={18} /> New plan</Button></span>}
       />
+      {grouping && plans && <NewMaster plans={plans.filter((x) => !x.master && !x.masterId && !x.shared)} onDone={(id) => go(`/m/${id}`)} onCancel={() => setGrouping(false)} />}
       {error && <Notice tone="bad">{error}</Notice>}
       {!plans && !error && <Spinner label="Loading your plans" />}
       {plans && plans.length === 0 && (
@@ -37,7 +39,7 @@ export function Home({ me }: { me: Me }) {
         <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2 xl:grid-cols-3" aria-label="Your plans">
           {plans.map((p) => (
             <li key={p.id}>
-              <Link to={`/p/${p.id}`} className="block h-full rounded-2xl bg-surface p-4 shadow-[0_1px_2px_rgba(15,23,42,0.06)] ring-1 ring-line/60 hover:ring-primary/50">
+              <Link to={p.master ? `/m/${p.id}` : `/p/${p.id}`} className="block h-full rounded-2xl bg-surface p-4 shadow-[0_1px_2px_rgba(15,23,42,0.06)] ring-1 ring-line/60 hover:ring-primary/50">
                 <div className="flex items-start gap-3">
                   <ProgressRing percent={p.summary?.percent ?? 0} />
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -46,6 +48,8 @@ export function Home({ me }: { me: Me }) {
                       {p.summary && <HealthChip value={p.state === "review" ? "On hold" : p.summary.health} />}
                       <UpdateOverdue state={p.statusUpdate} />
                       {p.shared && <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary-ink">Shared with you</span>}
+                      {p.master && <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary-ink"><Layers aria-hidden size={12} /> Master plan · {plural(p.master.plans, "plan")} inside</span>}
+                      {p.masterId && <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-semibold text-ink-2 ring-1 ring-line">In a master plan</span>}
                     </span>
                   </div>
                 </div>
@@ -66,5 +70,31 @@ export function Home({ me }: { me: Me }) {
         </ul>
       )}
     </>
+  );
+}
+
+/** "New master plan": group existing plans under one master (each keeps its own tasks and people). */
+function NewMaster({ plans, onDone, onCancel }: { plans: PlanSummary[]; onDone: (id: string) => void; onCancel: () => void }) {
+  const [title, setTitle] = useState("");
+  const [picked, setPicked] = useState<string[]>([]);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const create = async () => {
+    setBusy(true);
+    setError("");
+    try { onDone((await api.createMaster(title.trim(), picked)).id); } catch (e) { setError(e instanceof ApiError ? e.message : "Couldn't make the master plan."); } finally { setBusy(false); }
+  };
+  return (
+    <Card aria-label="New master plan" className="flex flex-col gap-3">
+      <h2 className="m-0 text-lg font-bold">New master plan</h2>
+      <p className="m-0 text-[15px] text-ink-2">A master plan holds several plans, for example one per room or per workstream, and schedules them as one: a delay in one moves what waits on it in the others, and someone working in several isn't double-booked. Each plan keeps its own tasks and people.</p>
+      <label className="flex flex-col gap-1.5 text-sm font-semibold">Name<input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="For example: HQ remodel" className="min-h-11 rounded-xl border border-line bg-surface px-3 text-base font-normal" /></label>
+      <fieldset className="m-0 flex flex-col gap-1 border-0 p-0">
+        <legend className="mb-1 text-sm font-semibold">Plans to put in it</legend>
+        {plans.map((p) => <label key={p.id} className="flex min-h-11 items-center gap-3 text-[15px]"><input type="checkbox" className="h-5 w-5" checked={picked.includes(p.id)} onChange={(e) => setPicked(e.target.checked ? [...picked, p.id] : picked.filter((x) => x !== p.id))} /> {p.title}</label>)}
+      </fieldset>
+      {error && <Notice tone="bad">{error}</Notice>}
+      <div className="flex flex-wrap gap-2"><Button onClick={() => void create()} disabled={busy || !title.trim() || picked.length === 0}>Make the master plan</Button><Button variant="secondary" onClick={onCancel}>Cancel</Button></div>
+    </Card>
   );
 }
