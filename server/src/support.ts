@@ -4,7 +4,7 @@
  * plan on that request; every view is logged and the grant can be revoked at any time.
  */
 import type { Hono } from "hono";
-import { exportPlan, freeModeration } from "@ezplan/shared";
+import { exportPlan, freeModeration } from "@rakuplan/shared";
 import type { Clock, Db, ServerConfig, User } from "./ports";
 import { notify } from "./notify";
 import { loadRoom } from "./room";

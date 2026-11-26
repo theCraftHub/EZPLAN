@@ -1,7 +1,7 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwind from "@tailwindcss/vite";
-import { BRAND } from "../shared/src/brand";
+import { BRAND, FILE_EXTENSIONS } from "../shared/src/brand";
 
 /** The product name comes from brand.ts only: page title and the install manifest. */
 function brand(): Plugin {
@@ -15,7 +15,7 @@ function brand(): Plugin {
       background_color: BRAND.colors.ground,
       theme_color: BRAND.colors.ink,
       icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any maskable" }],
-      file_handlers: [{ action: "/new", accept: { "text/markdown": [...BRAND.fileExtensions, ".md"] } }],
+      file_handlers: [{ action: "/new", accept: { "text/markdown": [...FILE_EXTENSIONS, ".md"] } }],
     },
     null,
     2,

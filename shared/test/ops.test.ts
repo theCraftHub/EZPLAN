@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { allTasks, ClientReplica, newRoom, parsePlan, serverApply, type Actor, type Op, type OpEnvelope, type Plan } from "../src";
 
-const gala = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "gala.ezplan"), "utf8")).plan;
+const gala = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "gala.rakuplan"), "utf8")).plan;
 const DAY = "2026-12-08";
 const sam: Actor = { userId: "u1", name: "Sam" };
 const ana: Actor = { userId: "u2", name: "Ana" };
@@ -116,7 +116,7 @@ describe("live editing sync", () => {
 
 describe("client replica: reconnect helpers", () => {
   it("resets to a whole plan but keeps unsent edits, and drops a refused edit", () => {
-    const base = parsePlan("---\nezplan: 1\ntitle: R\n---\n## P1: A\n- [ ] T1: One (1d)\n- [ ] T2: Two (1d)").plan;
+    const base = parsePlan("---\nrakuplan: 1\ntitle: R\n---\n## P1: A\n- [ ] T1: One (1d)\n- [ ] T2: Two (1d)").plan;
     const c = new ClientReplica("c1", { userId: "u1", name: "Ana" }, base, 3);
     const keep = c.edit({ kind: "setStatus", taskId: "T1", status: "progress" });
     const refuse = c.edit({ kind: "setField", taskId: "T2", field: "title", value: "Renamed" });

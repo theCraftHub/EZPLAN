@@ -3,7 +3,7 @@
  * order, and applies everyone else's. Edits made while offline queue up and are sent on reconnect.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ClientReplica, type Op, type PresencePerson, type ServerMessage } from "@ezplan/shared";
+import { ClientReplica, type Op, type PresencePerson, type ServerMessage } from "@rakuplan/shared";
 import { api, type Me, type PlanDetail } from "./api";
 
 export type LiveStatus = "connecting" | "live" | "offline";

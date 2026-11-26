@@ -36,19 +36,19 @@ _Last updated 2026-11-12. Prices come from 2026 comparison articles and vendor p
 | Smartsheet / MS Project | Spreadsheet + Gantt | Serious scheduling (critical path, baselines) | Intimidating for casual users |
 | Notion | Docs-first | Flexible, pretty | Weak portfolio / workload features |
 
-**Direction for EZPLAN:** Linear's calm + Monday's clear status color, mobile-first, plain language. Show the serious scheduling power (critical path, baseline) visually without the spreadsheet feel.
+**Direction for Rakuplan:** Linear's calm + Monday's clear status color, mobile-first, plain language. Show the serious scheduling power (critical path, baseline) visually without the spreadsheet feel.
 
-## 3. Features adopted into EZPLAN (phase 1)
+## 3. Features adopted into Rakuplan (phase 1)
 
 Milestones, baseline vs actual, AI status reports, task notes, assignees, workload view, real-time collaboration, project dashboard + all-projects dashboard, portfolio (Active / Completed / Archived), read-only share links, due-date reminders.
 
 Deliberately skipped for now (complexity users complain about): custom fields everywhere, automation builders, time tracking and invoicing.
 
-## 4. EZPLAN's angle
+## 4. Rakuplan's angle
 
-1. **Idea to an AI-checked, good-looking plan in ~2 minutes**: the customer's own Claude writes the plan, EZPLAN checks and visualizes it.
-2. **No lock-in**: the `.ezplan` file is plain text that keeps tracking in any app.
-3. **Simple, fair pricing**: no seat minimums and clear AI caps. Unit economics (`docs/finance/ezplan-unit-economics.xlsx`) show a ~$6 to $8 per user floor for a healthy margin, which fits inside the market band.
+1. **Idea to an AI-checked, good-looking plan in ~2 minutes**: the customer's own Claude writes the plan, Rakuplan checks and visualizes it.
+2. **No lock-in**: the `.rakuplan` file is plain text that keeps tracking in any app.
+3. **Simple, fair pricing**: no seat minimums and clear AI caps. Unit economics (`docs/finance/rakuplan-unit-economics.xlsx`) show a ~$6 to $8 per user floor for a healthy margin, which fits inside the market band.
 
 ## Sources
 - [PricePulse: PM pricing guide 2026](https://www.getpricepulse.com/blog/project-management-pricing-guide-2026.html)
@@ -85,17 +85,17 @@ Deliberately skipped for now (complexity users complain about): custom fields ev
 
 - **Asana** has a ChatGPT app that creates projects from a chat and connectors for several AI tools; users report some settings (owner, team) must still be changed in Asana itself.
 - **monday.com**'s ChatGPT plugin was reported (third-party) as read-only.
-- **Updating an existing plan from an AI chat** is not clearly offered by any tool reviewed; integrations are tied to one AI vendor's app. EZPLAN's "Update with my AI" works with any assistant by copy/paste (and later MCP/API) and preserves progress.
+- **Updating an existing plan from an AI chat** is not clearly offered by any tool reviewed; integrations are tied to one AI vendor's app. Rakuplan's "Update with my AI" works with any assistant by copy/paste (and later MCP/API) and preserves progress.
 
 ## 7. Admin consoles
 
 - **Asana:** SCIM provisioning, admin console, Audit Log API (Enterprise+ or Enterprise with a compliance add-on), SIEM/DLP integrations; SSO/SCIM/audit API at top tiers.
 - **Enterprise-readiness checklists** (vendor-written) agree on: SCIM-based offboarding as a security control, tamper-evident per-tenant audit logs streamable to SIEM, role-based and delegated admin, support access off by default and time-limited.
-- **EZPLAN position:** every business admin feature included in the Business plan; only SIEM streaming, legal hold, IP allowlist, extended retention and SOC 2 materials form the Enterprise Security add-on; custom SAML is quoted.
+- **Rakuplan position:** every business admin feature included in the Business plan; only SIEM streaming, legal hold, IP allowlist, extended retention and SOC 2 materials form the Enterprise Security add-on; custom SAML is quoted.
 
 ## 8. Scheduling depth by tier (summary)
 
-| Capability | Typical competitor tier | EZPLAN |
+| Capability | Typical competitor tier | Rakuplan |
 |---|---|---|
 | Critical path | Mid/top tier (Smartsheet Pro+, Planner Plan 3) | Included |
 | Baselines | Top tier, often one only | Multiple, included |

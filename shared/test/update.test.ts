@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { allTasks, changesToOps, diffPlans, newRoom, parseOp, parsePlan, serverApply, updatePrompt, whatChanged, type Op, type Plan } from "../src";
 
-const gala = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "gala.ezplan"), "utf8")).plan;
+const gala = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "gala.rakuplan"), "utf8")).plan;
 const DAY = "2026-12-08";
 const codeBlock = (s: string) => /```\n([\s\S]*?)\n```/.exec(s.slice(s.indexOf("CURRENT PLAN")))![1]!;
 

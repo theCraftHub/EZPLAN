@@ -5,7 +5,7 @@
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
-import { AiModerationSchema, AiReportTextSchema, AiReviewSchema, type AiReportText, type AiReview, type ModerationVerdict, type StatusFacts } from "@ezplan/shared";
+import { AiModerationSchema, AiReportTextSchema, AiReviewSchema, type AiReportText, type AiReview, type ModerationVerdict, type StatusFacts } from "@rakuplan/shared";
 import type { z } from "zod";
 import type { AiEngine, AiResult, ReviewInput } from "./engine";
 import { marker, MODERATION_SYSTEM, moderationMessage, REPORT_SYSTEM, reportMessage, REVIEW_SYSTEM, reviewMessage } from "./prompts";

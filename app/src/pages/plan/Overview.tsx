@@ -1,6 +1,6 @@
 import { CalendarClock, Flag, TriangleAlert } from "lucide-react";
 import { RecentActivity } from "./Activity";
-import type { Op, Plan } from "@ezplan/shared";
+import type { Op, Plan } from "@rakuplan/shared";
 import { plural, shortDate } from "../../lib/format";
 import { Link } from "../../lib/router";
 import { Card, ProgressRing } from "../../ui/kit";

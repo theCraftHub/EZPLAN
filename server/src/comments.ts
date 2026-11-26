@@ -3,7 +3,7 @@
  * HTML), screened with the free checks, and @mentions resolve only to people on the plan.
  */
 import type { Hono } from "hono";
-import { allTasks, findMentions, freeModeration } from "@ezplan/shared";
+import { allTasks, findMentions, freeModeration } from "@rakuplan/shared";
 import type { Clock, Db, RoomHost, User } from "./ports";
 import { activityFor, recordActivity } from "./activity";
 import { loadRoom } from "./room";

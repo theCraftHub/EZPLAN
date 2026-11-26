@@ -6,8 +6,8 @@ import { allTasks, estimateToDays, exportPlan, parseDepends, parseEstimate, pars
 const fixture = (name: string) => readFileSync(join(import.meta.dirname, "fixtures", name), "utf8");
 const task = (plan: Plan, id: string) => allTasks(plan).find((t) => t.id === id)!;
 
-describe("strict EZPLAN format", () => {
-  const { plan, issues, mode } = parsePlan(fixture("gala.ezplan"));
+describe("strict Rakuplan format", () => {
+  const { plan, issues, mode } = parsePlan(fixture("gala.rakuplan"));
 
   it("reads the front matter", () => {
     expect(mode).toBe("strict");
@@ -93,7 +93,7 @@ describe("tolerant mode for plain checklists", () => {
 });
 
 describe("unsafe content is neutralized", () => {
-  const { plan, issues } = parsePlan(fixture("attack.ezplan"));
+  const { plan, issues } = parsePlan(fixture("attack.rakuplan"));
 
   it("strips HTML, script, unsafe links and hidden characters", () => {
     const text = JSON.stringify(plan);
@@ -106,7 +106,7 @@ describe("unsafe content is neutralized", () => {
 });
 
 describe("friendly line-numbered problems", () => {
-  const { plan, issues } = parsePlan(fixture("errors.ezplan"));
+  const { plan, issues } = parsePlan(fixture("errors.rakuplan"));
 
   it("skips bad dates with a hint and keeps going", () => {
     expect(plan.start).toBeUndefined();
@@ -124,13 +124,13 @@ describe("friendly line-numbered problems", () => {
 describe("limits", () => {
   it("caps the number of tasks", () => {
     const body = Array.from({ length: 5_010 }, (_, i) => `- [ ] Task ${i}`).join("\n");
-    const { plan, issues } = parsePlan(`---\nezplan: 1\ntitle: Big\n---\n## P1: All\n${body}`);
+    const { plan, issues } = parsePlan(`---\nrakuplan: 1\ntitle: Big\n---\n## P1: All\n${body}`);
     expect(allTasks(plan)).toHaveLength(5_000);
     expect(issues.some((i) => i.severity === "error" && /Too many tasks/.test(i.message))).toBe(true);
   });
 
   it("never throws on junk", () => {
-    for (const junk of ["", "   ", "---", "---\nezplan: 1\n---", "####", "- [", "\u0000\u0001", "x".repeat(10_000)]) {
+    for (const junk of ["", "   ", "---", "---\nrakuplan: 1\n---", "####", "- [", "\u0000\u0001", "x".repeat(10_000)]) {
       expect(() => parsePlan(junk)).not.toThrow();
     }
   });
@@ -156,7 +156,7 @@ describe("helpers", () => {
 });
 
 describe("round trip: export then parse returns the same plan", () => {
-  for (const name of ["gala.ezplan", "chatgpt-style.md", "plain-checklist.md", "errors.ezplan"]) {
+  for (const name of ["gala.rakuplan", "chatgpt-style.md", "plain-checklist.md", "errors.rakuplan"]) {
     it(name, () => {
       const first = parsePlan(fixture(name)).plan;
       const exported = exportPlan(first);
@@ -168,7 +168,7 @@ describe("round trip: export then parse returns the same plan", () => {
   }
 
   it("a box ticked by hand in another app comes back as done", () => {
-    const exported = exportPlan(parsePlan(fixture("gala.ezplan")).plan);
+    const exported = exportPlan(parsePlan(fixture("gala.rakuplan")).plan);
     const edited = exported.replace("- [ ] T3:", "- [x] T3:");
     expect(task(parsePlan(edited).plan, "T3").status).toBe("done");
   });

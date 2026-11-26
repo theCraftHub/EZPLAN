@@ -2,7 +2,7 @@
 import { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import type { PersonAvailability, WorkWeek } from "@ezplan/shared";
+import type { PersonAvailability, WorkWeek } from "@rakuplan/shared";
 import { api } from "../../lib/api";
 import { longDate } from "../../lib/format";
 import { HoursPicker } from "../../ui/HoursPicker";

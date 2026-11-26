@@ -1,7 +1,7 @@
 /** The workspace's standard week ("Full time"), with a preview of every plan's new finish date. */
 import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
-import type { WorkWeek as Week } from "@ezplan/shared";
+import type { WorkWeek as Week } from "@rakuplan/shared";
 import { api, type Me } from "../lib/api";
 import { shortDate } from "../lib/format";
 import { Button, Card, Notice } from "../ui/kit";

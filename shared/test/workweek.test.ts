@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { availableHours, Calendar, checkPlan, estimateToDays, exportPlan, hoursPerDay, levelPlan, parsePlan, schedulePlan, workloadByWeek } from "../src";
 
-const plan = (body: string, header = "") => parsePlan(`---\nezplan: 1\ntitle: T\nstart: 2026-11-16\n${header}---\n## P1: Work\n${body}`).plan;
+const plan = (body: string, header = "") => parsePlan(`---\nrakuplan: 1\ntitle: T\nstart: 2026-11-16\n${header}---\n## P1: Work\n${body}`).plan;
 const kitchen = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "assistants", "copilot-renovation-v2.txt"), "utf8")).plan;
 
 describe("workspace standard work week (full time)", () => {
@@ -85,7 +85,7 @@ describe("plan files keep their day length (hours_per_day)", () => {
   });
 
   it("an unreadable value is skipped with a hint", () => {
-    const r = parsePlan("---\nezplan: 1\ntitle: T\nhours_per_day: lots\n---\n## P1: A\n- [ ] T1: A (1d)");
+    const r = parsePlan("---\nrakuplan: 1\ntitle: T\nhours_per_day: lots\n---\n## P1: A\n- [ ] T1: A (1d)");
     expect(r.plan.hoursPerDay).toBeUndefined();
     expect(r.issues).toContainEqual(expect.objectContaining({ severity: "warning", message: expect.stringMatching(/working-day length/) }));
   });

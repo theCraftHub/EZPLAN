@@ -2,8 +2,8 @@
  * Cloud entry point (Cloudflare Workers): the shared API (server/) on the Cloudflare connectors,
  * plus the PlanRoom Durable Object for live editing.
  */
-import { AnthropicEngine, configFromEnv, createApp, FakeEngine, LiveRoom, PlanRoomCore, systemClock, testAuthEnabled, type Clock, type Peer } from "@ezplan/server";
-import { LIVE_MAX_MESSAGE, type Actor, type OpEnvelope, type ServerMessage } from "@ezplan/shared";
+import { AnthropicEngine, configFromEnv, createApp, FakeEngine, LiveRoom, PlanRoomCore, systemClock, testAuthEnabled, type Clock, type Peer } from "@rakuplan/server";
+import { LIVE_MAX_MESSAGE, type Actor, type OpEnvelope, type ServerMessage } from "@rakuplan/shared";
 import { D1Db, DurableRoomHost, R2Blobs, type LiveTicket } from "./adapters";
 
 export interface Env {

@@ -2,7 +2,7 @@
  * Comments, the Commenter role and the activity log. Written once, run on both hosts.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { ServerMessage } from "@ezplan/shared";
+import type { ServerMessage } from "@rakuplan/shared";
 import type { HostFactory, TestHost } from "./contract";
 import { LiveClient } from "./live.contract";
 import { PUBLIC_URL } from "./signin.contract";
@@ -10,7 +10,7 @@ import { PUBLIC_URL } from "./signin.contract";
 const ALEX = "u-alex|Alex|alex@example.com";
 const SAM = "u-sam|Sam Okoye|sam@example.com";
 const KIM = "u-kim|Kim|kim@example.com";
-const PLAN = "---\nezplan: 1\ntitle: Gala\nstart: 2027-01-04\n---\n## P1: Venue\n- [ ] T1: Book venue (2d) @Alex\n- [ ] T2: Set budget (1d) @Sam";
+const PLAN = "---\nrakuplan: 1\ntitle: Gala\nstart: 2027-01-04\n---\n## P1: Venue\n- [ ] T1: Book venue (2d) @Alex\n- [ ] T2: Set budget (1d) @Sam";
 
 export function collabContract(hostName: string, factory: HostFactory) {
   describe(`Comments, commenters and activity: ${hostName}`, () => {

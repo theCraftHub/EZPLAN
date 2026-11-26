@@ -3,7 +3,7 @@
  * Written once, run on both hosts.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { ServerMessage } from "@ezplan/shared";
+import type { ServerMessage } from "@rakuplan/shared";
 import type { HostFactory, TestHost } from "./contract";
 import { LiveClient, type LiveOpen } from "./live.contract";
 import { PUBLIC_URL } from "./signin.contract";
@@ -11,7 +11,7 @@ import { PUBLIC_URL } from "./signin.contract";
 const ALEX = "u-alex|Alex|alex@example.com";
 const SAM = "u-sam|Sam|sam@example.com";
 const KIM = "u-kim|Kim|kim@example.com";
-const PLAN = "---\nezplan: 1\ntitle: Shared kitchen\nstart: 2027-01-04\n---\n## P1: Work\n- [ ] T1: Measure (1d) @Alex\n- [ ] T2: Quotes (2d) @Sam depends: T1";
+const PLAN = "---\nrakuplan: 1\ntitle: Shared kitchen\nstart: 2027-01-04\n---\n## P1: Work\n- [ ] T1: Measure (1d) @Alex\n- [ ] T2: Quotes (2d) @Sam depends: T1";
 
 export function sharingContract(hostName: string, factory: HostFactory) {
   describe(`Sharing a plan: ${hostName}`, () => {

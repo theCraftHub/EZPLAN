@@ -1,7 +1,7 @@
 /** Status report: built from the plan's facts; AI (optional) only rewords them. Edit, then copy. */
 import { useState } from "react";
 import { Check, ClipboardCopy, FileText } from "lucide-react";
-import type { ReportText, StatusFacts } from "@ezplan/shared";
+import type { ReportText, StatusFacts } from "@rakuplan/shared";
 import { api } from "../../lib/api";
 import { Button, Card, Notice } from "../../ui/kit";
 

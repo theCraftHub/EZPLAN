@@ -3,7 +3,7 @@
  * saves the result. Both hosts use this unchanged: the cloud inside a Durable Object, the
  * self-hosted server in memory.
  */
-import { allTasks, describeOp, newRoom, serverApply, taskBefore, type Actor, type Applied, type OpEnvelope, type Plan, type RoomState } from "@ezplan/shared";
+import { allTasks, describeOp, newRoom, serverApply, taskBefore, type Actor, type Applied, type OpEnvelope, type Plan, type RoomState } from "@rakuplan/shared";
 import { recordActivity } from "./activity";
 import { notify, userForName } from "./notify";
 import type { ApplyResult, Clock, Db } from "./ports";

@@ -3,7 +3,7 @@
  * Approach: schedule with the shared engine, then render only the rows in view
  * (virtualized), absolutely positioned. Metrics are exposed on window for Playwright.
  */
-import { BRAND, parsePlan, schedulePlan, type Plan, type Schedule } from "@ezplan/shared";
+import { BRAND, parsePlan, schedulePlan, type Plan, type Schedule } from "@rakuplan/shared";
 
 const N = 2000;
 const ROW = 28;

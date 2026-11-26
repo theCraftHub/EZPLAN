@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Welcome to EZPLAN</title>
+<title>Welcome to Rakuplan</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -17,7 +17,7 @@ a{color:#4338CA;text-decoration:none}a:hover{color:#3730A3}
 </helmet>
 <div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F7F9; font-family: Inter, system-ui, sans-serif; color: #0F172A; display: flex; flex-direction: column; overflow: hidden">
   <main style="flex: 1; overflow-y: auto; padding: 48px 24px 24px; display: flex; flex-direction: column; gap: 18px">
-    <span style="font-size: 22px; font-weight: 800; letter-spacing: -0.03em; color: #4338CA">EZPLAN</span>
+    <span style="font-size: 22px; font-weight: 800; letter-spacing: -0.03em; color: #4338CA">Rakuplan</span>
 
     <sc-if value="{{ isQ }}" hint-placeholder-val="{{ true }}">
       <section style="display: flex; flex-direction: column; gap: 16px">
@@ -68,7 +68,7 @@ class Component extends DCLogic {
     var opts = [
       { k: 'ai', title: 'Use my AI assistant', sub: 'Copy a prompt into any AI you use (ChatGPT, Claude, Gemini, Copilot…), paste back its reply.' },
       { k: 'tpl', title: 'Start from a template', sub: 'Ready-made plans: renovation, event, move, launch, hiring and more. No AI needed.' },
-      { k: 'imp', title: 'Import a file', sub: 'An .ezplan file, a checklist, or a spreadsheet from Asana, Trello or Excel.' }
+      { k: 'imp', title: 'Import a file', sub: 'An .rakuplan file, a checklist, or a spreadsheet from Asana, Trello or Excel.' }
     ];
     return {
       isQ: !this.state.done,
@@ -83,7 +83,7 @@ class Component extends DCLogic {
         { n: 1, title: 'Check off a task', sub: 'Tap a status. It is saved with your name.' },
         { n: 2, title: 'See the timeline', sub: 'What happens when, and what decides the finish date.' },
         { n: 3, title: 'Read the Plan Check', sub: 'Free structure check, plus AI review when it is on.' },
-        { n: 4, title: 'Share or export', sub: 'A read-only link, or an .ezplan file that keeps tracking anywhere.' }
+        { n: 4, title: 'Share or export', sub: 'A read-only link, or an .rakuplan file that keeps tracking anywhere.' }
       ]
     };
   }

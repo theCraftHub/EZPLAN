@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { fits, whatIfOwner, type WhatIf } from "./reassign";
 import { useIsDesktop, useVisibleColumns } from "../../lib/view";
 import { ChevronLeft, ChevronRight, UserPlus, UserRound } from "lucide-react";
-import { levelPlan, type Op, type PersonAvailability, type Plan, type WorkWeek } from "@ezplan/shared";
+import { levelPlan, type Op, type PersonAvailability, type Plan, type WorkWeek } from "@rakuplan/shared";
 import type { Me } from "../../lib/api";
 import { longDate, plural, shortDate } from "../../lib/format";
 import { Button, Card, Notice } from "../../ui/kit";

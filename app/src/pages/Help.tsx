@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from "react";
 import { ExternalLink, LifeBuoy, Mail, Phone, Send, ShieldCheck } from "lucide-react";
-import { BRAND } from "@ezplan/shared";
+import { BRAND } from "@rakuplan/shared";
 import { api, ApiError, type HelpInfo, type Me, type PlanSummary, type SupportContact, type TicketRow, type TicketThread, type TicketTopic } from "../lib/api";
 import { recentErrors } from "../lib/errors";
 import { Link, useRouter } from "../lib/router";

@@ -1,5 +1,5 @@
 /** Writes and reads a plan's activity log. Lines are written by the server only. */
-import type { ActivityLine } from "@ezplan/shared";
+import type { ActivityLine } from "@rakuplan/shared";
 import type { Db } from "./ports";
 
 /** Quick repeats (same person, task and kind within 2 minutes) update the last line instead of adding one. */

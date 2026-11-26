@@ -5,9 +5,9 @@
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { DatabaseSync, type SQLInputValue } from "node:sqlite";
-import { LiveRoom, PlanRoomCore, type ApplyResult, type Blobs, type Clock, type Db, type LiveRole, type Peer, type RoomHost, type SqlValue } from "@ezplan/server";
+import { LiveRoom, PlanRoomCore, type ApplyResult, type Blobs, type Clock, type Db, type LiveRole, type Peer, type RoomHost, type SqlValue } from "@rakuplan/server";
 import type { WebSocket } from "ws";
-import type { Actor, OpEnvelope, ServerMessage } from "@ezplan/shared";
+import type { Actor, OpEnvelope, ServerMessage } from "@rakuplan/shared";
 
 export class NodeSqliteDb implements Db {
   readonly raw: DatabaseSync;

@@ -1,7 +1,7 @@
 /** A one-page summary to print or save as PDF (browser print). */
 import { useEffect } from "react";
 import { Printer } from "lucide-react";
-import { BRAND, type Plan } from "@ezplan/shared";
+import { BRAND, type Plan } from "@rakuplan/shared";
 import { longDate, plural, shortDate } from "../../lib/format";
 import { Button } from "../../ui/kit";
 import { STATUS } from "../../ui/Status";

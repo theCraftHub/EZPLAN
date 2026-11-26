@@ -9,7 +9,7 @@ const SAM = "u-sam|Sam|sam@example.com";
 const KIM = "u-kim|Kim|kim@example.com";
 const ZED = "u-zed|Zed|zed@example.com";
 const OWNER = "u-owner|Owner|owner@example.com";
-const PLAN = (title: string) => `---\nezplan: 1\ntitle: ${title}\nstart: 2027-01-04\n---\n## P1: Work\n- [ ] T1: Measure (1d) @Alex\n- [ ] T2: Quotes (2d) @Sam due: 2027-01-05\n- [ ] T3: Permit (1d) @Sam due: 2027-01-01\n- [ ] T4: Paint (1d) @Sam due: 2027-02-01`;
+const PLAN = (title: string) => `---\nrakuplan: 1\ntitle: ${title}\nstart: 2027-01-04\n---\n## P1: Work\n- [ ] T1: Measure (1d) @Alex\n- [ ] T2: Quotes (2d) @Sam due: 2027-01-05\n- [ ] T3: Permit (1d) @Sam due: 2027-01-01\n- [ ] T4: Paint (1d) @Sam due: 2027-02-01`;
 
 export function notifyContract(hostName: string, factory: HostFactory) {
   describe(`Notifications: ${hostName}`, () => {

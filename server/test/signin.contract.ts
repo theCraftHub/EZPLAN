@@ -123,7 +123,7 @@ export function signInContract(hostName: string, factory: HostFactory) {
       expect(evil.status).toBe(403);
       const form = await host.fetch("/api/plans", { method: "POST", headers: { "content-type": "text/plain" }, body: "x" }, undefined, cookie);
       expect(form.status).toBe(403);
-      const ours = await host.fetch("/api/plans", { method: "POST", headers: { origin: PUBLIC_URL, "content-type": "application/json" }, body: JSON.stringify({ text: "---\nezplan: 1\ntitle: Mine\n---\n## P1: A\n- [ ] T1: B (1d)" }) }, undefined, cookie);
+      const ours = await host.fetch("/api/plans", { method: "POST", headers: { origin: PUBLIC_URL, "content-type": "application/json" }, body: JSON.stringify({ text: "---\nrakuplan: 1\ntitle: Mine\n---\n## P1: A\n- [ ] T1: B (1d)" }) }, undefined, cookie);
       expect(ours.status).toBe(201);
     });
 

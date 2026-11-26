@@ -10,7 +10,7 @@ const ALEX = "u-alex|Alex|alex@example.com"; // manages the workspace
 const SAM = "u-sam|Sam|sam@example.com"; // on one plan
 const KIM = "u-kim|Kim|kim@example.com"; // unrelated
 const OWNER = "u-owner|Owner|owner@example.com"; // our team (PLATFORM_ADMINS)
-const PLAN = "---\nezplan: 1\ntitle: Office move\nstart: 2027-01-04\n---\n## P1: Work\n- [ ] T1: Pack (1d)";
+const PLAN = "---\nrakuplan: 1\ntitle: Office move\nstart: 2027-01-04\n---\n## P1: Work\n- [ ] T1: Pack (1d)";
 const NOW = Date.parse(`${TODAY}T12:00:00Z`);
 
 export function supportContract(hostName: string, factory: HostFactory) {

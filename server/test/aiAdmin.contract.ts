@@ -9,7 +9,7 @@ const ALEX = "u-alex|Alex|alex@example.com";
 const SAM = "u-sam|Sam|sam@example.com";
 const KIM = "u-kim|Kim|kim@example.com";
 const OWNER = "u-owner|Owner|owner@example.com"; // on PLATFORM_ADMINS in the test config
-const plan = (title: string) => `---\nezplan: 1\ntitle: ${title}\nstart: 2027-01-04\n---\n## P1: Work\n- [x] T1: Measure (1d) @Alex done: 2027-01-04 by Alex\n- [ ] T2: Order cabinets (2d) @Alex depends: T1\n- [ ] M1: Ordered (milestone) depends: T2`;
+const plan = (title: string) => `---\nrakuplan: 1\ntitle: ${title}\nstart: 2027-01-04\n---\n## P1: Work\n- [x] T1: Measure (1d) @Alex done: 2027-01-04 by Alex\n- [ ] T2: Order cabinets (2d) @Alex depends: T1\n- [ ] M1: Ordered (milestone) depends: T2`;
 
 export function aiAdminContract(hostName: string, factory: HostFactory) {
   describe(`AI credits, spending and safety review: ${hostName}`, () => {

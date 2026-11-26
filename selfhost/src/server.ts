@@ -7,7 +7,7 @@ import type { IncomingMessage, Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import type { Duplex } from "node:stream";
 import { serve } from "@hono/node-server";
-import { LIVE_MAX_MESSAGE } from "@ezplan/shared";
+import { LIVE_MAX_MESSAGE } from "@rakuplan/shared";
 import { WebSocketServer } from "ws";
 import { INTERNAL_UPGRADE_HEADER, type MemoryRoomHost } from "./adapters";
 

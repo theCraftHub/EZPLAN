@@ -16,7 +16,7 @@ export async function addPlan(page: Page, text: string): Promise<string> {
 }
 
 export const KITCHEN = `---
-ezplan: 1
+rakuplan: 1
 title: Kitchen Remodel
 goal: New kitchen ready by spring.
 start: 2027-01-04

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { allTasks, availableHours, Calendar, checkPlan, explainStart, levelPlan, parsePlan, schedulePlan } from "../src";
 
-const plan = (body: string, start = "2026-11-16") => parsePlan(`---\nezplan: 1\ntitle: T\nstart: ${start}\n---\n## P1: Work\n${body}`).plan;
+const plan = (body: string, start = "2026-11-16") => parsePlan(`---\nrakuplan: 1\ntitle: T\nstart: ${start}\n---\n## P1: Work\n${body}`).plan;
 const signage = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "assistants", "claude-existing-chat-signage.txt"), "utf8")).plan;
 
 describe("person-aware scheduling", () => {

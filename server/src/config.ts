@@ -10,7 +10,7 @@
  *   AI_POOL_CHECKS, AI_POOL_REPORTS, AI_POOL_MAX  per-workspace monthly pool and top-up ceiling
  *   ANTHROPIC_API_KEY, AI_MODEL, AI_REPORT_MODEL  the built-in AI (read by each host; AI is off without a key)
  */
-import { DEFAULT_WORK_WEEK } from "@ezplan/shared";
+import { DEFAULT_WORK_WEEK } from "@rakuplan/shared";
 import { DEFAULT_AI_LIMITS, type OidcProvider, type ServerConfig } from "./ports";
 
 const num = (v: string | undefined, d: number) => (v && /^\d+$/.test(v) ? Number(v) : d);

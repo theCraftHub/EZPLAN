@@ -4,7 +4,7 @@
  */
 import { useMemo, useState } from "react";
 import { ArrowLeft, Check, ClipboardCopy, Sparkles } from "lucide-react";
-import { changesToOps, diffPlans, updatePrompt, whatChanged, type Plan, type UpdateChange } from "@ezplan/shared";
+import { changesToOps, diffPlans, updatePrompt, whatChanged, type Plan, type UpdateChange } from "@rakuplan/shared";
 import { api } from "../../lib/api";
 import { plural } from "../../lib/format";
 import { useRouter } from "../../lib/router";

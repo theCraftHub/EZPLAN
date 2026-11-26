@@ -3,8 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { Calendar, checkPlan, parsePlan, progressOf, schedulePlan, workloadByWeek } from "../src";
 
-const gala = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "gala.ezplan"), "utf8")).plan;
-const plan = (body: string, header = "title: Test\nstart: 2026-12-01") => parsePlan(`---\nezplan: 1\n${header}\n---\n## P1: Work\n${body}`).plan;
+const gala = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "gala.rakuplan"), "utf8")).plan;
+const plan = (body: string, header = "title: Test\nstart: 2026-12-01") => parsePlan(`---\nrakuplan: 1\n${header}\n---\n## P1: Work\n${body}`).plan;
 
 describe("calendar", () => {
   const cal = new Calendar({ holidays: ["2026-12-25"] });
@@ -99,7 +99,7 @@ describe("free Plan Check", () => {
 
   it("explains problems in plain language with the tasks involved", () => {
     const p = parsePlan(
-      ["---", "ezplan: 1", "title: Messy", "start: 2026-12-01", "---", "## P1: Work",
+      ["---", "rakuplan: 1", "title: Messy", "start: 2026-12-01", "---", "## P1: Work",
         "- [ ] T1: A (2d) depends: T9", "- [ ] T1: Duplicate (1d)", "- [ ] T2: Loop one (1d) depends: T3",
         "- [ ] T3: Loop two (1d) depends: T2", "- [ ] T4: Huge job (4w) @Kim due: 2026-12-02", "## P2: Empty"].join("\n"),
     ).plan;

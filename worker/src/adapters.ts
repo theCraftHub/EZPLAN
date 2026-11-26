@@ -2,8 +2,8 @@
  * Cloud connectors (plan section 7b): Cloudflare D1 (SQLite), R2 files, and live rooms in
  * Durable Objects running the same room code as the self-hosted server.
  */
-import type { ApplyResult, Blobs, Db, LiveRole, RoomHost, SqlValue } from "@ezplan/server";
-import type { Actor, OpEnvelope, ServerMessage } from "@ezplan/shared";
+import type { ApplyResult, Blobs, Db, LiveRole, RoomHost, SqlValue } from "@rakuplan/server";
+import type { Actor, OpEnvelope, ServerMessage } from "@rakuplan/shared";
 
 export class D1Db implements Db {
   constructor(private readonly d1: D1Database) {}
