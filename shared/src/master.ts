@@ -5,7 +5,7 @@
  * person-aware scheduler runs once, so one person's hours count across every plan and a slip in
  * one plan moves whatever waits on it elsewhere; the results are split back per plan.
  */
-import { levelPlan, type LeveledSchedule, type LevelOptions } from "./level";
+import { levelPlan, type Booking, type LeveledSchedule, type LevelOptions, type PersonAvailability, type StartReason } from "./level";
 import type { ScheduledTask } from "./schedule";
 import type { Plan } from "./schema";
 
@@ -85,4 +85,102 @@ export function masterSchedule(parts: MasterPart[], opts: LevelOptions = {}): Ma
     });
   }
   return { schedule, flat, finish: schedule.finish, task: (key, id) => schedule.tasks.get(`${key}/${id}`), plans };
+}
+
+/**
+ * The master as one plan's people may see it: their plan in full; every other plan stripped to
+ * what scheduling needs (length, status, links, owner). Real titles are kept only for tasks this
+ * plan links to, and real names only for people who also work in this plan; everyone else gets a
+ * stand-in ("Person 3"). Running `masterSchedule` on it gives this plan exactly the whole master's
+ * dates, so the app can recompute live as edits arrive.
+ */
+export function maskedMaster(parts: MasterPart[], key: string, people: Record<string, PersonAvailability> = {}): { parts: MasterPart[]; people: Record<string, PersonAvailability> } {
+  const own = parts.find((p) => p.key === key);
+  const ownTasks = own ? own.plan.phases.flatMap((p) => p.tasks) : [];
+  const ownPeople = new Set(ownTasks.map((t) => t.owner?.toLowerCase()).filter((n): n is string => !!n));
+  const linked = new Set(ownTasks.flatMap((t) => t.depends.map((d) => d.id)).filter((id) => crossRef(id)));
+  const alias = new Map<string, string>();
+  const nameFor = (owner: string | undefined) => {
+    if (!owner) return undefined;
+    const k = owner.toLowerCase();
+    if (ownPeople.has(k)) return owner;
+    if (!alias.has(k)) alias.set(k, `Person ${alias.size + 1}`);
+    return alias.get(k)!;
+  };
+  const masked = parts.map((part) => {
+    if (part.key === key) return part;
+    return {
+      key: part.key,
+      title: part.title,
+      plan: {
+        ...part.plan,
+        goal: undefined,
+        doneWhen: undefined,
+        team: [],
+        extra: {},
+        phases: part.plan.phases.map((ph, i) => ({
+          id: ph.id,
+          title: `Part ${i + 1}`,
+          tasks: ph.tasks.map((t) => ({
+            id: t.id,
+            title: linked.has(`${part.key}/${t.id}`) ? t.title : "",
+            status: t.status,
+            milestone: t.milestone,
+            ...(t.estimate ? { estimate: t.estimate } : {}),
+            ...(t.owner ? { owner: nameFor(t.owner)! } : {}),
+            ...(t.due ? { due: t.due } : {}),
+            ...(t.priority ? { priority: t.priority } : {}),
+            depends: t.depends,
+            notes: [],
+            tags: [],
+            subtasks: [],
+            extra: {},
+          })),
+        })),
+      } as Plan,
+    };
+  });
+  const maskedPeople: Record<string, PersonAvailability> = {};
+  for (const [name, a] of Object.entries(people)) {
+    const k = name.toLowerCase();
+    if (ownPeople.has(k)) maskedPeople[name] = a;
+    else if (alias.has(k)) maskedPeople[alias.get(k)!] = { ...(a.hoursPerWeek !== undefined ? { hoursPerWeek: a.hoursPerWeek } : {}), ...(a.workdays ? { workdays: a.workdays } : {}), ...(a.timeOff ? { timeOff: a.timeOff.map((o) => ({ start: o.start, end: o.end })) } : {}), ...(a.busy ? { busy: a.busy } : {}) } as PersonAvailability;
+  }
+  return { parts: masked, people: maskedPeople };
+}
+
+/**
+ * One plan's part of a master schedule, with its own task IDs, so its pages (checklist, timeline,
+ * Team, Plan Check) work as for any plan. Reasons that point at other plans are put in words.
+ */
+export function localSchedule(ms: MasterSchedule, parts: MasterPart[], key: string): LeveledSchedule {
+  const pre = `${key}/`;
+  const strip = (id: string) => (id.startsWith(pre) ? id.slice(pre.length) : id);
+  const titleOf = (k: string) => parts.find((p) => p.key === k)?.title ?? k;
+  const taskTitle = (ref: { key: string; id: string }) => parts.find((p) => p.key === ref.key)?.plan.phases.flatMap((p) => p.tasks).find((t) => t.id === ref.id)?.title || "a task";
+  const tasks = new Map([...ms.schedule.tasks].filter(([id]) => id.startsWith(pre)).map(([id, s]) => [strip(id), { ...s, id: strip(id) }]));
+  const reasons = new Map<string, StartReason>();
+  for (const [id, r] of ms.schedule.reasons) {
+    if (!id.startsWith(pre)) continue;
+    const other = r.kind === "depends" ? crossRef(r.on) : r.kind === "person" ? crossRef(r.after) : null;
+    if (other && other.key !== key) reasons.set(strip(id), { kind: "other-plan", plan: titleOf(other.key), title: taskTitle(other), ...(r.kind === "person" ? { person: r.person } : {}) });
+    else reasons.set(strip(id), r.kind === "depends" ? { ...r, on: strip(r.on) } : r.kind === "person" ? { ...r, after: strip(r.after) } : r);
+  }
+  const bookings = new Map<string, Map<string, Booking[]>>();
+  for (const [person, days] of ms.schedule.bookings) {
+    const mine = new Map([...days].map(([d, list]) => [d, list.filter((b) => b.taskId.startsWith(pre)).map((b) => ({ ...b, taskId: strip(b.taskId) }))] as const).filter(([, l]) => l.length));
+    if (mine.size) bookings.set(person, mine);
+  }
+  const own = [...tasks.values()];
+  return {
+    ...ms.schedule,
+    projectStart: own.length ? own.reduce((a, b) => (a.start < b.start ? a : b)).start : ms.schedule.projectStart,
+    finish: own.length ? own.reduce((a, b) => (a.end > b.end ? a : b)).end : ms.schedule.projectStart,
+    tasks,
+    criticalPath: ms.schedule.criticalPath.filter((id) => id.startsWith(pre)).map(strip),
+    cycles: ms.schedule.cycles.map((c) => c.filter((id) => id.startsWith(pre)).map(strip)).filter((c) => c.length),
+    reasons,
+    bookings,
+    unplaceable: ms.schedule.unplaceable.filter((id) => id.startsWith(pre)).map(strip),
+  };
 }

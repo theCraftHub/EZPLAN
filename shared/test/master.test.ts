@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { checkPlan, crossRef, formatDepends, masterSchedule, parseDepends, parsePlan, exportPlan, type MasterPart } from "../src";
+import { checkPlan, crossRef, explainStart, formatDepends, localSchedule, maskedMaster, masterSchedule, parseDepends, parsePlan, exportPlan, type MasterPart } from "../src";
 
 type Fx = { today: string; start: string; finish: string; people: Record<string, number>; subs: { key: string; title: string; lead: string; needs: string[] }[]; tasks: { id: string; est: string; sub: string; title: string; owner: string; dept: string; status: string; start: string; end: string; deps: string[] }[]; whatIfNoor: { finish: string } };
 const fx = JSON.parse(readFileSync(join(import.meta.dirname, "fixtures", "northfield-engine.json"), "utf8")) as Fx;
@@ -58,5 +58,25 @@ describe("master plans", () => {
     // Per plan: each sub-plan's finish, and which plans decide the master's finish.
     expect(base.plans.get("kitchen")!.finish).toBe("2027-03-25");
     expect(base.plans.get("master")!.finish).toBe(fx.finish);
+  });
+
+  it("one plan, seeing the rest of the master only in outline, gets exactly the whole master's dates", () => {
+    const all = parts();
+    const ms = masterSchedule(all, { today: fx.today, people: people() });
+    for (const part of all) {
+      const view = maskedMaster(all, part.key, people());
+      const local = localSchedule(masterSchedule(view.parts, { today: fx.today, people: view.people }), view.parts, part.key);
+      for (const t of part.plan.phases.flatMap((p) => p.tasks)) expect([part.key, t.id, local.tasks.get(t.id)?.start, local.tasks.get(t.id)?.end]).toEqual([part.key, t.id, ms.task(part.key, t.id)?.start, ms.task(part.key, t.id)?.end]);
+    }
+    // Office 1 sees the linked Reception task's title, but not other titles, and not people who aren't on Office 1.
+    const view = maskedMaster(all, "office-1", people());
+    const text = JSON.stringify(view);
+    expect(text).toContain("Move network closet");
+    for (const hidden of ["Demolish old front desk", "Strip Bathroom 2", "Mei", "Omar", "Tess"]) expect(text, hidden).not.toContain(hidden);
+    expect(text).toContain("Kai"); // works on Office 1 too
+    // Starts decided in another plan are explained with that plan's name.
+    const local = localSchedule(masterSchedule(view.parts, { today: fx.today, people: view.people }), view.parts, "office-1");
+    expect(explainStart(local, "T30", all.find((p) => p.key === "office-1")!.plan)).toMatch(/in (Reception|Office 1|Bathroom 3)|waits on/);
+    expect(local.reasons.get("T29")).toMatchObject({ kind: "other-plan", person: "Kai" });
   });
 });

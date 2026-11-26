@@ -36,6 +36,8 @@ export interface LevelOptions extends ScheduleOptions {
 export type StartReason =
   | { kind: "start" }
   | { kind: "depends"; on: string }
+  /** Master plans: waits on, or for someone busy on, a task in another plan. */
+  | { kind: "other-plan"; plan: string; title: string; person?: string }
   | { kind: "person"; person: string; after: string }
   | { kind: "time-off"; person: string; from: string; to: string; label?: string }
   | { kind: "no-hours"; person: string };
@@ -310,6 +312,8 @@ export function explainStart(s: LeveledSchedule, id: string, plan: Plan): string
       return `Starts ${when}, the project start.`;
     case "depends":
       return `Starts ${when} because it waits on ${title(r.on)}.`;
+    case "other-plan":
+      return r.person ? `Starts ${when} because ${r.person} is on "${r.title}" in ${r.plan} until then.` : `Starts ${when} because it waits on "${r.title}" in ${r.plan}.`;
     case "person":
       return `Starts ${when} because ${r.person} is on ${title(r.after)} until then.`;
     case "time-off":
