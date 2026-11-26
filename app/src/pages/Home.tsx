@@ -1,6 +1,7 @@
 import { UpdateOverdue } from "../ui/StatusUpdate";
 import { useEffect, useState } from "react";
-import { CalendarClock, Flag, Layers, Plus } from "lucide-react";
+import { Building2, CalendarClock, Flag, Layers, Plus } from "lucide-react";
+import { BRAND } from "@rakuplan/shared";
 import { api, ApiError, type Me, type PlanSummary } from "../lib/api";
 import { shortDate, plural } from "../lib/format";
 import { Link, useRouter } from "../lib/router";
@@ -12,8 +13,10 @@ export function Home({ me }: { me: Me }) {
   const [plans, setPlans] = useState<PlanSummary[] | null>(null);
   const [error, setError] = useState("");
   const [grouping, setGrouping] = useState(false);
+  const [orgs, setOrgs] = useState<Awaited<ReturnType<typeof api.orgs>>["orgs"] | null>(null);
   useEffect(() => {
     api.plans().then((r) => setPlans(r.plans)).catch((e: Error) => setError(e.message));
+    api.orgs().then((r) => setOrgs(r.orgs)).catch(() => setOrgs([]));
   }, []);
   const first = me.user.name.split(" ")[0];
   const active = plans?.filter((p) => p.summary?.health !== "Complete") ?? [];
@@ -26,6 +29,13 @@ export function Home({ me }: { me: Me }) {
         actions={<span className="flex flex-wrap gap-2">{plans && plans.filter((x) => !x.master && !x.masterId && !x.shared).length > 0 && <Button variant="secondary" onClick={() => setGrouping(!grouping)} aria-expanded={grouping}><Layers aria-hidden size={18} /> New master plan</Button>}<Button onClick={() => go("/new")}><Plus aria-hidden size={18} /> New plan</Button></span>}
       />
       {grouping && plans && <NewMaster plans={plans.filter((x) => !x.master && !x.masterId && !x.shared)} onDone={(id) => go(`/m/${id}`)} onCancel={() => setGrouping(false)} />}
+      {orgs?.filter((o) => o.setup).map((o) => (
+        <Card key={o.id} aria-label={`Finish setting up ${o.name}`} className="flex flex-wrap items-center gap-3">
+          <Building2 aria-hidden size={22} className="text-primary" />
+          <span className="min-w-0 flex-1"><strong className="block text-[15px]">Finish setting up {o.name}</strong><span className="text-sm text-ink-2">Nothing has gone to employees yet. Pick up where you left off.</span></span>
+          <Button onClick={() => go(`/business/${o.id}/${o.setup!.step}`)}>Continue setup</Button>
+        </Card>
+      ))}
       {error && <Notice tone="bad">{error}</Notice>}
       {!plans && !error && <Spinner label="Loading your plans" />}
       {plans && plans.length === 0 && (
@@ -68,6 +78,9 @@ export function Home({ me }: { me: Me }) {
             </li>
           ))}
         </ul>
+      )}
+      {plans && orgs && orgs.length === 0 && (
+        <p className="m-0 flex flex-wrap items-center gap-2 text-sm text-ink-2"><Building2 aria-hidden size={16} /> Planning for a company? <Link to="/business/start" className="font-semibold text-primary-ink underline">Start {BRAND.name} for your business</Link></p>
       )}
     </>
   );

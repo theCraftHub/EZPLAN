@@ -200,6 +200,11 @@ export const MIGRATIONS: Migration[] = [
       `CREATE TABLE undo_batches (id TEXT PRIMARY KEY, org_id TEXT NOT NULL REFERENCES organizations(id), actor_id TEXT NOT NULL, action TEXT NOT NULL, payload TEXT NOT NULL, created_at INTEGER NOT NULL, undone_at INTEGER)`,
     ],
   },
+  {
+    id: 17,
+    name: "plan access that ends: company rules give outside guests a set number of days",
+    statements: [`ALTER TABLE plan_members ADD COLUMN expires_at INTEGER`],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

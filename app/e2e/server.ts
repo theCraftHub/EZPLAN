@@ -8,7 +8,7 @@ import { createServer } from "node:http";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DEFAULT_WORK_WEEK } from "@rakuplan/shared";
+import { BRAND, DEFAULT_WORK_WEEK } from "@rakuplan/shared";
 import { createSelfHost } from "../../selfhost/src/host";
 import { startServer } from "../../selfhost/src/server";
 import { FakeOidc } from "../../server/test/fakeOidc";
@@ -35,7 +35,16 @@ const { app: site, rooms, db } = createSelfHost({
   config: { defaultWorkWeek: DEFAULT_WORK_WEEK, publicUrl, providers: [fake.provider({ label: "Test ID" })], secureCookies: false, platformAdmins: ["pat@example.com"] },
   // A fixed "today" keeps dates in screenshots and assertions stable; real time for sign-in tokens.
   clock: { today: () => today, now: () => Date.now() },
-  http: async (req) => (new URL(req.url).origin === fake.issuer ? fake.handle(req) : new Response("Tests don't reach the internet.", { status: 599 })),
+  http: async (req) => {
+    const u = new URL(req.url);
+    if (u.origin === fake.issuer) return fake.handle(req);
+    // Domain checks: answers as if each company had already added its TXT record.
+    if (u.hostname === "cloudflare-dns.com") {
+      const rows = await db.all<{ token: string }>(`SELECT token FROM org_domains WHERE domain = ?`, [u.searchParams.get("name") ?? ""]);
+      return Response.json({ Status: 0, Answer: rows.map((r) => ({ type: 16, data: `"${BRAND.name.toLowerCase()}-verify=${r.token}"` })) });
+    }
+    return new Response("Tests don't reach the internet.", { status: 599 });
+  },
   staticDir: join(import.meta.dirname, "..", "dist"),
   // A scripted AI engine (no network); real AI needs ANTHROPIC_API_KEY on a real server.
   testAi: true,

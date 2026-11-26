@@ -31,6 +31,44 @@ export const mayGrant = (mine: OrgRole, target: OrgRole) => (mine === "owner" ? 
 /** Guests don't take a seat. */
 export const usesSeat = (r: OrgRole) => r !== "guest";
 
+// ---------------------------------------------------------------- company rules (step L2)
+
+/**
+ * The rule presets picked in onboarding (changeable later in the console). Each is enforced where
+ * the feature exists: inviting people from outside the company to a company plan, how long such
+ * guests keep access, and who may download plan files.
+ */
+export const RULE_PRESETS = {
+  standard: { outsideInvites: "managers", exports: "everyone", guestDays: 90 },
+  strict: { outsideInvites: "admins", exports: "admins", guestDays: 30 },
+  open: { outsideInvites: "anyone", exports: "everyone", guestDays: null },
+} as const satisfies Record<string, { outsideInvites: "anyone" | "managers" | "admins"; exports: "everyone" | "admins"; guestDays: number | null }>;
+export type RulePreset = keyof typeof RULE_PRESETS;
+export type OrgRules = { preset: RulePreset } & (typeof RULE_PRESETS)[RulePreset];
+
+/** A company's rules from its settings; Standard until one is picked. */
+export function rulesOf(settings: string | null | undefined): OrgRules {
+  let preset: RulePreset = "standard";
+  try {
+    const p = (JSON.parse(settings || "{}") as { preset?: string }).preset;
+    if (p && p in RULE_PRESETS) preset = p as RulePreset;
+  } catch { /* keep Standard */ }
+  return { preset, ...RULE_PRESETS[preset] };
+}
+
+/** The company a workspace belongs to, with its rules; null for a personal workspace. */
+export async function companyOf(db: Db, workspaceId: string): Promise<{ orgId: string; name: string; rules: OrgRules } | null> {
+  const r = await db.first<{ id: string; name: string; settings: string }>(`SELECT o.id, o.name, o.settings FROM workspaces w JOIN organizations o ON o.id = w.org_id WHERE w.id = ?`, [workspaceId]);
+  return r ? { orgId: r.id, name: r.name, rules: rulesOf(r.settings) } : null;
+}
+
+/** Whether an address belongs inside the company: an active member, or on a verified domain. */
+export async function isInsider(db: Db, orgId: string, email: string): Promise<boolean> {
+  const e = email.trim().toLowerCase();
+  if (await db.first(`SELECT 1 AS x FROM org_members om JOIN users u ON u.id = om.user_id WHERE om.org_id = ? AND om.status = 'active' AND om.role != 'guest' AND lower(u.email) = ?`, [orgId, e])) return true;
+  return !!(await db.first(`SELECT 1 AS x FROM org_domains WHERE org_id = ? AND domain = ? AND verified_at IS NOT NULL`, [orgId, e.split("@")[1] ?? ""]));
+}
+
 export interface OrgDeps { db: Db; clock: Clock; http: HttpFetch; siteOrigin: string; notFound: { error: string } }
 
 type OrgRow = { id: string; name: string; industry: string | null; seats: number; settings: string; onboarding: string; created_at: number };
@@ -158,6 +196,31 @@ async function txtRecords(http: HttpFetch, domain: string): Promise<string[] | n
   }
 }
 
+// ---------------------------------------------------------------- onboarding progress (step L2)
+
+export const ONBOARDING_STEPS = ["company", "domain", "people", "rules", "first", "live"] as const;
+export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
+export interface Onboarding { step?: OnboardingStep; email?: string; people?: InviteRequest[]; firstPlanId?: string | null; done?: boolean; liveAt?: number }
+
+const str = (v: unknown, max: number) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : undefined);
+/** The people list as saved between steps: only known fields, trimmed, at most 1,000 rows. */
+function cleanPeople(v: unknown): InviteRequest[] | null {
+  if (!Array.isArray(v) || v.length > 1000) return null;
+  const out: InviteRequest[] = [];
+  for (const r of v as Record<string, unknown>[]) {
+    if (!r || typeof r !== "object") return null;
+    const row: InviteRequest = { email: str(r.email, 254) ?? "" };
+    const name = str(r.name, 80), department = str(r.department, 60), workspaceId = str(r.workspaceId, 64);
+    if (name) row.name = name;
+    if (department) row.department = department;
+    if (workspaceId) row.workspaceId = workspaceId;
+    if (typeof r.role === "string" && (ORG_ROLES as readonly string[]).includes(r.role)) row.role = r.role as OrgRole;
+    out.push(row);
+  }
+  return out;
+}
+export const onboardingOf = (org: OrgRow): Onboarding => { try { return JSON.parse(org.onboarding || "{}") as Onboarding; } catch { return {}; } };
+
 // ---------------------------------------------------------------- routes
 
 export function registerOrgRoutes(app: Hono<{ Variables: { user: User } }>, d: OrgDeps & { email: (to: string, subject: string, text: string) => Promise<void> }) {
@@ -193,8 +256,14 @@ export function registerOrgRoutes(app: Hono<{ Variables: { user: User } }>, d: O
 
   /** The companies I belong to, with my role. */
   app.get("/api/orgs", async (c) => {
-    const rows = await db.all<{ id: string; name: string; role: OrgRole }>(`SELECT o.id, o.name, m.role FROM organizations o JOIN org_members m ON m.org_id = o.id WHERE m.user_id = ? AND m.status = 'active' ORDER BY o.name`, [c.get("user").id]);
-    return c.json({ orgs: rows.map((r) => ({ ...r, console: can.console(r.role) })) });
+    const rows = await db.all<{ id: string; name: string; role: OrgRole; onboarding: string }>(`SELECT o.id, o.name, m.role, o.onboarding FROM organizations o JOIN org_members m ON m.org_id = o.id WHERE m.user_id = ? AND m.status = 'active' ORDER BY o.name`, [c.get("user").id]);
+    return c.json({
+      orgs: rows.map((r) => {
+        const ob = onboardingOf(r as unknown as OrgRow);
+        // Owners and Admins are shown "finish setting up" until Go live.
+        return { id: r.id, name: r.name, role: r.role, console: can.console(r.role), setup: can.manageSettings(r.role) && !ob.done ? { step: ob.step ?? "domain" } : null };
+      }),
+    });
   });
 
   app.get("/api/orgs/:id", async (c) => {
@@ -206,7 +275,7 @@ export function registerOrgRoutes(app: Hono<{ Variables: { user: User } }>, d: O
     return c.json({
       id: x.org.id, name: x.org.name, industry: x.org.industry, role: x.role,
       seats: { total: Number(x.org.seats), taken: await seatsTaken(db, x.org.id, now) },
-      workspaces, settings: JSON.parse(x.org.settings), onboarding: JSON.parse(x.org.onboarding),
+      workspaces, rules: rulesOf(x.org.settings), onboarding: onboardingOf(x.org),
       domains: domains.map((r) => ({ domain: r.domain, record: `${BRAND.name.toLowerCase()}-verify=${r.token}`, verified: !!r.verified_at, verifiedAt: r.verified_at === null ? null : Number(r.verified_at) })),
       can: { settings: can.manageSettings(x.role), seats: can.manageSeats(x.role), people: can.managePeople(x.role), support: can.supportPeople(x.role), audit: can.readAudit(x.role) },
     });
@@ -313,6 +382,72 @@ export function registerOrgRoutes(app: Hono<{ Variables: { user: User } }>, d: O
     await db.run(`UPDATE org_domains SET verified_at = ? WHERE org_id = ? AND domain = ?`, [clock.now(), x.org.id, domain]);
     await audit(db, clock.now(), x.org.id, actor(user), "domain.verified", domain);
     return c.json({ verified: true });
+  });
+
+  // Onboarding progress: saved after each step so the setup can be left and resumed.
+  app.put("/api/orgs/:id/onboarding", async (c) => {
+    const user = c.get("user");
+    const x = await consoleFor(c.req.param("id"), user);
+    if (!x) return c.json(d.notFound, 404);
+    if (!can.manageSettings(x.role)) return c.json({ error: "Only Owners and Admins can set up the company." }, 403);
+    const b = await c.req.json<Record<string, unknown>>().catch(() => null);
+    if (!b) return c.json({ error: "Send the progress to save." }, 400);
+    const next = onboardingOf(x.org);
+    if (b.step !== undefined) {
+      if (!(ONBOARDING_STEPS as readonly unknown[]).includes(b.step)) return c.json({ error: "Unknown step." }, 400);
+      next.step = b.step as OnboardingStep;
+    }
+    if (b.email !== undefined) next.email = str(b.email, 254) ?? "";
+    if (b.people !== undefined) {
+      const people = cleanPeople(b.people);
+      if (!people) return c.json({ error: "The people list isn't valid (up to 1,000 people)." }, 400);
+      next.people = people;
+    }
+    if (b.firstPlanId !== undefined) {
+      const id = typeof b.firstPlanId === "string" ? b.firstPlanId : null;
+      if (id && !(await db.first(`SELECT 1 AS x FROM plans p JOIN workspaces w ON w.id = p.workspace_id WHERE p.id = ? AND w.org_id = ?`, [id, x.org.id]))) return c.json({ error: "That plan isn't in the company." }, 400);
+      next.firstPlanId = id;
+    }
+    await db.run(`UPDATE organizations SET onboarding = ? WHERE id = ?`, [JSON.stringify(next), x.org.id]);
+    return c.json({ onboarding: next });
+  });
+
+  // Rules: one of the presets; each change is in the audit log.
+  app.put("/api/orgs/:id/settings", async (c) => {
+    const user = c.get("user");
+    const x = await consoleFor(c.req.param("id"), user);
+    if (!x) return c.json(d.notFound, 404);
+    if (!can.manageSettings(x.role)) return c.json({ error: "Only Owners and Admins can change the company's rules." }, 403);
+    const b = await c.req.json<{ preset?: unknown }>().catch(() => null);
+    const preset = typeof b?.preset === "string" && b.preset in RULE_PRESETS ? (b.preset as RulePreset) : null;
+    if (!preset) return c.json({ error: "Choose Standard, Strict or Open." }, 400);
+    const before = rulesOf(x.org.settings).preset;
+    const settings = { ...(JSON.parse(x.org.settings || "{}") as Record<string, unknown>), preset };
+    await db.run(`UPDATE organizations SET settings = ? WHERE id = ?`, [JSON.stringify(settings), x.org.id]);
+    if (before !== preset || !JSON.parse(x.org.settings || "{}").preset) await audit(db, clock.now(), x.org.id, actor(user), "rules.changed", x.org.name, { from: before, to: preset });
+    return c.json({ rules: rulesOf(JSON.stringify(settings)) });
+  });
+
+  // Go live: the saved people list is checked once more and the good rows get invite links; with
+  // `dryRun` only the check. Onboarding is then done.
+  app.post("/api/orgs/:id/golive", async (c) => {
+    const user = c.get("user");
+    const x = await consoleFor(c.req.param("id"), user);
+    if (!x) return c.json(d.notFound, 404);
+    if (!can.manageSettings(x.role)) return c.json({ error: "Only Owners and Admins can set up the company." }, 403);
+    const b = await c.req.json<{ dryRun?: unknown }>().catch(() => ({}) as { dryRun?: unknown });
+    const ob = onboardingOf(x.org);
+    const people = ob.people ?? [];
+    const check = people.length ? await checkInvites(db, clock.now(), x.org.id, x.role, people) : { rows: [] as InviteCheck[], seatsLeft: 0 };
+    const skipped = check.rows.filter((r) => !r.ok);
+    if (b?.dryRun === true) return c.json({ dryRun: true, willInvite: check.rows.filter((r) => r.ok), skipped });
+    const invited = [];
+    for (const r of check.rows.filter((r) => r.ok)) invited.push({ ...(await createInvite(db, d, x.org, user, r, d.email)), name: r.name, role: r.role });
+    const now = clock.now();
+    if (invited.length) await audit(db, now, x.org.id, actor(user), "people.invited", `${invited.length} ${invited.length === 1 ? "person" : "people"}`, { emails: invited.map((l) => l.email) });
+    await db.run(`UPDATE organizations SET onboarding = ? WHERE id = ?`, [JSON.stringify({ ...ob, step: "live", done: true, liveAt: now }), x.org.id]);
+    await audit(db, now, x.org.id, actor(user), "org.live", x.org.name, { invited: invited.length, skipped: skipped.length, rules: rulesOf(x.org.settings).preset });
+    return c.json({ invited, skipped }, 201);
   });
 
   // Audit log: search and filter; CSV; whether the chain is intact.

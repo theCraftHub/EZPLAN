@@ -1,4 +1,5 @@
 import { Join } from "./pages/Join";
+import { BusinessStart } from "./pages/BusinessStart";
 import { MasterPage } from "./pages/MasterPage";
 import { SafetyCasePage } from "./pages/SafetyCases";
 import { useCallback, useEffect, useState } from "react";
@@ -25,6 +26,9 @@ function Routes({ me, onSignOut, onMe }: { me: Me; onSignOut: () => void; onMe: 
   if (match("/new", path)) return <NewPlan me={me} />;
   const invId = match("/invite/id/:id", path);
   if (invId) return <Invite key={invId.id} token={invId.id!} byId />;
+  if (match("/business/start", path)) return <BusinessStart key="start" me={me} />;
+  const biz = match("/business/:org", path) ?? match("/business/:org/:step", path);
+  if (biz) return <BusinessStart key={biz.org} me={me} orgId={biz.org!} {...(biz.step ? { step: biz.step } : {})} />;
   const joinTo = match("/join/:token", path);
   if (joinTo) return <Join token={joinTo.token!} />;
   const inv = match("/invite/:token", path);

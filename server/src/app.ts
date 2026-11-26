@@ -39,7 +39,7 @@ import { registerStatusUpdateRoutes, updateState } from "./statusUpdates";
 import { registerPrefRoutes } from "./prefs";
 import { raidOpen, registerRaidRoutes } from "./raid";
 import { masterContext, registerMasterRoutes, scheduleOf } from "./masters";
-import { registerOrgRoutes } from "./orgs";
+import { audit, companyOf, isInsider, orgRole, registerOrgRoutes } from "./orgs";
 import { mailSettings, sendEmail } from "./mail";
 import { registerCollabRoutes } from "./comments";
 import { notify, registerNotificationRoutes, unreadCount, userForName } from "./notify";
@@ -172,9 +172,9 @@ export function createApp(ports: Ports) {
       `SELECT p.workspace_id, m.role AS ws_role, pm.role AS plan_role, w.work_week, p.title, p.version FROM plans p
        JOIN workspaces w ON w.id = p.workspace_id
        LEFT JOIN members m ON m.workspace_id = p.workspace_id AND m.user_id = ?
-       LEFT JOIN plan_members pm ON pm.plan_id = p.id AND pm.user_id = ?
+       LEFT JOIN plan_members pm ON pm.plan_id = p.id AND pm.user_id = ? AND (pm.expires_at IS NULL OR pm.expires_at > ?)
        WHERE p.id = ? AND (m.user_id IS NOT NULL OR pm.user_id IS NOT NULL)`,
-      [userId, userId, planId],
+      [userId, userId, clock.now(), planId],
     );
     if (!row) return null;
     const role = strongest<Role>(row.ws_role, row.plan_role)!;
@@ -371,10 +371,10 @@ export function createApp(ports: Ports) {
       `SELECT p.id, p.title, p.state, p.version, p.workspace_id, p.updated_at, w.work_week, p.kind, p.master_id, (SELECT COUNT(*) FROM plans s WHERE s.master_id = p.id) AS plans, CASE WHEN m.user_id IS NULL THEN 1 ELSE 0 END AS shared FROM plans p
        JOIN workspaces w ON w.id = p.workspace_id
        LEFT JOIN members m ON m.workspace_id = p.workspace_id AND m.user_id = ?
-       LEFT JOIN plan_members pm ON pm.plan_id = p.id AND pm.user_id = ?
+       LEFT JOIN plan_members pm ON pm.plan_id = p.id AND pm.user_id = ? AND (pm.expires_at IS NULL OR pm.expires_at > ?)
        WHERE m.user_id IS NOT NULL OR pm.user_id IS NOT NULL
        ORDER BY p.updated_at DESC`,
-      [user.id, user.id],
+      [user.id, user.id, clock.now()],
     );
     const today = clock.today();
     // Home shows each plan's progress, health, finish and next milestone, computed by the same engine.
@@ -557,7 +557,7 @@ export function createApp(ports: Ports) {
     const a = await access(id, user.id);
     if (!a) return c.json(notFound, 404);
     const ws = await db.all<{ id: string; name: string; email: string; role: Role }>(`SELECT u.id, u.name, u.email, m.role FROM members m JOIN users u ON u.id = m.user_id WHERE m.workspace_id = ?`, [a.workspace_id]);
-    const invited = await db.all<{ id: string; name: string; email: string; role: PlanRole }>(`SELECT u.id, u.name, u.email, pm.role FROM plan_members pm JOIN users u ON u.id = pm.user_id WHERE pm.plan_id = ?`, [id]);
+    const invited = await db.all<{ id: string; name: string; email: string; role: PlanRole }>(`SELECT u.id, u.name, u.email, pm.role FROM plan_members pm JOIN users u ON u.id = pm.user_id WHERE pm.plan_id = ? AND (pm.expires_at IS NULL OR pm.expires_at > ?)`, [id, clock.now()]);
     const members = [...ws.map((m) => ({ userId: m.id, name: m.name, email: m.email, role: m.role, via: "workspace" as const })), ...invited.filter((p) => !ws.some((w) => w.id === p.id)).map((m) => ({ userId: m.id, name: m.name, email: m.email, role: m.role, via: "invite" as const }))];
     const invites = a.canShare
       ? (await db.all<{ id: string; email: string; role: PlanRole; person_name: string | null; expires_at: number }>(`SELECT id, email, role, person_name, expires_at FROM invites WHERE plan_id = ? AND accepted_by IS NULL AND revoked_at IS NULL AND expires_at > ? ORDER BY created_at DESC`, [id, clock.now()])).map((i) => ({ id: i.id, email: i.email, role: i.role, personName: i.person_name, expiresAt: Number(i.expires_at) }))
@@ -583,6 +583,13 @@ export function createApp(ports: Ports) {
       [email, a.workspace_id, id],
     );
     if (already) return c.json({ error: "That person already has access to this plan." }, 409);
+    // A company plan follows the company's rules for inviting people from outside it.
+    const company = await companyOf(db, a.workspace_id);
+    if (company && !(await isInsider(db, company.orgId, email))) {
+      const mine = await orgRole(db, company.orgId, user.id);
+      if (company.rules.outsideInvites === "admins" && mine !== "owner" && mine !== "admin") return c.json({ error: `${company.name} only lets Owners and Admins invite people from outside the company.` }, 403);
+      if (company.rules.outsideInvites === "managers" && a.ws_role !== "manager" && mine !== "owner" && mine !== "admin") return c.json({ error: `${company.name} only lets managers invite people from outside the company.` }, 403);
+    }
     const token = randomToken();
     const inviteId = crypto.randomUUID();
     const expiresAt = clock.now() + INVITE_DAYS * 86_400_000;
@@ -663,8 +670,12 @@ export function createApp(ports: Ports) {
     const problem = inviteProblem(inv, clock.now(), user.email, user.id);
     if (problem) return c.json({ error: problem }, 403);
     if (!inv.accepted_by) {
+      // In a company plan, people from outside the company keep access only as long as its rules say.
+      const ws = await db.first<{ workspace_id: string }>(`SELECT workspace_id FROM plans WHERE id = ?`, [inv.plan_id]);
+      const company = ws ? await companyOf(db, ws.workspace_id) : null;
+      const ends = company?.rules.guestDays && !(await isInsider(db, company.orgId, user.email)) ? clock.now() + company.rules.guestDays * 86_400_000 : null;
       await db.batch([
-        { sql: `INSERT INTO plan_members (plan_id, user_id, role, added_by, added_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT (plan_id, user_id) DO UPDATE SET role = excluded.role`, params: [inv.plan_id, user.id, inv.role, inv.created_by, clock.now()] },
+        { sql: `INSERT INTO plan_members (plan_id, user_id, role, added_by, added_at, expires_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (plan_id, user_id) DO UPDATE SET role = excluded.role, expires_at = excluded.expires_at`, params: [inv.plan_id, user.id, inv.role, inv.created_by, clock.now(), ends] },
         { sql: `UPDATE invites SET accepted_by = ?, accepted_at = ? WHERE id = ?`, params: [user.id, clock.now(), inv.id] },
         // The name the inviter used on the plan (e.g. "Sam") now means this account.
         ...(inv.person_name ? [{ sql: `UPDATE plan_people SET user_id = ? WHERE plan_id = ? AND name_key = ?`, params: [user.id, inv.plan_id, inv.person_name.toLowerCase()] }] : []),
@@ -705,6 +716,13 @@ export function createApp(ports: Ports) {
     if (await isHeld(id)) return c.json({ error: heldMessage }, 423);
     const room = await loadRoom(db, id);
     if (!room) return c.json(notFound, 404);
+    // Company plans: Strict rules keep downloads to Owners and Admins; every download is logged.
+    const company = await companyOf(db, a.workspace_id);
+    if (company) {
+      const mine = await orgRole(db, company.orgId, user.id);
+      if (company.rules.exports === "admins" && mine !== "owner" && mine !== "admin") return c.json({ error: `${company.name} only lets Owners and Admins download plan files.` }, 403);
+      await audit(db, clock.now(), company.orgId, { id: user.id, name: user.name }, "plan.exported", room.plan.title, { planId: id });
+    }
     const text = exportPlan(room.plan, { hoursPerDay: hoursPerDay(parseWorkWeek(a.work_week)) });
     const name = (room.plan.title.replace(/[^\w .-]+/g, "").trim() || "plan").slice(0, 80);
     return c.body(text, 200, {

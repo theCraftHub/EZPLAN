@@ -46,7 +46,9 @@ export function NewPlan({ me }: { me: Me }) {
     setError("");
     setBusy(true);
     try {
-      const r = await api.createPlan(text, withPeople, fileName);
+      // From business setup: the plan goes into the company workspace (/new?ws=…).
+      const ws = new URLSearchParams(location.search).get("ws") ?? undefined;
+      const r = await api.createPlan(text, withPeople, fileName, ws);
       go(`/p/${r.id}`, { replace: true });
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Couldn't save. Check your connection and try again.");

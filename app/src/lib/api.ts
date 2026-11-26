@@ -207,7 +207,7 @@ export const api = {
   plans: () => call<{ plans: PlanSummary[] }>("/api/plans"),
   plan: (id: string) => call<PlanDetail>(`/api/plans/${encodeURIComponent(id)}`),
   preview: (text: string, people: People = {}, fileName?: string) => call<ImportPreview>("/api/plans/preview", { method: "POST", body: JSON.stringify({ text, people, ...(fileName ? { fileName } : {}) }) }),
-  createPlan: (text: string, people: People = {}, fileName?: string) => call<{ id: string; notices: string[] }>("/api/plans", { method: "POST", body: JSON.stringify({ text, people, ...(fileName ? { fileName } : {}) }) }),
+  createPlan: (text: string, people: People = {}, fileName?: string, workspaceId?: string) => call<{ id: string; notices: string[] }>("/api/plans", { method: "POST", body: JSON.stringify({ text, people, ...(fileName ? { fileName } : {}), ...(workspaceId ? { workspaceId } : {}) }) }),
   setPerson: (planId: string, name: string, a: PersonAvailability) => call<{ name: string }>(`/api/plans/${encodeURIComponent(planId)}/people/${encodeURIComponent(name)}`, { method: "PUT", body: JSON.stringify(a) }),
   workWeek: (workspaceId: string, w: WorkWeek, dryRun: boolean) => call<{ workWeek: WorkWeek; saved: boolean; impact: { planId: string; title: string; before: string; after: string }[] }>(`/api/workspaces/${encodeURIComponent(workspaceId)}/work-week`, { method: "PUT", body: JSON.stringify({ ...w, dryRun }) }),
   update: (planId: string, ops: Op[]) => call<{ version: number; applied: number }>(`/api/plans/${encodeURIComponent(planId)}/update`, { method: "POST", body: JSON.stringify({ ops }) }),
@@ -234,7 +234,15 @@ export const api = {
   addRaid: (planId: string, v: RaidInput) => call<{ item: RaidItem }>(`/api/plans/${encodeURIComponent(planId)}/raid`, { method: "POST", body: JSON.stringify(v) }),
   updateRaid: (planId: string, itemId: string, v: RaidInput) => call<{ item: RaidItem }>(`/api/plans/${encodeURIComponent(planId)}/raid/${encodeURIComponent(itemId)}`, { method: "PATCH", body: JSON.stringify(v) }),
   deleteRaid: (planId: string, itemId: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/raid/${encodeURIComponent(itemId)}`, { method: "DELETE" }),
-  orgs: () => call<{ orgs: { id: string; name: string; role: string; console: boolean }[] }>("/api/orgs"),
+  orgs: () => call<{ orgs: { id: string; name: string; role: string; console: boolean; setup: { step: OnboardingStep } | null }[] }>("/api/orgs"),
+  org: (id: string) => call<OrgDetail>(`/api/orgs/${encodeURIComponent(id)}`),
+  createOrg: (name: string, industry: string, people: number) => call<{ id: string; workspaceId: string }>("/api/orgs", { method: "POST", body: JSON.stringify({ name, industry, people }) }),
+  saveOnboarding: (id: string, v: Partial<Onboarding>) => call<{ onboarding: Onboarding }>(`/api/orgs/${encodeURIComponent(id)}/onboarding`, { method: "PUT", body: JSON.stringify(v) }),
+  setRules: (id: string, preset: RulePreset) => call<{ rules: OrgRules }>(`/api/orgs/${encodeURIComponent(id)}/settings`, { method: "PUT", body: JSON.stringify({ preset }) }),
+  addDomain: (id: string, domain: string) => call<{ domain: string; record: string }>(`/api/orgs/${encodeURIComponent(id)}/domains`, { method: "POST", body: JSON.stringify({ domain }) }),
+  checkDomain: (id: string, domain: string) => call<{ verified: boolean; reason?: string }>(`/api/orgs/${encodeURIComponent(id)}/domains/${encodeURIComponent(domain)}/check`, { method: "POST", body: "{}" }),
+  checkPeople: (id: string, people: OrgInviteRequest[]) => call<{ rows: OrgInviteCheck[]; seatsLeft: number; willInvite: number; skipped: number }>(`/api/orgs/${encodeURIComponent(id)}/invites`, { method: "POST", body: JSON.stringify({ people, dryRun: true }) }),
+  goLive: (id: string, dryRun: boolean) => call<{ willInvite?: OrgInviteCheck[]; invited?: { email: string; name: string | null; role: string; link: string }[]; skipped: OrgInviteCheck[] }>(`/api/orgs/${encodeURIComponent(id)}/golive`, { method: "POST", body: JSON.stringify({ dryRun }) }),
   joinInfo: (token: string) => call<{ org: string | null; inviter: string; role: string; email: string; problem: string | null; accepted: boolean }>(`/api/join/${encodeURIComponent(token)}`),
   acceptJoin: (token: string) => call<{ orgId: string }>(`/api/join/${encodeURIComponent(token)}/accept`, { method: "POST", body: "{}" }),
   master: (id: string) => call<MasterData>(`/api/masters/${encodeURIComponent(id)}`),
@@ -287,3 +295,20 @@ export const api = {
   supportPlan: (ticketId: string) => call<{ planId: string; title: string; until: number; text: string }>(`/api/admin/support/tickets/${encodeURIComponent(ticketId)}/plan`),
   logout: () => call<{ ok: true }>("/auth/logout", { method: "POST", body: "{}" }),
 };
+
+// ---------------------------------------------------------------- companies (step L)
+export type OrgRole = "owner" | "admin" | "dept_admin" | "helpdesk" | "auditor" | "member" | "guest";
+export type OnboardingStep = "company" | "domain" | "people" | "rules" | "first" | "live";
+export type RulePreset = "standard" | "strict" | "open";
+export interface OrgRules { preset: RulePreset; outsideInvites: "anyone" | "managers" | "admins"; exports: "everyone" | "admins"; guestDays: number | null }
+export interface OrgInviteRequest { email: string; name?: string; role?: OrgRole; department?: string; workspaceId?: string }
+export interface OrgInviteCheck { email: string; name: string | null; role: OrgRole; department: string | null; workspaceId: string | null; ok: boolean; problem?: string }
+export interface Onboarding { step?: OnboardingStep; email?: string; people?: OrgInviteRequest[]; firstPlanId?: string | null; done?: boolean; liveAt?: number }
+export interface OrgDetail {
+  id: string; name: string; industry: string | null; role: OrgRole;
+  seats: { total: number; taken: number };
+  workspaces: { id: string; name: string }[];
+  rules: OrgRules; onboarding: Onboarding;
+  domains: { domain: string; record: string; verified: boolean; verifiedAt: number | null }[];
+  can: { settings: boolean; seats: boolean; people: boolean; support: boolean; audit: boolean };
+}

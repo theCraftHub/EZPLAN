@@ -31,7 +31,7 @@ export function orgsContract(hostName: string, factory: HostFactory) {
       const made = await req("POST", "/api/orgs", { name: "Northfield Builders", industry: "Construction", people: 3 }, DANA);
       expect(made.status).toBe(201);
       ({ id: org, workspaceId: ws } = made.body as { id: string; workspaceId: string });
-      expect((await req("GET", "/api/orgs", undefined, DANA)).body.orgs).toEqual([{ id: org, name: "Northfield Builders", role: "owner", console: true }]);
+      expect((await req("GET", "/api/orgs", undefined, DANA)).body.orgs).toEqual([{ id: org, name: "Northfield Builders", role: "owner", console: true, setup: { step: "domain" } }]);
       const o = (await req("GET", `/api/orgs/${org}`, undefined, DANA)).body;
       expect(o).toMatchObject({ role: "owner", seats: { total: 3, taken: 1 }, workspaces: [{ id: ws, name: "Northfield Builders" }], can: { settings: true, seats: true, people: true, audit: true } });
       // A plan in the company workspace belongs to the company.
