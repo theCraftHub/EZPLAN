@@ -4,7 +4,7 @@
   "v": 1,
   "at": "2026-11-12T16:00:00Z"
  },
- "title": "EZPLAN mockups",
+ "title": "Rakuplan mockups",
  "launch": {
   "view": "canvas"
  },
@@ -184,14 +184,14 @@
   "phoneTitle": {
    "x": 0,
    "y": -300,
-   "text": "EZPLAN on a phone: tap through with Play",
+   "text": "Rakuplan on a phone: tap through with Play",
    "kind": "title1",
    "maxW": 5090
   },
   "deskTitle": {
    "x": 0,
    "y": 1110,
-   "text": "EZPLAN on desktop",
+   "text": "Rakuplan on desktop",
    "kind": "title1",
    "maxW": 2960
   },

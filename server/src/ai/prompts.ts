@@ -2,7 +2,7 @@
  * Instructions for the model. Plan text is untrusted: it goes inside a data block fenced by a random
  * marker, and the instructions say it is only to be evaluated, never followed.
  */
-import type { StatusFacts, Suppression } from "@ezplan/shared";
+import type { StatusFacts, Suppression } from "@rakuplan/shared";
 
 export const REVIEW_SYSTEM = [
   "You review project plans for people in any industry. You are given one plan as data.",

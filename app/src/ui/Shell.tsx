@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { Bell, CircleHelp, Inbox, FolderKanban, Home, LogOut, Plus, Settings, ShieldAlert, Sparkles, ChartLine } from "lucide-react";
 import { api } from "../lib/api";
-import { BRAND } from "@ezplan/shared";
+import { BRAND } from "@rakuplan/shared";
 import { Link, useRouter } from "../lib/router";
 import type { Me } from "../lib/api";
 

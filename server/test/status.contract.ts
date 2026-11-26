@@ -2,13 +2,13 @@
  * Baselines and status updates (step J1). Written once, run on both hosts.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { allTasks, type Plan } from "@ezplan/shared";
+import { allTasks, type Plan } from "@rakuplan/shared";
 import type { HostFactory, TestHost } from "./contract";
 import { TODAY } from "./contract";
 
 const ALEX = "u-alex|Alex|alex@example.com";
 const SAM = "u-sam|Sam Okoye|sam@example.com"; // a viewer
-const PLAN = "---\nezplan: 1\ntitle: Gala\nstart: 2027-01-04\n---\n## P1: Venue\n- [ ] T1: Book venue (2d) @Alex\n- [ ] T2: Set budget (1d) @Alex depends: T1\n- [ ] T3: Send invites (1d) @Alex depends: T2";
+const PLAN = "---\nrakuplan: 1\ntitle: Gala\nstart: 2027-01-04\n---\n## P1: Venue\n- [ ] T1: Book venue (2d) @Alex\n- [ ] T2: Set budget (1d) @Alex depends: T1\n- [ ] T3: Send invites (1d) @Alex depends: T2";
 const NOW = Date.parse(`${TODAY}T12:00:00Z`);
 const DAY = 86_400_000;
 

@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 import { Link2, MessageCircle, MessageSquareText, Plus } from "lucide-react";
-import { parseQuickAdd, type Op, type Phase, type Plan, type Task } from "@ezplan/shared";
+import { parseQuickAdd, type Op, type Phase, type Plan, type Task } from "@rakuplan/shared";
 import { shortDate } from "../../lib/format";
 import { Card } from "../../ui/kit";
 import { MilestoneMark, StatusButton } from "../../ui/Status";

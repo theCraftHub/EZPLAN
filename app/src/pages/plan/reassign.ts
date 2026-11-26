@@ -1,5 +1,5 @@
 /** "What if this person did this task?": fit in their free hours, the new finish, what moves. */
-import { levelPlan, type PersonAvailability, type Plan, type WorkWeek } from "@ezplan/shared";
+import { levelPlan, type PersonAvailability, type Plan, type WorkWeek } from "@rakuplan/shared";
 import type { usePlanMath } from "./math";
 import type { useTeamData } from "./teamData";
 

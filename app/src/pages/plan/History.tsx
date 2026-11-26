@@ -1,7 +1,7 @@
 /** Version history (restore any saved version) and Trash (bring deleted tasks back). */
 import { useEffect, useState } from "react";
 import { History as HistoryIcon, Trash2 } from "lucide-react";
-import { diffPlans, type Op, type Plan } from "@ezplan/shared";
+import { diffPlans, type Op, type Plan } from "@rakuplan/shared";
 import { api } from "../../lib/api";
 import { longDate, plural } from "../../lib/format";
 import { Button, Card, Notice, Spinner } from "../../ui/kit";

@@ -2,7 +2,7 @@
  * The AI engine port: every AI call goes through this, so other providers (bring your own AI,
  * section 4b) only add adapters. With no engine configured, AI features are off.
  */
-import type { AiReportText, AiReview, ModerationVerdict, StatusFacts, Suppression } from "@ezplan/shared";
+import type { AiReportText, AiReview, ModerationVerdict, StatusFacts, Suppression } from "@rakuplan/shared";
 
 export interface AiUsage {
   model: string;

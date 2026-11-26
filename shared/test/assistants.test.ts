@@ -104,7 +104,7 @@ describe("replies from other AI assistants", () => {
       expect(parsePlan(readFileSync(join(dir, c.file), "utf8")).issues.map((i) => i.message).join()).not.toMatch(/stop early/);
     }
     // A code block that opens but never closes.
-    const open = "```\n---\nezplan: 1\ntitle: X\n---\n## P1: A\n- [ ] T1: First (1d)\n- [ ] T2: Second (1d) depends: T1";
+    const open = "```\n---\nrakuplan: 1\ntitle: X\n---\n## P1: A\n- [ ] T1: First (1d)\n- [ ] T2: Second (1d) depends: T1";
     expect(parsePlan(open).issues.map((i) => i.message).join()).toMatch(/stop early after T2/);
   });
 
@@ -117,6 +117,6 @@ describe("replies from other AI assistants", () => {
     ]);
     const header = exportPlan(r.plan).split("\n---")[0]!;
     expect(header).toMatch(/\nnote: Assumption: No permit is required/);
-    expect(parsePlan("---\nezplan: 1\ntitle: X\nassumption: Venue is free\nnote: Ask Sam\n---\n## P1: A\n- [ ] T1: Go (1d)").plan.notes).toEqual(["Assumption: Venue is free", "Ask Sam"]);
+    expect(parsePlan("---\nrakuplan: 1\ntitle: X\nassumption: Venue is free\nnote: Ask Sam\n---\n## P1: A\n- [ ] T1: Go (1d)").plan.notes).toEqual(["Assumption: Venue is free", "Ask Sam"]);
   });
 });

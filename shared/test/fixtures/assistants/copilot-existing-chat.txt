@@ -1,5 +1,5 @@
 ---
-ezplan: 1
+rakuplan: 1
 title: Kitchen Remodel - Granite Countertops, New Sink & Cabinet Design
 goal: Upgrade the kitchen with new granite countertops, a new sink, and an approved cabinet design while staying within budget shared by Alex, Jordan, and Priya.
 done_when: Contractor selected, granite countertops and sink installed, cabinet design finalized, all inspections and punch-list items completed, and costs reconciled between Alex, Jordan, and Priya.

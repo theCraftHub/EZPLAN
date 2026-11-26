@@ -1,5 +1,5 @@
 {
-  "name": "@ezplan/server",
+  "name": "@rakuplan/server",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,7 +7,7 @@
   "types": "src/index.ts",
   "dependencies": {
     "@anthropic-ai/sdk": "1.6.0",
-    "@ezplan/shared": "0.0.0",
+    "@rakuplan/shared": "0.0.0",
     "hono": "4.13.17",
     "jose": "6.2.17"
   }

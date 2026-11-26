@@ -4,7 +4,7 @@
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, CalendarClock, Eye, EyeOff, GripVertical, LayoutGrid, Route, TriangleAlert, Users } from "lucide-react";
-import { fromDay, toDay, type Op, type PersonAvailability, type Plan, type WorkWeek } from "@ezplan/shared";
+import { fromDay, toDay, type Op, type PersonAvailability, type Plan, type WorkWeek } from "@rakuplan/shared";
 import { api, type UpdateState } from "../../lib/api";
 import { plural, shortDate } from "../../lib/format";
 import { Button, Card, ProgressRing } from "../../ui/kit";

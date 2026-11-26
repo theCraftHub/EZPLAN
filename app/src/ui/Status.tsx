@@ -1,6 +1,6 @@
 /** Task status: icon + word + color (never color alone). Tapping moves it to the next step. */
 import { Check, Circle, CircleDashed, CircleSlash, Clock3 } from "lucide-react";
-import type { TaskStatus } from "@ezplan/shared";
+import type { TaskStatus } from "@rakuplan/shared";
 
 export const STATUS: Record<TaskStatus, { label: string; cls: string; Icon: typeof Check }> = {
   todo: { label: "To do", cls: "bg-surface-2 text-ink-2 ring-line", Icon: Circle },

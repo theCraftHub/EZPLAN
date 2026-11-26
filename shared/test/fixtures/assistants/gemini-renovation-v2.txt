@@ -1,6 +1,6 @@
 ```
 ---
-ezplan: 1
+rakuplan: 1
 title: Kitchen Renovation Project
 goal: Complete a kitchen remodel featuring new cabinets, counters, and wiring by spring with an approved permit and inspection.
 done_when: Kitchen renovation finished, permit inspected and closed out, and budget reconciled.

@@ -1,7 +1,7 @@
 /** Who has this plan, with which role; invite someone by a single-use link. */
 import { useEffect, useState } from "react";
 import { Check, ClipboardCopy, UserPlus } from "lucide-react";
-import { planPeople, type Plan } from "@ezplan/shared";
+import { planPeople, type Plan } from "@rakuplan/shared";
 import { api, ROLE_NAME, type Me, type PlanRole, type Sharing } from "../../lib/api";
 import { longDate } from "../../lib/format";
 import { Button, Card, Notice, Spinner } from "../../ui/kit";

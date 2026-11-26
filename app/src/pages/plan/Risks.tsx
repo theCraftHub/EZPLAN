@@ -5,7 +5,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { CircleHelp, Flag, Gavel, ShieldAlert, TriangleAlert, type LucideIcon } from "lucide-react";
-import { allTasks, type Plan } from "@ezplan/shared";
+import { allTasks, type Plan } from "@rakuplan/shared";
 import { api, ApiError, type RaidItem, type RaidKind } from "../../lib/api";
 import { shortDate } from "../../lib/format";
 import { Button, Card, Notice } from "../../ui/kit";

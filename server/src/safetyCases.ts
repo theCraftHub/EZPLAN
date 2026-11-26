@@ -5,7 +5,7 @@
  * Owner decisions, Nov 24: notice wording, email thread from day one, replies by email.
  */
 import type { Hono } from "hono";
-import { BRAND } from "@ezplan/shared";
+import { BRAND } from "@rakuplan/shared";
 import type { Clock, Db, ServerConfig, User } from "./ports";
 import { notify } from "./notify";
 import { isPlatformAdmin } from "./safety";

@@ -1,8 +1,8 @@
 /** Gantt timeline: bars from the same schedule as everything else, critical path marked, today line. */
 import { useMemo, useRef, useState } from "react";
 import { useVisibleRows } from "../../lib/view";
-import type { ScheduledTask, Task } from "@ezplan/shared";
-import { toDay, fromDay, type Plan } from "@ezplan/shared";
+import type { ScheduledTask, Task } from "@rakuplan/shared";
+import { toDay, fromDay, type Plan } from "@rakuplan/shared";
 import { shortDate } from "../../lib/format";
 import { Card } from "../../ui/kit";
 import type { usePlanMath } from "./math";

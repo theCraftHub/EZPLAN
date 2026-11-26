@@ -1,4 +1,4 @@
-# EZPLAN mockups
+# Rakuplan mockups
 
 Clickable design mockups (Phase 0), published as a design canvas: https://claude.ai/artifact/2oxB1WmPNDAys16AYAbUdf
 

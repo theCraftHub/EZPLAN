@@ -1,5 +1,5 @@
 ---
-ezplan: 1
+rakuplan: 1
 title: Kitchen Remodel
 goal: Complete kitchen renovation including new cabinets, countertops, and updated wiring within a $30,000 budget.
 done_when: Cabinets and counters installed, electrical wiring updated, final inspection passed, and budget reconciled.

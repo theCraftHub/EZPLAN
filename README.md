@@ -1,22 +1,22 @@
-# EZPLAN (working name)
+# Rakuplan
 
-> "EZPLAN" is an internal codename: another company uses the name, so the product will be renamed. The name, file extension and domain live in `shared/src/brand.ts`.
+> "Raku" is Japanese for easy. The name, file extension and domain (`rakuplan.com`) live in `shared/src/brand.ts`.
 
 Turn any project description into a clear, good-looking, AI-checked plan your team can track together, on phone or desktop.
 
 **Status:** Phase 0 (design + business). Private beta to follow.
 
 ## How it works
-1. **Get prompt**: copy EZPLAN's prompt and paste it into your own Claude with your project notes.
-2. **Paste the reply** into EZPLAN. It builds the plan and runs an **AI Plan Check** (is it aligned with the goal, does it make sense?).
+1. **Get prompt**: copy Rakuplan's prompt and paste it into your own Claude with your project notes.
+2. **Paste the reply** into Rakuplan. It builds the plan and runs an **AI Plan Check** (is it aligned with the goal, does it make sense?).
 3. **Track** it with your team: checklist, timeline, workload, dashboards.
-4. **Export** a `.ezplan` file that keeps tracking in any app.
+4. **Export** a `.rakuplan` file that keeps tracking in any app.
 
 ## Repo map
 | Path | What |
 |---|---|
 | `docs/research/competitors.md` | Competitor pricing + design research |
-| `docs/finance/ezplan-unit-economics.xlsx` | Unit economics model (edit blue cells on Assumptions) |
+| `docs/finance/rakuplan-unit-economics.xlsx` | Unit economics model (edit blue cells on Assumptions) |
 | `scripts/build_finance_model.py` | Regenerates the finance model template |
 | `docs/PLAN.md` | The full approved build plan |
 | `design/mockups/` | Clickable UI mockups for review |

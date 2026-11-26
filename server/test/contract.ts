@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { levelPlan, parsePlan, type PersonAvailability, type Plan } from "@ezplan/shared";
+import { levelPlan, parsePlan, type PersonAvailability, type Plan } from "@rakuplan/shared";
 
 export const TODAY = "2027-01-04";
 
@@ -84,7 +84,7 @@ export function apiContract(hostName: string, factory: HostFactory) {
     });
 
     it("refuses plans that break the Acceptable Use Policy", async () => {
-      const res = await host.fetch("/api/plans", json({ text: "---\nezplan: 1\ntitle: X\n---\n## P1: A\n- [ ] T1: Build a bomb" }), ALEX);
+      const res = await host.fetch("/api/plans", json({ text: "---\nrakuplan: 1\ntitle: X\n---\n## P1: A\n- [ ] T1: Build a bomb" }), ALEX);
       expect(res.status).toBe(422);
     });
 
@@ -196,7 +196,7 @@ export function apiContract(hostName: string, factory: HostFactory) {
     });
 
     it("applies an AI update after saving a version, restores versions exactly, and lists the Trash", async () => {
-      const created = (await (await host.fetch("/api/plans", json({ text: "---\nezplan: 1\ntitle: Move\nstart: 2027-01-04\n---\n## P1: Pack\n- [x] T1: Boxes (1d) @Alex\n- [ ] T2: Pack books (2d) @Alex depends: T1" }), ALEX)).json()) as { id: string };
+      const created = (await (await host.fetch("/api/plans", json({ text: "---\nrakuplan: 1\ntitle: Move\nstart: 2027-01-04\n---\n## P1: Pack\n- [x] T1: Boxes (1d) @Alex\n- [ ] T2: Pack books (2d) @Alex depends: T1" }), ALEX)).json()) as { id: string };
       const id = created.id;
       const get = async () => (await (await host.fetch(`/api/plans/${id}`, {}, ALEX)).json()) as { plan: Plan; version: number };
       const before = (await get()).plan;

@@ -12,7 +12,7 @@
  *   INBOUND_EMAIL_SECRET      turns on replies by email: the email provider posts received mail to /inbound/email with it
  *   ANTHROPIC_API_KEY, AI_MODEL, AI_REPORT_MODEL  the built-in AI (read by each host; AI is off without a key)
  */
-import { DEFAULT_WORK_WEEK } from "@ezplan/shared";
+import { DEFAULT_WORK_WEEK } from "@rakuplan/shared";
 import { DEFAULT_AI_LIMITS, type OidcProvider, type ServerConfig } from "./ports";
 
 const num = (v: string | undefined, d: number) => (v && /^\d+$/.test(v) ? Number(v) : d);

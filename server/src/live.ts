@@ -4,7 +4,7 @@
  * applies edits through PlanRoomCore one at a time, confirms them to the sender, broadcasts
  * them to everyone, and keeps presence up to date.
  */
-import { LIVE_MAX_MESSAGE, parseOp, type Actor, type ClientMessage, type OpEnvelope, type PresencePerson, type ServerMessage } from "@ezplan/shared";
+import { LIVE_MAX_MESSAGE, parseOp, type Actor, type ClientMessage, type OpEnvelope, type PresencePerson, type ServerMessage } from "@rakuplan/shared";
 import { PlanRoomCore } from "./room";
 import type { ApplyResult } from "./ports";
 

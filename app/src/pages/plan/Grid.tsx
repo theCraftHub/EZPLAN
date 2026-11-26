@@ -5,7 +5,7 @@
  */
 import { memo, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { ArrowDownUp, ArrowDown, ArrowUp } from "lucide-react";
-import { allTasks, formatDepends, formatEstimate, fromDay, parseDepends, parseEstimate, toDay, type Op, type Plan, type ScheduledTask, type Task, type TaskStatus } from "@ezplan/shared";
+import { allTasks, formatDepends, formatEstimate, fromDay, parseDepends, parseEstimate, toDay, type Op, type Plan, type ScheduledTask, type Task, type TaskStatus } from "@rakuplan/shared";
 import { shortDate } from "../../lib/format";
 import { Link } from "../../lib/router";
 import { useIsDesktop, useVisibleRows } from "../../lib/view";

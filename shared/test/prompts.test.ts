@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { allTasks, generatePrompt, helperPrompt, parsePlan, promptExample, restoreNames, updatePrompt, WIZARD_QUESTIONS, wizardNotes, wizardPrompt } from "../src";
 
-const gala = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "gala.ezplan"), "utf8")).plan;
+const gala = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "gala.rakuplan"), "utf8")).plan;
 const codeBlock = (s: string) => /```\n([\s\S]*?)\n```/.exec(s.slice(s.indexOf("CURRENT PLAN")))![1]!;
 
 describe("AI-neutral prompts", () => {

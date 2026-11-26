@@ -3,7 +3,7 @@
  * "Due soon" and "overdue" are worked out when the list is read (nothing to schedule).
  */
 import type { Hono } from "hono";
-import { allTasks } from "@ezplan/shared";
+import { allTasks } from "@rakuplan/shared";
 import type { Clock, Db, User } from "./ports";
 import { loadRoom } from "./room";
 

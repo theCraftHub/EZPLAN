@@ -1,6 +1,6 @@
 /** Server settings and outbound HTTP the test hosts use (both hosts, same values). */
 import type { HttpFetch, ServerConfig } from "../src/ports";
-import { DEFAULT_WORK_WEEK } from "@ezplan/shared";
+import { DEFAULT_WORK_WEEK } from "@rakuplan/shared";
 import type { FakeOidc } from "./fakeOidc";
 import { ALLOWED, PUBLIC_URL } from "./signin.contract";
 

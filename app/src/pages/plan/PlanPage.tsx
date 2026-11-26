@@ -1,6 +1,6 @@
 import { Grid } from "./Grid";
 import { Risks } from "./Risks";
-import { planPeople } from "@ezplan/shared";
+import { planPeople } from "@rakuplan/shared";
 import { api } from "../../lib/api";
 import { UpdateOverdue } from "../../ui/StatusUpdate";
 import { useDeferredValue, useMemo } from "react";

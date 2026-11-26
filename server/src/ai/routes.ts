@@ -19,7 +19,7 @@ import {
   type SuggestionKind,
   type Suppression,
   type WorkWeek,
-} from "@ezplan/shared";
+} from "@rakuplan/shared";
 import type { StoredRoomState } from "../room";
 import { sha256 } from "../sessions";
 import { DEFAULT_AI_LIMITS, type Clock, type Db, type ServerConfig, type User } from "../ports";

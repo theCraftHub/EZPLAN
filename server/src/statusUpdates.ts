@@ -5,7 +5,7 @@
  * Everyone on the plan reads them; editors and managers post.
  */
 import type { Hono } from "hono";
-import { freeModeration } from "@ezplan/shared";
+import { freeModeration } from "@rakuplan/shared";
 import type { Clock, Db, User } from "./ports";
 import { canEdit, type Role } from "./roles";
 import { notify } from "./notify";

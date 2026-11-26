@@ -1,5 +1,5 @@
 /** Calls to our own server. Every change is JSON, which the server requires (blocks cross-site forms). */
-import type { AiReview, Op, PersonAvailability, Plan, PlanCheckResult, ReportText, StatusFacts, SuggestionKind, WorkWeek } from "@ezplan/shared";
+import type { AiReview, Op, PersonAvailability, Plan, PlanCheckResult, ReportText, StatusFacts, SuggestionKind, WorkWeek } from "@rakuplan/shared";
 
 export class ApiError extends Error {
   constructor(readonly status: number, message: string, readonly body: unknown) {

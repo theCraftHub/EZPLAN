@@ -912,7 +912,7 @@ class Component extends DCLogic {
         impact: function (v) { return v === 30 ? '4 of 11 guests have been in for more than 30 days and lose access tonight. Their inviters get a renew link.' : v === 0 ? 'Guests keep access until someone removes them. This lowers your security checklist score.' : null; } },
       { key: 'week', title: 'Standard work week for new workspaces', body: 'What "Full time" means when a team creates a workspace. Each workspace can change its own.', opts: [['40', '40 h'], ['37.5', '37.5 h'], ['35', '35 h']],
         impact: function (v) { return v === '40' ? null : 'New workspaces start at ' + v + ' h a week. Your 6 existing workspaces keep their own setting; managers can switch each one in its settings, with its own preview.'; } },
-      { key: 'ai', title: 'AI features', body: 'Plan Check and status reports use EZPLAN\'s built-in AI unless you add your own key.', opts: [['on', 'On'], ['managers', 'Managers only'], ['off', 'Off']],
+      { key: 'ai', title: 'AI features', body: 'Plan Check and status reports use Rakuplan\'s built-in AI unless you add your own key.', opts: [['on', 'On'], ['managers', 'Managers only'], ['off', 'Off']],
         impact: function (v) { return v === 'off' ? 'Plan Check keeps its free checks; AI reviews and AI status reports stop. 41 plans lose their AI review badge.' : v === 'managers' ? '143 people lose AI features; 41 managers keep them.' : null; } }
     ];
     var policies = defs.map(function (d) {

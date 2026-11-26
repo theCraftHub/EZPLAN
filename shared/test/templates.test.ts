@@ -29,7 +29,7 @@ describe("starter templates", () => {
 });
 
 describe("start from a past project", () => {
-  const gala = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "gala.ezplan"), "utf8")).plan;
+  const gala = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "gala.rakuplan"), "utf8")).plan;
   it("keeps the structure and clears progress, dates, baselines and the plan's identity", () => {
     const p = planFromPast(gala, { title: "Gala 2028", start: "2027-11-01" });
     expect(p.title).toBe("Gala 2028");

@@ -3,7 +3,7 @@ import { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Comments } from "./Comments";
 import { Trash2, X } from "lucide-react";
-import { parseEstimate, type Op, type Plan, type Task } from "@ezplan/shared";
+import { parseEstimate, type Op, type Plan, type Task } from "@rakuplan/shared";
 import { longDate } from "../../lib/format";
 import { Button } from "../../ui/kit";
 import { STATUS } from "../../ui/Status";

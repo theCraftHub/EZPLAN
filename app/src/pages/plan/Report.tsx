@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import { Check, ClipboardCopy, FileText, History, Send } from "lucide-react";
-import type { ReportText, StatusFacts } from "@ezplan/shared";
+import type { ReportText, StatusFacts } from "@rakuplan/shared";
 import { api, ApiError, type Rag, type StatusUpdate } from "../../lib/api";
 import { Button, Card, Notice } from "../../ui/kit";
 import { RAG_STYLE, RAG_WORD, RagChip, UpdateHistory, UpdateOverdue } from "../../ui/StatusUpdate";

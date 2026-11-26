@@ -1,4 +1,4 @@
-"""Builds docs/finance/ezplan-unit-economics.xlsx.
+"""Builds docs/finance/rakuplan-unit-economics.xlsx.
 
 Every output is a formula driven by the Assumptions sheet, so the workbook can be
 opened in Excel / Google Sheets / Numbers and edited directly. Re-run this script
@@ -14,7 +14,7 @@ from openpyxl.comments import Comment
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
-OUT = Path(__file__).resolve().parent.parent / "docs" / "finance" / "ezplan-unit-economics.xlsx"
+OUT = Path(__file__).resolve().parent.parent / "docs" / "finance" / "rakuplan-unit-economics.xlsx"
 CHECKED = "2026-11-12"
 
 FONT = "Arial"
@@ -72,7 +72,7 @@ rd = wb.active
 rd.title = "ReadMe"
 rd.column_dimensions["A"].width = 110
 lines = [
-    ("EZPLAN unit economics model", TITLE),
+    ("Rakuplan unit economics model", TITLE),
     (f"Template built {CHECKED}. Prices were last checked on that date (see Source column on Assumptions).", BLACK),
     ("", BLACK),
     ("HOW TO USE", BOLD),
@@ -112,7 +112,7 @@ SRC_CLAUDE = "Anthropic API pricing (Claude API skill model table, cached 2026-1
 SRC_CF = "Cloudflare Workers/D1/Durable Objects pricing docs (developers.cloudflare.com), via search " + CHECKED
 SRC_RESEND = "resend.com/pricing + Resend docs (via search " + CHECKED + ")"
 SRC_STRIPE = "Stripe US standard pricing + Stripe Billing 0.7% (via search " + CHECKED + ")"
-SRC_EST = "EZPLAN estimate; replace with Actuals once the app is live"
+SRC_EST = "Rakuplan estimate; replace with Actuals once the app is live"
 
 blocks = [
     ("Claude API prices (per 1M tokens)", [
@@ -778,7 +778,7 @@ for row_i in range(2, 26):
 ac.cell(row=28, column=1, value="Row 2 is an EXAMPLE showing the expected format; overwrite it with real data. Paste one row per month from Admin > Economics > Export CSV.").font = BLACK
 ac.cell(row=29, column=1, value="Actual vs model above 1.00x means real AI usage is heavier than assumed: update the usage rows on Assumptions.").font = BLACK
 ac.freeze_panes = "B2"
-ac.cell(row=2, column=1).comment = Comment("Example row. Replace with real numbers.", "EZPLAN")
+ac.cell(row=2, column=1).comment = Comment("Example row. Replace with real numbers.", "Rakuplan")
 
 OUT.parent.mkdir(parents=True, exist_ok=True)
 wb.save(OUT)

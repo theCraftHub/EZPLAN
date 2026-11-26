@@ -4,7 +4,7 @@
  */
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { ArrowLeft, Check, ClipboardCopy, Copy, FileUp, LayoutTemplate, MessagesSquare, PencilLine, Sparkles } from "lucide-react";
-import { BRAND, FILE_EXTENSIONS, generatePrompt, pastPlanText, TEMPLATES, templateText, WIZARD_QUESTIONS, wizardPrompt, type WizardAnswers } from "@ezplan/shared";
+import { BRAND, FILE_EXTENSIONS, generatePrompt, pastPlanText, TEMPLATES, templateText, WIZARD_QUESTIONS, wizardPrompt, type WizardAnswers } from "@rakuplan/shared";
 import { api, ApiError, type ImportPreview, type Me, type People, type PlanSummary } from "../lib/api";
 import { longDate, plural } from "../lib/format";
 import { useRouter } from "../lib/router";
@@ -75,7 +75,7 @@ function Start({ onPick }: { onPick: (s: Step) => void }) {
   const options = [
     { s: "conversation" as const, Icon: MessagesSquare, title: "I've been talking it through with my AI", body: "Copy our prompt into that same chat. Your assistant turns the conversation into a plan; you paste its reply here." },
     { s: "wizard" as const, Icon: PencilLine, title: "I'm starting fresh", body: "Answer a few short questions. We put your answers into a prompt for any AI assistant." },
-    { s: "paste" as const, Icon: FileUp, title: "I already have a reply or a plan file", body: `Paste an assistant's reply, or open a ${FILE_EXTENSIONS[0]} file.` },
+    { s: "paste" as const, Icon: FileUp, title: "I already have a reply or a plan file", body: `Paste an assistant's reply, or open a ${BRAND.fileExtensions[0]} file.` },
     { s: "template" as const, Icon: LayoutTemplate, title: "Start from a template", body: "Event, renovation, launch, hiring, research, move, wedding, construction, marketing, or blank. No AI needed." },
     { s: "past" as const, Icon: Copy, title: "Start from a past project", body: "Reuse one of your plans: same steps, fresh dates, no progress." },
   ];

@@ -1,6 +1,6 @@
 /** Dates, progress and Plan Check, recomputed in the browser with the same engine as the server. */
 import { useMemo } from "react";
-import { allTasks, baselineVariance, checkPlan, explainStart, levelPlan, progressOf, type PersonAvailability, type Plan, type WorkWeek } from "@ezplan/shared";
+import { allTasks, baselineVariance, checkPlan, explainStart, levelPlan, progressOf, type PersonAvailability, type Plan, type WorkWeek } from "@rakuplan/shared";
 
 export function usePlanMath(plan: Plan | null, ctx: { workWeek: WorkWeek; today: string; people: Record<string, PersonAvailability> } | null) {
   return useMemo(() => {

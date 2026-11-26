@@ -27,7 +27,7 @@ describe("don't suggest this again", () => {
 });
 
 describe("status report facts", () => {
-  const gala = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "gala.ezplan"), "utf8")).plan;
+  const gala = parsePlan(readFileSync(join(import.meta.dirname, "fixtures", "gala.rakuplan"), "utf8")).plan;
   const today = "2026-12-08";
   const s = levelPlan(gala, { today });
   const facts = statusFacts(gala, s, progressOf(gala, s, { today }), { today, since: "2026-12-01" });

@@ -2,7 +2,7 @@
  * The connectors ("ports") the server talks to. The same server code runs on our cloud
  * (Cloudflare adapters in worker/) and self-hosted (Node adapters in selfhost/). Plan section 7b.
  */
-import type { Actor, Applied, OpEnvelope, ServerMessage, WorkWeek } from "@ezplan/shared";
+import type { Actor, Applied, OpEnvelope, ServerMessage, WorkWeek } from "@rakuplan/shared";
 
 export type SqlValue = string | number | null;
 

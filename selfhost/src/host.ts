@@ -3,7 +3,7 @@
  */
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { createApp, FakeEngine, systemClock, type AiEngine, type Clock, type HttpFetch, type ServerConfig } from "@ezplan/server";
+import { createApp, FakeEngine, systemClock, type AiEngine, type Clock, type HttpFetch, type ServerConfig } from "@rakuplan/server";
 import { FolderBlobs, MemoryRoomHost, NodeSqliteDb } from "./adapters";
 import { withStatic } from "./static";
 

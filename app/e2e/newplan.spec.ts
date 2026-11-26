@@ -82,8 +82,8 @@ test("a plan file can be opened from the device", async ({ page }) => {
   await signIn(page);
   await page.goto("/new");
   await page.getByRole("button", { name: /I already have a reply or a plan file/ }).click();
-  await page.locator('input[type="file"]').setInputFiles({ name: "kitchen.ezplan", mimeType: "text/markdown", buffer: Buffer.from(KITCHEN) });
-  await expect(page.getByText("Opened kitchen.ezplan")).toBeVisible();
+  await page.locator('input[type="file"]').setInputFiles({ name: "kitchen.rakuplan", mimeType: "text/markdown", buffer: Buffer.from(KITCHEN) });
+  await expect(page.getByText("Opened kitchen.rakuplan")).toBeVisible();
   await page.getByRole("button", { name: "Check my plan" }).click();
   await expect(page.getByRole("heading", { name: "Kitchen Remodel" })).toBeVisible();
   await page.getByRole("button", { name: "Skip for now" }).click();

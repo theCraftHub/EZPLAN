@@ -7,7 +7,7 @@
  */
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { AnthropicEngine, configFromEnv, testAuthEnabled } from "@ezplan/server";
+import { AnthropicEngine, configFromEnv, testAuthEnabled } from "@rakuplan/server";
 import { createSelfHost } from "./host";
 import { startServer } from "./server";
 

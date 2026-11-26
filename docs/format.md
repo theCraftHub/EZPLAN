@@ -1,14 +1,14 @@
 # The plan file format (version 1)
 
-> **Working name:** "EZPLAN", the `ezplan:` header key and the `.ezplan` extension are placeholders until the product is renamed (another company uses the name). The header key and extensions come from `shared/src/brand.ts`; files written with any earlier key keep importing after a rename.
+> The header key and extensions come from `shared/src/brand.ts`. If the product is ever renamed again, the old key and extensions stay accepted so existing files keep importing.
 
-A `.ezplan` file is plain text (Markdown). People can read and edit it in any app, AI assistants can write it, and EZPLAN reads it back without losing progress. Files ending in `.ezplan.md` are the same format.
+A `.rakuplan` file is plain text (Markdown). People can read and edit it in any app, AI assistants can write it, and Rakuplan reads it back without losing progress. Files ending in `.rakuplan.md` are the same format.
 
 ## Example
 
 ```markdown
 ---
-ezplan: 1
+rakuplan: 1
 id: 7f3a
 title: Spring Charity Gala
 goal: Host a 200-guest fundraising dinner raising $50k.
@@ -30,11 +30,11 @@ team: Sam <sam@co.com>, Ana <ana@co.com>
 ```
 
 ## 1. Header (front matter)
-Between two `---` lines. `ezplan: 1` is required; everything else is optional.
+Between two `---` lines. `rakuplan: 1` is required; everything else is optional.
 
 | Key | Meaning |
 |---|---|
-| `ezplan` | Format version (1) |
+| `rakuplan` | Format version (1) |
 | `id` | Plan ID, so a re-imported file updates the same plan |
 | `title` | Plan name |
 | `goal` | What the project must achieve (the Plan Check measures against it) |
@@ -82,7 +82,7 @@ Indented lines under a task:
 | `- [ ] …` | Subtask |
 | `some_key: value` | Unknown attribute from a newer version, kept as is |
 
-## 4. What EZPLAN forgives (AI-neutral reading)
+## 4. What Rakuplan forgives (AI-neutral reading)
 - Text before or after the plan (an assistant's "Sure! Here's your plan…") is ignored, with a note.
 - A plan inside a ```` ``` ```` code block is found automatically.
 - `*`, `+`, `•` and numbered bullets; bold or italic titles; `T1.` or `T1)` IDs; curly quotes; Windows line endings.

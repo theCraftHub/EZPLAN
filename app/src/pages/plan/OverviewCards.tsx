@@ -1,7 +1,7 @@
 /** Cards shared by the phone Overview and the desktop dashboard. */
 import { useState } from "react";
 import { Ruler } from "lucide-react";
-import type { Op, Plan } from "@ezplan/shared";
+import type { Op, Plan } from "@rakuplan/shared";
 import { api, ApiError, type UpdateState } from "../../lib/api";
 import { plural, shortDate } from "../../lib/format";
 import { Link } from "../../lib/router";

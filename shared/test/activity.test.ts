@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { describeOp, findMentions, parsePlan, taskBefore, type Op } from "../src";
 
-const plan = parsePlan(`---\nezplan: 1\ntitle: Gala\nstart: 2027-01-04\n---\n## P1: Venue\n- [ ] T1: Book venue (2d) @Ana\n- [x] T2: Set budget (1d) @Sam done: 2027-01-04 by Sam`).plan;
+const plan = parsePlan(`---\nrakuplan: 1\ntitle: Gala\nstart: 2027-01-04\n---\n## P1: Venue\n- [ ] T1: Book venue (2d) @Ana\n- [x] T2: Set budget (1d) @Sam done: 2027-01-04 by Sam`).plan;
 const line = (op: Op) => describeOp(op, taskBefore(op, plan), plan, "Kim");
 
 describe("activity lines", () => {
@@ -23,7 +23,7 @@ describe("activity lines", () => {
   it("renames use the old name", () => {
     const op: Op = { kind: "setField", taskId: "T1", field: "title", value: "Book hall" };
     const before = taskBefore(op, plan);
-    const after = parsePlan(`---\nezplan: 1\ntitle: Gala\n---\n## P1: Venue\n- [ ] T1: Book hall`).plan;
+    const after = parsePlan(`---\nrakuplan: 1\ntitle: Gala\n---\n## P1: Venue\n- [ ] T1: Book hall`).plan;
     expect(describeOp(op, before, after, "Kim")?.summary).toBe("Kim renamed Book venue to Book hall");
   });
 });

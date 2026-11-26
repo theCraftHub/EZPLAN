@@ -21,7 +21,7 @@ import {
   type Actor,
   type OpEnvelope,
   type WorkWeek,
-} from "@ezplan/shared";
+} from "@rakuplan/shared";
 import { userFromTestHeader } from "./auth";
 import { migrate } from "./migrations";
 import { finishLogin, SignInError, startLogin, userForSignIn } from "./oidc";

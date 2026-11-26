@@ -4,10 +4,9 @@
  * plan on that request; every view is logged and the grant can be revoked at any time.
  */
 import type { Hono } from "hono";
-import { exportPlan, freeModeration } from "@ezplan/shared";
+import { BRAND, exportPlan, freeModeration } from "@rakuplan/shared";
 import { openCases } from "./safetyCases";
 import { customerWho, readWho, teamWho } from "./authors";
-import { BRAND } from "@ezplan/shared";
 import type { Mailer } from "./mail";
 import type { Clock, Db, ServerConfig, User } from "./ports";
 import { notify } from "./notify";

@@ -6,7 +6,7 @@
  *   [mod-refuse]   moderation is declined
  * It repeats its suggestions reworded, so "don't suggest this again" is tested against rewording.
  */
-import type { AiReportText, AiReview, ModerationVerdict, StatusFacts } from "@ezplan/shared";
+import type { AiReportText, AiReview, ModerationVerdict, StatusFacts } from "@rakuplan/shared";
 import type { AiEngine, AiResult, ReviewInput } from "./engine";
 
 const usage = (model: string) => ({ model, inputTokens: 1000, outputTokens: 200 });

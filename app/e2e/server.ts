@@ -8,7 +8,7 @@ import { createServer } from "node:http";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DEFAULT_WORK_WEEK } from "@ezplan/shared";
+import { DEFAULT_WORK_WEEK } from "@rakuplan/shared";
 import { createSelfHost } from "../../selfhost/src/host";
 import { startServer } from "../../selfhost/src/server";
 import { FakeOidc } from "../../server/test/fakeOidc";

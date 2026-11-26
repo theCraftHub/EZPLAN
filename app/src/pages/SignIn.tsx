@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { FolderKanban } from "lucide-react";
-import { BRAND } from "@ezplan/shared";
+import { BRAND } from "@rakuplan/shared";
 import { api } from "../lib/api";
 import { Notice, Spinner } from "../ui/kit";
 

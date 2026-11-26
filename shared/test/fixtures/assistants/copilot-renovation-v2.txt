@@ -1,5 +1,5 @@
 ---
-ezplan: 1
+rakuplan: 1
 title: Kitchen Remodel by Spring 2027
 goal: Complete a full kitchen remodel with new cabinets, countertops, and upgraded wiring within the $30,000 budget and all required permits approved.
 done_when: Kitchen remodel is complete, final inspection passes, all contractor work is paid, and the kitchen is ready for normal use.

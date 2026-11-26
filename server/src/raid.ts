@@ -5,7 +5,7 @@
  * comments, and every change writes an activity line.
  */
 import type { Hono } from "hono";
-import { allTasks, freeModeration } from "@ezplan/shared";
+import { allTasks, freeModeration } from "@rakuplan/shared";
 import type { Clock, Db, User } from "./ports";
 import { canEdit, type Role } from "./roles";
 import { loadRoom } from "./room";

@@ -1,6 +1,6 @@
 /** A generated plan for speed tests: `tasks` tasks in 20 phases, shared by `people` people. */
 export function bigPlan(tasks = 2000, people = 50): string {
-  const lines = ["---", "ezplan: 1", "title: Big programme", "start: 2027-01-04", "---"];
+  const lines = ["---", "rakuplan: 1", "title: Big programme", "start: 2027-01-04", "---"];
   const per = tasks / 20;
   for (let p = 0; p < 20; p++) {
     lines.push(`## P${p + 1}: Workstream ${p + 1}`);

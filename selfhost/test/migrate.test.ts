@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { MIGRATIONS, migrate } from "@ezplan/server";
+import { MIGRATIONS, migrate } from "@rakuplan/server";
 import { NodeSqliteDb } from "../src/adapters";
 
 describe("migration 7 keeps plan members and invites", () => {

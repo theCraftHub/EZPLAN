@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from "react";
 import { EyeOff, ShieldAlert, Sparkles } from "lucide-react";
-import { isSuppressed, nextTaskId, type Op, type Plan, type SuggestionKind, type Task } from "@ezplan/shared";
+import { isSuppressed, nextTaskId, type Op, type Plan, type SuggestionKind, type Task } from "@rakuplan/shared";
 import { api, type AiState } from "../../lib/api";
 import { plural } from "../../lib/format";
 import { Button, Card, Notice } from "../../ui/kit";

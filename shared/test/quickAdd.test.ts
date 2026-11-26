@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parsePlan, parseQuickAdd } from "../src";
 
-const plan = parsePlan("---\nezplan: 1\ntitle: Gala\n---\n## P1: Venue\n- [ ] T1: Set budget (2d)\n- [ ] T2: Shortlist venues (1d)\n- [ ] M1: Venue picked (milestone) depends: T2").plan;
+const plan = parsePlan("---\nrakuplan: 1\ntitle: Gala\n---\n## P1: Venue\n- [ ] T1: Set budget (2d)\n- [ ] T2: Shortlist venues (1d)\n- [ ] M1: Venue picked (milestone) depends: T2").plan;
 const TODAY = "2027-01-04"; // a Monday
 
 describe("quick-add", () => {

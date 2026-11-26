@@ -4,7 +4,7 @@ import { useIsDesktop } from "../../lib/view";
 import { Baseline, LatestUpdate, UpNext } from "./OverviewCards";
 import { Dashboard } from "./Dashboard";
 import { RecentActivity } from "./Activity";
-import type { Op, PersonAvailability, Plan, WorkWeek } from "@ezplan/shared";
+import type { Op, PersonAvailability, Plan, WorkWeek } from "@rakuplan/shared";
 import { plural, shortDate } from "../../lib/format";
 import { Card, ProgressRing } from "../../ui/kit";
 import type { usePlanMath } from "./math";

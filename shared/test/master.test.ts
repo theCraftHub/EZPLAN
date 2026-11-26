@@ -18,7 +18,7 @@ function parts(edit: (t: Fx["tasks"][number]) => Fx["tasks"][number] = (t) => t)
       const deps = t.deps.map((d) => (fx.tasks.find((o) => o.id === d)!.sub === s.key ? d : `${fx.tasks.find((o) => o.id === d)!.sub}/${d}`));
       return `- [${box}] ${t.id}: ${t.title} (${t.est}) @${t.owner} dept: ${t.dept}${deps.length ? ` depends: ${deps.join(", ")}` : ""}`;
     });
-    const text = `---\nezplan: 1\ntitle: ${s.title}\nstart: ${fx.start}\n---\n## P1: Work\n${lines.join("\n")}\n`;
+    const text = `---\nrakuplan: 1\ntitle: ${s.title}\nstart: ${fx.start}\n---\n## P1: Work\n${lines.join("\n")}\n`;
     const r = parsePlan(text);
     expect(r.issues.filter((i) => i.severity === "error")).toEqual([]);
     return { key: s.key, title: s.title, plan: r.plan };
@@ -33,7 +33,7 @@ describe("master plans", () => {
     ]);
     expect(crossRef("bathroom-2/T20")).toEqual({ key: "bathroom-2", id: "T20" });
     expect(crossRef("T20")).toBeNull();
-    const plan = parsePlan("---\nezplan: 1\ntitle: Office 1\n---\n## P1: Work\n- [ ] T1: Network cabling (2d) @Ivan dept: IT depends: reception/T4\n").plan;
+    const plan = parsePlan("---\nrakuplan: 1\ntitle: Office 1\n---\n## P1: Work\n- [ ] T1: Network cabling (2d) @Ivan dept: IT depends: reception/T4\n").plan;
     expect(plan.phases[0]!.tasks[0]).toMatchObject({ dept: "IT", depends: [{ id: "reception/T4" }] });
     expect(exportPlan(plan)).toContain("dept: IT");
     expect(formatDepends(plan.phases[0]!.tasks[0]!.depends)).toBe("reception/T4");

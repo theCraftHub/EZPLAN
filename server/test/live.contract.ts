@@ -2,7 +2,7 @@
  * Live editing contract (WebSockets), written once and run on both hosts.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { ClientReplica, parsePlan, type Applied, type Plan, type ServerMessage } from "@ezplan/shared";
+import { ClientReplica, parsePlan, type Applied, type Plan, type ServerMessage } from "@rakuplan/shared";
 import { TODAY, type HostFactory, type TestHost } from "./contract";
 import { PUBLIC_URL } from "./signin.contract";
 
@@ -98,7 +98,7 @@ export function liveContract(hostName: string, factory: HostFactory) {
       open = host.live!;
       const res = await host.fetch(
         "/api/plans",
-        { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: "---\nezplan: 1\ntitle: Live\nstart: 2027-01-04\n---\n## P1: Work\n- [ ] T1: First (1d)\n- [ ] T2: Second (2d) depends: T1\n- [ ] T3: Third (1d)" }) },
+        { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: "---\nrakuplan: 1\ntitle: Live\nstart: 2027-01-04\n---\n## P1: Work\n- [ ] T1: First (1d)\n- [ ] T2: Second (2d) depends: T1\n- [ ] T3: Third (1d)" }) },
         ALEX,
       );
       planId = ((await res.json()) as { id: string }).id;
@@ -186,7 +186,7 @@ export function liveContract(hostName: string, factory: HostFactory) {
       expect(b.applied().map((m) => m.applied.env.opId)).toEqual(a.applied().map((m) => m.applied.env.opId));
 
       // A client that applies what it received ends up with exactly the server's plan.
-      const start = parsePlan("---\nezplan: 1\ntitle: Live\nstart: 2027-01-04\n---\n## P1: Work\n- [ ] T1: First (1d)\n- [ ] T2: Second (2d) depends: T1\n- [ ] T3: Third (1d)").plan;
+      const start = parsePlan("---\nrakuplan: 1\ntitle: Live\nstart: 2027-01-04\n---\n## P1: Work\n- [ ] T1: First (1d)\n- [ ] T2: Second (2d) depends: T1\n- [ ] T3: Third (1d)").plan;
       const server = ((await (await host.fetch(`/api/plans/${planId}`, {}, ALEX)).json()) as { plan: Plan }).plan;
       const replica = new ClientReplica("check", { userId: "u-alex", name: "Alex" }, { ...start, id: server.id });
       for (const m of a.applied()) replica.receive(m.applied, TODAY);

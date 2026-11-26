@@ -1,5 +1,5 @@
 {
-  "name": "@ezplan/selfhost",
+  "name": "@rakuplan/selfhost",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,8 +8,8 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
-    "@ezplan/server": "0.0.0",
-    "@ezplan/shared": "0.0.0",
+    "@rakuplan/server": "0.0.0",
+    "@rakuplan/shared": "0.0.0",
     "@hono/node-server": "2.1.6",
     "ws": "8.22.2"
   },

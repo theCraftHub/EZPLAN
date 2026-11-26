@@ -1,6 +1,6 @@
 /** Per person, per day: hours free, hours booked, days off. What the Team schedule draws. */
 import { useMemo } from "react";
-import { availableHours, Calendar, calendarOf, fromDay, planDayLength, planPeople, toDay, type PersonAvailability, type Plan, type WorkWeek } from "@ezplan/shared";
+import { availableHours, Calendar, calendarOf, fromDay, planDayLength, planPeople, toDay, type PersonAvailability, type Plan, type WorkWeek } from "@rakuplan/shared";
 import type { usePlanMath } from "./math";
 
 type Math = NonNullable<ReturnType<typeof usePlanMath>>;

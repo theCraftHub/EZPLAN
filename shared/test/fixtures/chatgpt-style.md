@@ -1,8 +1,8 @@
-Sure! Here's your project plan in EZPLAN format:
+Sure! Here's your project plan in Rakuplan format:
 
 ```markdown
 ---
-ezplan: 1
+rakuplan: 1
 title: “Kitchen Renovation”
 goal: New kitchen by spring without going over $30k
 done_when: Kitchen usable, inspection passed, final invoice paid
