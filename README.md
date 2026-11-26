@@ -23,7 +23,7 @@ Turn any project description into a clear, good-looking, AI-checked plan your te
 
 ## Run it on your computer
 
-Needs Node 22 or newer.
+Needs Node 22.5 or newer (the self-hosted server uses Node's built-in SQLite).
 
 ```bash
 npm ci
@@ -49,6 +49,17 @@ npm run check          # type checks + unit and API tests (both hosts: Node and 
 npm run e2e            # browser tests on a phone and a desktop screen, against the real self-hosted build
 npm run shots -w app   # saves screenshots of every screen to app/e2e/.results/shots
 ```
+
+The browser tests need Playwright's Chromium once per computer: `npx playwright install chromium` (after `npm ci`, so it matches the project's Playwright version).
+
+**On Windows** (Command Prompt or PowerShell), run everything from inside the project folder. Newer npm versions hold back packages' install scripts until you approve them; approve the two this project needs, then rebuild them:
+
+```bash
+npm install-scripts approve esbuild workerd
+npm rebuild esbuild workerd
+```
+
+`npm run shots -w app` uses Linux shell syntax; on Windows run `set SHOTS=1` first, then `npm run e2e`.
 
 ## Roadmap
 | Phase | Contents |

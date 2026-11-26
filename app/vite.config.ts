@@ -1,7 +1,7 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwind from "@tailwindcss/vite";
-import { BRAND, FILE_EXTENSIONS } from "../shared/src/brand";
+import { BRAND, FILE_EXTENSIONS } from "../shared/src/brand.ts";
 
 /** The product name comes from brand.ts only: page title and the install manifest. */
 function brand(): Plugin {
