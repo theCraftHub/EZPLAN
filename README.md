@@ -1,6 +1,6 @@
 # Rakuplan
 
-> Rakuplan ("raku" is Japanese for easy) was developed under the codename EZPLAN. The name, file extension and domain (`rakuplan.com`) live in `shared/src/brand.ts`. Files saved under the old name (`.ezplan`, `ezplan: 1`) still open.
+> "Raku" is Japanese for easy. The name, file extension and domain (`rakuplan.com`) live in `shared/src/brand.ts`.
 
 Turn any project description into a clear, good-looking, AI-checked plan your team can track together, on phone or desktop.
 

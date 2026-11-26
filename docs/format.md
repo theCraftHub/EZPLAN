@@ -1,6 +1,6 @@
 # The plan file format (version 1)
 
-> **Earlier name:** the product was called EZPLAN during development. Files written with the old `ezplan:` header key or the `.ezplan` / `.ezplan.md` extensions keep importing. The header key and extensions come from `shared/src/brand.ts`.
+> The header key and extensions come from `shared/src/brand.ts`. If the product is ever renamed again, the old key and extensions stay accepted so existing files keep importing.
 
 A `.rakuplan` file is plain text (Markdown). People can read and edit it in any app, AI assistants can write it, and Rakuplan reads it back without losing progress. Files ending in `.rakuplan.md` are the same format.
 

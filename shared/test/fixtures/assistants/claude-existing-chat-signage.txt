@@ -1,5 +1,5 @@
 ---
-ezplan: 1
+rakuplan: 1
 title: Showroom Screens — Site-Wide Signage Platform
 goal: Deliver a self-hosted, multi-screen display system that replaces the Google Slides prototype, adds a customer-facing video/audio signage mode, auto-recovers CRM sessions, and ships a de-specialized open-source core.
 done_when: Front-door video signs are live, sales boards run the in-house app with per-screen config and access, CRM auto-login passes its on-site acceptance test, and the FOSS "OpenSig" core is published.

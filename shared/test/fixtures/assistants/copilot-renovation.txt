@@ -1,5 +1,5 @@
 ---
-ezplan: 1
+rakuplan: 1
 title: Kitchen Remodel
 goal: Complete a full kitchen renovation within the $30k budget, including new cabinets, countertops, and updated wiring, with all required permits and inspections approved before spring.
 done_when: Kitchen is fully functional, all construction work is complete, final inspection is passed, and total project costs remain within budget.

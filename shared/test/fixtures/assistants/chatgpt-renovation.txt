@@ -2,7 +2,7 @@ text
 
 ```text
 ---
-ezplan: 1
+rakuplan: 1
 title: Kitchen Renovation
 goal: Complete a kitchen renovation by spring 2027 with new cabinets, countertops, and updated wiring while staying within the $30,000 budget and meeting permit and inspection requirements.
 done_when: Cabinets and countertops are installed, electrical wiring is completed and approved, required inspections are passed, the kitchen is functional, final costs are within $30,000, and all outstanding contractor payments and documentation are settled.

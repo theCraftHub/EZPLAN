@@ -19,7 +19,7 @@ describe("brand isolation (renaming = editing brand.ts)", () => {
     expect(files.length).toBeGreaterThan(3);
     const offenders = files
       .filter((f) => !f.endsWith("brand.ts"))
-      .filter((f) => /ezplan|rakuplan/i.test(readFileSync(f, "utf8").replace(/@rakuplan\//g, "")));
+      .filter((f) => /rakuplan/i.test(readFileSync(f, "utf8").replace(/@rakuplan\//g, "")));
     expect(offenders).toEqual([]);
   });
 
@@ -28,20 +28,11 @@ describe("brand isolation (renaming = editing brand.ts)", () => {
     expect(exportPlan(plan).split("\n")[1]).toBe(`${BRAND.formatKey}: 1`);
   });
 
-  it("files written under the old EZPLAN codename still import", () => {
-    const oldFile = `---\nezplan: 1\ntitle: Old file\n---\n## P1: A\n- [x] T1: Done thing (1d)`;
-    const fromOld = parsePlan(oldFile);
-    const fromNew = parsePlan(oldFile.replace("ezplan: 1", `${BRAND.formatKey}: 1`));
-    expect(fromOld.mode).toBe("strict");
-    expect(fromNew.plan).toEqual(fromOld.plan);
-    expect(exportPlan(fromOld.plan).split("\n")[1]).toBe(`${BRAND.formatKey}: 1`);
-  });
-
   it("after a future rename, files written under the old name still import", () => {
-    const oldFile = `---\nezplan: 1\ntitle: Old file\n---\n## P1: A\n- [x] T1: Done thing (1d)`;
+    const oldFile = `---\n${BRAND.formatKey}: 1\ntitle: Old file\n---\n## P1: A\n- [x] T1: Done thing (1d)`;
     const renamedKeys = [...FORMAT_KEYS, "newname"];
     const fromOld = parsePlan(oldFile, { formatKeys: renamedKeys });
-    const fromNew = parsePlan(oldFile.replace("ezplan: 1", "newname: 1"), { formatKeys: renamedKeys });
+    const fromNew = parsePlan(oldFile.replace(`${BRAND.formatKey}: 1`, "newname: 1"), { formatKeys: renamedKeys });
     expect(fromOld.mode).toBe("strict");
     expect(fromNew.mode).toBe("strict");
     expect(fromNew.plan).toEqual(fromOld.plan);

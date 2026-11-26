@@ -1,7 +1,6 @@
 /**
  * The single place the product's name and identity live.
  *
- * The product was developed under the codename "EZPLAN" and renamed to
  * Rakuplan ("raku" is Japanese for easy). Renaming = editing this file (plus
  * mockups and docs). No other source file may contain the brand name; a test
  * enforces that.
@@ -27,7 +26,7 @@ export const BRAND = {
  * importing after a rename, so when the brand changes, add the new key here and
  * never remove old ones.
  */
-export const FORMAT_KEYS: readonly string[] = ["ezplan", "rakuplan"];
+export const FORMAT_KEYS: readonly string[] = ["rakuplan"];
 
 /** Every file extension ever used, for imports and "open with" registration. */
-export const FILE_EXTENSIONS: readonly string[] = [".ezplan", ".ezplan.md", ".rakuplan", ".rakuplan.md"];
+export const FILE_EXTENSIONS: readonly string[] = [".rakuplan", ".rakuplan.md"];
