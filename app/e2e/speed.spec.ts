@@ -33,6 +33,16 @@ test("big plan: open, switch views, edit", async ({ page }) => {
   console.log(`${test.info().project.name} edit to paint (in page): ${editMs} ms`);
   expect(editMs, "a tap shows within 100 ms").toBeLessThan(100);
   await time("timeline", async () => { await page.getByRole("navigation", { name: "Plan views" }).getByRole("link", { name: "Timeline" }).click(); await page.getByRole("region", { name: "Timeline" }).waitFor(); });
+  await time("grid", async () => { await page.getByRole("navigation", { name: "Plan views" }).getByRole("link", { name: "Grid" }).click(); await page.getByRole("table", { name: "Tasks" }).waitFor(); });
+  const gridScroll = await page.evaluate(async () => {
+    let worst = 0; let last = performance.now();
+    const stop = performance.now() + 2000;
+    await new Promise<void>((done) => { const tick = (t: number) => { worst = Math.max(worst, t - last); last = t; scrollBy(0, 60); if (t < stop) requestAnimationFrame(tick); else done(); }; requestAnimationFrame(tick); });
+    return { worstFrameMs: Math.round(worst), rows: document.querySelectorAll('[role="table"] [role="row"]').length };
+  });
+  console.log(`${test.info().project.name} grid scroll: ${JSON.stringify(gridScroll)}`);
+  expect(gridScroll.worstFrameMs, "no frame slower than 50 ms while scrolling the grid").toBeLessThan(50);
+  expect(gridScroll.rows, "only rows near the screen are drawn").toBeLessThan(200);
   await time("team", async () => { await page.getByRole("navigation", { name: "Plan views" }).getByRole("link", { name: "Team" }).click(); await page.getByRole("button", { name: "Add person" }).waitFor(); });
   const frames = await page.evaluate(async () => {
     const el = document.querySelector('[aria-label="Team schedule grid"]') ?? document.scrollingElement!;

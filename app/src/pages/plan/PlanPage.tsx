@@ -1,3 +1,4 @@
+import { Grid } from "./Grid";
 import { Risks } from "./Risks";
 import { planPeople } from "@ezplan/shared";
 import { api } from "../../lib/api";
@@ -25,6 +26,7 @@ const TABS = [
   { view: "", label: "Overview" },
   { view: "checklist", label: "Checklist" },
   { view: "timeline", label: "Timeline" },
+  { view: "grid", label: "Grid" },
   { view: "team", label: "Team" },
   { view: "risks", label: "Risks" },
   { view: "activity", label: "Activity" },
@@ -97,6 +99,7 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
       {view === "timeline" && <Timeline plan={room.plan} math={math} today={room.detail.today} />}
       {view === "team" && <Team me={me} planId={id} plan={room.plan} math={math} people={room.detail.people} workWeek={room.detail.workWeek} today={room.detail.today} canEdit={canEdit} edit={room.edit} onPeople={(people) => room.setDetail({ ...room.detail!, people })} />}
       {view === "activity" && <Activity version={room.version} />}
+      {view === "grid" && <Grid plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} planId={id} />}
       {view === "risks" && <Risks planId={id} plan={room.plan} today={room.detail.today} people={[...new Set([...planPeople(room.plan), ...Object.keys(room.detail.people)])]} onOpenChange={(raidOpen) => room.setDetail({ ...room.detail!, raidOpen })} />}
     </PlanContext.Provider>
   );

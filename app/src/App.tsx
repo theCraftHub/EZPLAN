@@ -39,7 +39,7 @@ function Routes({ me, onSignOut, onMe }: { me: Me; onSignOut: () => void; onMe: 
   const adm = match("/admin/ai/:ws", path) ?? match("/admin/ai/:ws/:tab", path);
   if (adm && ["", "spending"].includes(adm.tab ?? "")) return <AiAdminPage key={adm.ws} me={me} ws={adm.ws!} tab={adm.tab ?? ""} />;
   const p = match("/p/:id", path) ?? match("/p/:id/:view", path);
-  if (p && ["", "checklist", "timeline", "team", "update", "history", "print", "share", "report", "activity", "risks"].includes(p.view ?? "")) return <PlanPage key={p.id} me={me} id={p.id!} view={p.view ?? ""} />;
+  if (p && ["", "checklist", "timeline", "team", "update", "history", "print", "share", "report", "activity", "risks", "grid"].includes(p.view ?? "")) return <PlanPage key={p.id} me={me} id={p.id!} view={p.view ?? ""} />;
   return <NotFound />;
 }
 
