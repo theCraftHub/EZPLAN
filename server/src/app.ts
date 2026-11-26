@@ -39,6 +39,8 @@ import { registerStatusUpdateRoutes, updateState } from "./statusUpdates";
 import { registerPrefRoutes } from "./prefs";
 import { raidOpen, registerRaidRoutes } from "./raid";
 import { masterContext, registerMasterRoutes, scheduleOf } from "./masters";
+import { registerOrgRoutes } from "./orgs";
+import { mailSettings, sendEmail } from "./mail";
 import { registerCollabRoutes } from "./comments";
 import { notify, registerNotificationRoutes, unreadCount, userForName } from "./notify";
 import { registerSupportRoutes, supportOpen } from "./support";
@@ -203,6 +205,14 @@ export function createApp(ports: Ports) {
   registerPrefRoutes(app, { db, clock });
   registerRaidRoutes(app, { db, clock, access, notFound });
   registerMasterRoutes(app, { db, clock, access, notFound, workWeekOf: aiDeps.workWeekOf });
+  registerOrgRoutes(app, {
+    db, clock, http: ports.http, siteOrigin, notFound,
+    // Invite emails go through the outbox like every email (sent once a mailer is set up).
+    email: async (to, subject, text) => {
+      const settings = mailSettings(config, BRAND.name);
+      await sendEmail(db, clock, settings, ports.mail, { to, subject, text, replyTo: settings.from, headers: {} }, null, null);
+    },
+  });
   registerSafetyCaseRoutes(app, { db, clock, config, ...(ports.mail ? { mail: ports.mail } : {}) });
   registerCollabRoutes(app, {
     db, clock, rooms, access, notFound,

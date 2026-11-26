@@ -23,6 +23,10 @@ export const PEOPLE: Record<string, { sub: string; name: string; email: string }
   sam: { sub: "sam", name: "Sam Okoye", email: "sam@example.com" },
   kim: { sub: "kim", name: "Kim Park", email: "kim@example.com" },
   pat: { sub: "pat", name: "Pat Lee", email: "pat@example.com" }, // on the safety review team
+  // Company tests only (step L), so other tests never see these people in a company.
+  dana: { sub: "dana", name: "Dana Reyes", email: "dana@northfield.example" },
+  ivan: { sub: "ivan", name: "Ivan Petrov", email: "ivan@northfield.example" },
+  mei: { sub: "mei", name: "Mei Chen", email: "mei@northfield.example" },
 };
 
 const fake = await FakeOidc.create(() => Date.now(), `http://127.0.0.1:${idPort}`);

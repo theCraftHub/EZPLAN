@@ -185,6 +185,21 @@ export const MIGRATIONS: Migration[] = [
       `CREATE INDEX master_messages_scope ON master_messages(master_id, scope, created_at)`,
     ],
   },
+  {
+    id: 16,
+    name: "organizations: companies above workspaces, members with org roles, invites, domains, audit log, undo",
+    statements: [
+      `CREATE TABLE organizations (id TEXT PRIMARY KEY, name TEXT NOT NULL, industry TEXT, seats INTEGER NOT NULL, settings TEXT NOT NULL, onboarding TEXT NOT NULL, created_by TEXT NOT NULL REFERENCES users(id), created_at INTEGER NOT NULL)`,
+      `ALTER TABLE workspaces ADD COLUMN org_id TEXT REFERENCES organizations(id)`,
+      `CREATE TABLE org_members (org_id TEXT NOT NULL REFERENCES organizations(id), user_id TEXT NOT NULL REFERENCES users(id), role TEXT NOT NULL CHECK (role IN ('owner', 'admin', 'dept_admin', 'helpdesk', 'auditor', 'member', 'guest')), status TEXT NOT NULL CHECK (status IN ('active', 'deactivated')), department TEXT, workspaces TEXT NOT NULL, source TEXT NOT NULL, joined_at INTEGER NOT NULL, last_active_at INTEGER, deactivated_at INTEGER, PRIMARY KEY (org_id, user_id))`,
+      `CREATE INDEX org_members_user ON org_members(user_id)`,
+      `CREATE TABLE org_invites (id TEXT PRIMARY KEY, org_id TEXT NOT NULL REFERENCES organizations(id), token_hash TEXT NOT NULL UNIQUE, email TEXT NOT NULL, name TEXT, role TEXT NOT NULL, department TEXT, workspace_id TEXT, created_by TEXT NOT NULL, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL, accepted_by TEXT, accepted_at INTEGER, revoked_at INTEGER)`,
+      `CREATE INDEX org_invites_org ON org_invites(org_id, email)`,
+      `CREATE TABLE org_domains (org_id TEXT NOT NULL REFERENCES organizations(id), domain TEXT NOT NULL, token TEXT NOT NULL, created_at INTEGER NOT NULL, verified_at INTEGER, PRIMARY KEY (org_id, domain))`,
+      `CREATE TABLE audit_log (org_id TEXT NOT NULL REFERENCES organizations(id), seq INTEGER NOT NULL, at INTEGER NOT NULL, actor_id TEXT, actor_name TEXT NOT NULL, action TEXT NOT NULL, target TEXT NOT NULL, detail TEXT NOT NULL, prev_hash TEXT NOT NULL, hash TEXT NOT NULL, PRIMARY KEY (org_id, seq))`,
+      `CREATE TABLE undo_batches (id TEXT PRIMARY KEY, org_id TEXT NOT NULL REFERENCES organizations(id), actor_id TEXT NOT NULL, action TEXT NOT NULL, payload TEXT NOT NULL, created_at INTEGER NOT NULL, undone_at INTEGER)`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

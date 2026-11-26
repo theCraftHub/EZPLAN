@@ -30,8 +30,16 @@ export function testEnv(fake?: FakeOidc): Record<string, string> {
   };
 }
 
+/** TXT records tests publish for domain checks (answered as Cloudflare DNS-over-HTTPS would). */
+export const FAKE_DNS: Record<string, string[]> = {};
+
 export function testHttp(fake?: FakeOidc): HttpFetch {
   return async (req) => {
+    const u = new URL(req.url);
+    if (u.hostname === "cloudflare-dns.com") {
+      const records = FAKE_DNS[u.searchParams.get("name") ?? ""] ?? [];
+      return Response.json({ Status: 0, Answer: records.map((r) => ({ type: 16, data: `"${r}"` })) });
+    }
     if (fake && new URL(req.url).origin === fake.issuer) return fake.handle(req);
     return new Response("Tests don't reach the internet.", { status: 599 });
   };

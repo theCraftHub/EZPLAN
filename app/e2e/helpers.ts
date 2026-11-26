@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
 /** Signs in through the real flow: our sign-in page → the test sign-in service → back to the app. */
-export async function signIn(page: Page, who: "Alex Rivera" | "Sam Okoye" | "Kim Park" | "Pat Lee" = "Alex Rivera", path = "/") {
+export async function signIn(page: Page, who: "Alex Rivera" | "Sam Okoye" | "Kim Park" | "Pat Lee" | "Dana Reyes" | "Ivan Petrov" | "Mei Chen" = "Alex Rivera", path = "/") {
   await page.goto(path);
   await page.getByRole("link", { name: "Sign in with Test ID" }).click();
   await page.getByRole("link", { name: `Continue as ${who}` }).click();
