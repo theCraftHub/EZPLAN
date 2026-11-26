@@ -3,6 +3,7 @@
  * Every AI call goes through the refusal rule (one retry on the same model, then held for review)
  * and is logged with its cost.
  */
+import { scheduleOf } from "../masters";
 import type { Hono } from "hono";
 import {
   detectInjection,
@@ -235,7 +236,7 @@ export function registerAiRoutes(app: Hono<{ Variables: { user: User } }>, d: Ai
     const today = clock.today();
     const people = await d.loadPeople(id);
     const workWeek = await d.workWeekOf(a.workspace_id);
-    const schedule = levelPlan(room.plan as Plan, { workWeek, today, people });
+    const schedule = await scheduleOf(d.db, id, room.plan as Plan, { workWeek, today, people }, levelPlan);
     const since = typeof b?.since === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.since) ? b.since : undefined;
     const facts = statusFacts(room.plan, schedule, progressOf(room.plan, schedule, { workWeek, today }), { today, ...(since ? { since } : {}) });
     const template = templateReport(facts);

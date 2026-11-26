@@ -38,6 +38,7 @@ import { recordActivity } from "./activity";
 import { registerStatusUpdateRoutes, updateState } from "./statusUpdates";
 import { registerPrefRoutes } from "./prefs";
 import { raidOpen, registerRaidRoutes } from "./raid";
+import { masterContext, registerMasterRoutes, scheduleOf } from "./masters";
 import { registerCollabRoutes } from "./comments";
 import { notify, registerNotificationRoutes, unreadCount, userForName } from "./notify";
 import { registerSupportRoutes, supportOpen } from "./support";
@@ -201,6 +202,7 @@ export function createApp(ports: Ports) {
   registerStatusUpdateRoutes(app, { db, clock, access, notFound });
   registerPrefRoutes(app, { db, clock });
   registerRaidRoutes(app, { db, clock, access, notFound });
+  registerMasterRoutes(app, { db, clock, access, notFound, workWeekOf: aiDeps.workWeekOf });
   registerSafetyCaseRoutes(app, { db, clock, config, ...(ports.mail ? { mail: ports.mail } : {}) });
   registerCollabRoutes(app, {
     db, clock, rooms, access, notFound,
@@ -355,8 +357,8 @@ export function createApp(ports: Ports) {
 
   app.get("/api/plans", async (c) => {
     const user = c.get("user");
-    const rows = await db.all<{ id: string; title: string; state: string; version: number; workspace_id: string; updated_at: number; work_week: string; shared: number }>(
-      `SELECT p.id, p.title, p.state, p.version, p.workspace_id, p.updated_at, w.work_week, CASE WHEN m.user_id IS NULL THEN 1 ELSE 0 END AS shared FROM plans p
+    const rows = await db.all<{ id: string; title: string; state: string; version: number; workspace_id: string; updated_at: number; work_week: string; shared: number; kind: string; master_id: string | null; plans: number }>(
+      `SELECT p.id, p.title, p.state, p.version, p.workspace_id, p.updated_at, w.work_week, p.kind, p.master_id, (SELECT COUNT(*) FROM plans s WHERE s.master_id = p.id) AS plans, CASE WHEN m.user_id IS NULL THEN 1 ELSE 0 END AS shared FROM plans p
        JOIN workspaces w ON w.id = p.workspace_id
        LEFT JOIN members m ON m.workspace_id = p.workspace_id AND m.user_id = ?
        LEFT JOIN plan_members pm ON pm.plan_id = p.id AND pm.user_id = ?
@@ -367,11 +369,11 @@ export function createApp(ports: Ports) {
     const today = clock.today();
     // Home shows each plan's progress, health, finish and next milestone, computed by the same engine.
     const plans = await Promise.all(
-      rows.map(async ({ work_week, shared, ...p }) => {
+      rows.map(async ({ work_week, shared, kind, master_id, plans: inside, ...p }) => {
         const room = await loadRoom(db, p.id);
         if (!room) return { ...p, summary: null };
         const workWeek = parseWorkWeek(work_week);
-        const schedule = levelPlan(room.plan, { workWeek, today, people: await loadPeople(p.id) });
+        const schedule = await scheduleOf(db, p.id, room.plan, { workWeek, today, people: await loadPeople(p.id) }, levelPlan);
         const progress = progressOf(room.plan, schedule, { workWeek, today });
         const next = room.plan.phases
           .flatMap((ph) => ph.tasks)
@@ -381,6 +383,8 @@ export function createApp(ports: Ports) {
         return {
           ...p,
           shared: Number(shared) === 1,
+          ...(kind === "master" ? { master: { plans: Number(inside) } } : {}),
+          ...(master_id ? { masterId: master_id } : {}),
           title: room.plan.title,
           summary: { percent: progress.percent, doneCount: progress.doneCount, countedTasks: progress.countedTasks, overdueCount: progress.overdueCount, finish: schedule.finish, health: progress.suggestedHealth, nextMilestone: next ?? null, baselineVarianceDays: progress.baselineVarianceDays },
           statusUpdate: await updateState(db, clock.now(), p.id),
@@ -400,9 +404,10 @@ export function createApp(ports: Ports) {
     const workWeek = parseWorkWeek(a.work_week);
     const today = clock.today();
     const people = await loadPeople(id);
-    const schedule = levelPlan(room.plan, { workWeek, today, people });
+    const schedule = await scheduleOf(db, id, room.plan, { workWeek, today, people }, levelPlan);
     const check = checkPlan(room.plan, { schedule, workWeek, today, people, level: true });
     return c.json({
+      master: await masterContext(db, id, user.id, access),
       id,
       version: room.seq,
       role: a.role,
@@ -526,7 +531,7 @@ export function createApp(ports: Ports) {
     const room = await loadRoom(db, id);
     if (!room) return c.json(notFound, 404);
     const today = clock.today();
-    const schedule = levelPlan(room.plan, { workWeek: parseWorkWeek(a.work_week), today, people: await loadPeople(id) });
+    const schedule = await scheduleOf(db, id, room.plan, { workWeek: parseWorkWeek(a.work_week), today, people: await loadPeople(id) }, levelPlan);
     const dates = Object.fromEntries([...schedule.tasks].map(([tid, t]) => [tid, { start: t.start, end: t.end }]));
     const saved = await saveVersion(id, room.plan.baselineSet ? `Before replacing the baseline from ${room.plan.baselineSet}` : "Before setting the baseline", user.id);
     const r = await rooms.apply(id, { opId: `baseline-${crypto.randomUUID().slice(0, 8)}`, clientId: "baseline", op: { kind: "setBaseline", on: today, dates } }, { userId: user.id, name: user.name });

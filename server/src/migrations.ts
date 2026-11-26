@@ -170,6 +170,21 @@ export const MIGRATIONS: Migration[] = [
       `CREATE INDEX raid_items_plan ON raid_items(plan_id, status, updated_at)`,
     ],
   },
+  {
+    id: 15,
+    name: "master plans: sub-plans with keys and departments, department contacts, discussion",
+    statements: [
+      `ALTER TABLE plans ADD COLUMN kind TEXT NOT NULL DEFAULT 'plan'`,
+      `ALTER TABLE plans ADD COLUMN master_id TEXT REFERENCES plans(id)`,
+      `ALTER TABLE plans ADD COLUMN plan_key TEXT`,
+      `ALTER TABLE plans ADD COLUMN lead_dept TEXT`,
+      `ALTER TABLE plans ADD COLUMN needs_depts TEXT NOT NULL DEFAULT '[]'`,
+      `CREATE INDEX plans_master ON plans(master_id)`,
+      `CREATE TABLE master_departments (master_id TEXT NOT NULL REFERENCES plans(id), name TEXT NOT NULL, contact TEXT, role TEXT, PRIMARY KEY (master_id, name))`,
+      `CREATE TABLE master_messages (id TEXT PRIMARY KEY, master_id TEXT NOT NULL REFERENCES plans(id), scope TEXT NOT NULL, author_id TEXT NOT NULL REFERENCES users(id), body TEXT NOT NULL, about TEXT, created_at INTEGER NOT NULL)`,
+      `CREATE INDEX master_messages_scope ON master_messages(master_id, scope, created_at)`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */
