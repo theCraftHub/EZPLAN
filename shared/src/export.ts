@@ -81,6 +81,7 @@ function taskLines(t: Task): string[] {
   if (t.milestone && !t.id.startsWith("M")) line += " (milestone)";
   if (t.owner) line += /\s/.test(t.owner) ? ` @"${t.owner}"` : ` @${t.owner}`;
   if (t.priority) line += ` !${t.priority}`;
+  if (t.dept) line += ` dept: ${oneLine(t.dept)}`;
   for (const tag of t.tags) line += ` #${tag}`;
   if (t.due) line += ` due: ${t.due}`;
   if (t.depends.length) line += ` depends: ${formatDepends(t.depends)}`;

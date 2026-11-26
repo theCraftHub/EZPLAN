@@ -16,7 +16,7 @@
  */
 import type { Phase, Plan, Task, TaskStatus } from "./schema";
 
-export type EditableField = "title" | "owner" | "due" | "notes" | "priority" | "estimate" | "depends" | "tags";
+export type EditableField = "title" | "owner" | "dept" | "due" | "notes" | "priority" | "estimate" | "depends" | "tags";
 
 export type Op =
   | { kind: "setStatus"; taskId: string; status: TaskStatus }

@@ -13,6 +13,7 @@ const Text = (max: number) => z.string().max(max);
 const FIELD_VALUES = {
   title: Text(500).min(1),
   owner: Text(120).nullable(),
+  dept: Text(60).nullable(),
   due: IsoDate.nullable(),
   notes: z.array(Text(4000)).max(200),
   priority: Priority.nullable(),
@@ -26,6 +27,7 @@ const setField = <F extends keyof typeof FIELD_VALUES>(field: F) =>
 const SetField = z.union([
   setField("title"),
   setField("owner"),
+  setField("dept"),
   setField("due"),
   setField("notes"),
   setField("priority"),

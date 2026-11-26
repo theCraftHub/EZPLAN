@@ -256,10 +256,10 @@ const BULLET_RE = /^(\s*)(?:[-*+•]|\d+[.)])\s+(.*)$/;
 const CHECKBOX_RE = /^(?:\[( |x|X|\/|-|~|>)\]|(☐|⬜|□)|(☑|✅|✔️?|☒|✓))\s*/;
 const TASK_ID_RE = /^(?:\*\*|__)?\s*([TtMm])(\d+)\s*[:.)\-–]\s*/;
 const PHASE_ID_RE = /^(?:P(\d+)|Phase\s+(\d+))\s*[:.)\-–]\s*(.*)$/i;
-const ATTR_LINE_RE = /^(planned|notes?|due|depends|owner|done|skipped|priority|tags?)\s*:\s*(.*)$/i;
+const ATTR_LINE_RE = /^(planned|notes?|due|depends|owner|dept|done|skipped|priority|tags?)\s*:\s*(.*)$/i;
 /** Unknown attributes written by newer versions: lower_snake_case keys only, so ordinary notes aren't mistaken for them. */
 const EXTRA_ATTR_RE = /^([a-z][a-z0-9_]{1,29})\s*:\s+(.+)$/;
-const INLINE_KEYS = ["due", "depends", "done", "skipped", "after"] as const;
+const INLINE_KEYS = ["due", "depends", "done", "skipped", "after", "dept"] as const;
 
 function readBody(lines: Line[], plan: Plan, issues: ParseIssue[], strict: boolean): void {
   let phase: Phase | null = null;
@@ -508,6 +508,9 @@ function applyAttributeLine(t: Task, key: string, value: string, n: number, issu
     case "owner":
       t.owner = v.replace(/^@/, "");
       break;
+    case "dept":
+      if (v.trim()) t.dept = v.trim().slice(0, 60);
+      break;
     case "priority": {
       const p = v.toLowerCase();
       if (p === "high" || p === "medium" || p === "low") t.priority = p;
@@ -545,13 +548,15 @@ export function parseEstimate(text: string): Estimate | undefined {
 
 export function parseDepends(text: string): Dependency[] {
   const out: Dependency[] = [];
-  const re = /\b([TtMm]\d+)\b(?:\s*(FS|SS|FF))?(?:\s*([+-]\s*\d+(?:\.\d+)?)\s*d?)?/g;
+  // A task in another plan of the same master plan is written with that plan's key: "reception/T4".
+  const re = /(?:\b([a-z0-9][a-z0-9-]{0,39})\/)?\b([TtMm]\d+)\b(?:\s*(FS|SS|FF))?(?:\s*([+-]\s*\d+(?:\.\d+)?)\s*d?)?/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) {
+    const id = m[2]!.toUpperCase();
     out.push({
-      id: m[1]!.toUpperCase(),
-      type: ((m[2] ?? "FS").toUpperCase() as DependencyType),
-      lagDays: m[3] ? Number(m[3].replace(/\s/g, "")) : 0,
+      id: m[1] ? `${m[1].toLowerCase()}/${id}` : id,
+      type: ((m[3] ?? "FS").toUpperCase() as DependencyType),
+      lagDays: m[4] ? Number(m[4].replace(/\s/g, "")) : 0,
     });
   }
   return out;

@@ -59,6 +59,8 @@ export const Task = z.object({
   milestone: z.boolean(),
   estimate: Estimate.optional(),
   owner: z.string().optional(),
+  /** The department doing it (master plans): Facilities, IT, HR… */
+  dept: z.string().optional(),
   due: IsoDate.optional(),
   depends: z.array(Dependency),
   planned: DateRange.optional(),

@@ -47,7 +47,8 @@ export function checkPlan(plan: Plan, opts: CheckOptions = {}): PlanCheckResult 
   for (const t of tasks) {
     for (const d of t.depends) {
       if (d.id === t.id) add("self-dependency", "problem", `${t.id} "${t.title}" waits on itself.`, [t.id]);
-      else if (!ids.has(d.id)) add("unknown-dependency", "problem", `${t.id} "${t.title}" waits on ${d.id}, which isn't in the plan.`, [t.id]);
+      // A link to another plan of the same master plan (reception/T4) is checked with the master plan.
+      else if (!ids.has(d.id) && !d.id.includes("/")) add("unknown-dependency", "problem", `${t.id} "${t.title}" waits on ${d.id}, which isn't in the plan.`, [t.id]);
     }
   }
 

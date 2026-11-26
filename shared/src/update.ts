@@ -46,7 +46,7 @@ const show = (v: unknown): string => {
   }
   return String(v);
 };
-const FIELD_NAME: Record<EditableField, string> = { title: "name", owner: "owner", due: "due date", estimate: "time needed", depends: "waits on", notes: "notes", tags: "tags", priority: "priority" };
+const FIELD_NAME: Record<EditableField, string> = { title: "name", owner: "owner", dept: "department", due: "due date", estimate: "time needed", depends: "waits on", notes: "notes", tags: "tags", priority: "priority" };
 const PLAN_NAME: Record<PlanField, string> = { title: "Plan name", goal: "Goal", doneWhen: "Done when" };
 
 /** A new task from a reply starts fresh: not started, nobody credited. */
