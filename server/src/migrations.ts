@@ -215,6 +215,15 @@ export const MIGRATIONS: Migration[] = [
     name: "archiving: when a plan was archived",
     statements: [`ALTER TABLE plans ADD COLUMN archived_at INTEGER`],
   },
+  {
+    id: 20,
+    name: "operations: unexpected server errors (no personal data) and daily event counts",
+    statements: [
+      `CREATE TABLE server_errors (at INTEGER NOT NULL, method TEXT NOT NULL, route TEXT NOT NULL, name TEXT NOT NULL, message TEXT NOT NULL)`,
+      `CREATE INDEX server_errors_at ON server_errors(at)`,
+      `CREATE TABLE ops_events (day TEXT NOT NULL, kind TEXT NOT NULL, count INTEGER NOT NULL, PRIMARY KEY (day, kind))`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

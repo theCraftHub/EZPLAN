@@ -213,6 +213,18 @@ export const api = {
   plans: () => call<{ plans: PlanSummary[] }>("/api/plans"),
   plan: (id: string) => call<PlanDetail>(`/api/plans/${encodeURIComponent(id)}`),
   preview: (text: string, people: People = {}, fileName?: string) => call<ImportPreview>("/api/plans/preview", { method: "POST", body: JSON.stringify({ text, people, ...(fileName ? { fileName } : {}) }) }),
+  ops: () => call<{
+    at: number;
+    people: { total: number; active7: number; active30: number; suspended: number };
+    companies: { total: number; live: number; auditBroken: { id: string; name: string; at: number }[] };
+    plans: { active: number; archived: number; review: number; changedToday: number };
+    ai: { month: string; calls: number; costUsd: number; inputTokens: number; outputTokens: number };
+    email: { waiting: number; sent: number; failed: number; sending: boolean };
+    queues: { safety: number; support: number };
+    limits: { refusedToday: number; byRule: Record<string, number> };
+    database: { migrations: number; latest: number; expected: number; upToDate: boolean };
+    errors: { last24h: number; recent: { at: number; method: string; route: string; name: string; message: string }[]; byRoute: { route: string; method: string; n: number; last: number }[] };
+  }>("/api/ops"),
   setPlanState: (id: string, state: "archived" | "active") => call<{ state: string }>(`/api/plans/${encodeURIComponent(id)}/state`, { method: "PUT", body: JSON.stringify({ state }) }),
   createPlan: (text: string, people: People = {}, fileName?: string, workspaceId?: string) => call<{ id: string; notices: string[] }>("/api/plans", { method: "POST", body: JSON.stringify({ text, people, ...(fileName ? { fileName } : {}), ...(workspaceId ? { workspaceId } : {}) }) }),
   setPerson: (planId: string, name: string, a: PersonAvailability) => call<{ name: string }>(`/api/plans/${encodeURIComponent(planId)}/people/${encodeURIComponent(name)}`, { method: "PUT", body: JSON.stringify(a) }),

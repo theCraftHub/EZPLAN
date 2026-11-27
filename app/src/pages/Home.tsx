@@ -21,7 +21,8 @@ export function Home({ me }: { me: Me }) {
       .then((r) => { setPlans(r.plans); void offline.plans(me.user.id, r.plans); })
       .catch(async (e: Error) => {
         const last = isNetworkError(e) ? await offline.lastPlans(me.user.id) : undefined;
-        if (last) { setPlans(last.list); setOfflineSince(last.savedAt); } else setError(e.message);
+        if (last) { setPlans(last.list); setOfflineSince(last.savedAt); }
+        else setError(isNetworkError(e) ? "You're offline, and your plans haven't been loaded on this device yet. Plans you've opened here before still open from their own links." : e.message);
       });
     api.orgs().then((r) => setOrgs(r.orgs)).catch(() => setOrgs([]));
   }, []);

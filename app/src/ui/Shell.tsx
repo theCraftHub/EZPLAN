@@ -1,7 +1,7 @@
 /** Page frame: a side panel on desktop, a top bar and bottom tabs on phones. Same destinations on both. */
 import type { ReactNode } from "react";
 import { useEffect } from "react";
-import { Bell, CircleHelp, Inbox, FolderKanban, Home, LogOut, Plus, Settings, ShieldAlert, Sparkles, ChartLine } from "lucide-react";
+import { Activity, Bell, CircleHelp, Inbox, FolderKanban, Home, LogOut, Plus, Settings, ShieldAlert, Sparkles, ChartLine } from "lucide-react";
 import { api } from "../lib/api";
 import { BRAND } from "@rakuplan/shared";
 import { Link, useRouter } from "../lib/router";
@@ -72,6 +72,11 @@ export function Shell({ me, onSignOut, onUnread, children }: { me: Me; onSignOut
                 </Link>
               ));
             })}
+            {me.platformAdmin && (
+              <Link to="/admin/ops" aria-current={path.startsWith("/admin/ops") ? "page" : undefined} className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium ${path.startsWith("/admin/ops") ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5"}`}>
+                <Activity aria-hidden size={18} /> Operations
+              </Link>
+            )}
             {me.platformAdmin && (
               <Link to="/admin/support" aria-current={path.startsWith("/admin/support") ? "page" : undefined} className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium ${path.startsWith("/admin/support") ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5"}`}>
                 <Inbox aria-hidden size={18} /> Support inbox

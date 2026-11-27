@@ -9,6 +9,9 @@ test("offline: edit, reload, still there; back online, saved for everyone", asyn
   const tag = `${info.project.name}${Date.now() % 100000}`;
   await signIn(page, "Kim Park");
   const id = await addPlan(page, `---\nrakuplan: 1\ntitle: Shed ${tag}\nstart: 2027-01-04\n---\n## P1: Work\n- [ ] T1: Pour the base (1d)\n- [ ] T2: Raise the walls (2d)`);
+  // Home once online, so this device has its list.
+  await page.goto("/");
+  await expect(page.getByRole("list", { name: "Your plans" }).getByText(`Shed ${tag}`)).toBeVisible();
   await page.goto(`/p/${id}/checklist`);
   await expect(page.getByRole("status").filter({ hasText: /^Live/ })).toBeVisible();
   // The app's offline shell is installed in the background on the first visit.

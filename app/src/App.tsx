@@ -1,6 +1,7 @@
 import { Join } from "./pages/Join";
 import { BusinessStart } from "./pages/BusinessStart";
 import { OrgConsole } from "./pages/admin/OrgConsole";
+import { OpsPage } from "./pages/OpsPage";
 import { MasterPage } from "./pages/MasterPage";
 import { SafetyCasePage } from "./pages/SafetyCases";
 import { useCallback, useEffect, useState } from "react";
@@ -44,6 +45,7 @@ function Routes({ me, onSignOut, onMe }: { me: Me; onSignOut: () => void; onMe: 
   if (reqPage) return <RequestPage key={reqPage.id} id={reqPage.id!} />;
   const oc = match("/admin/org/:id", path) ?? match("/admin/org/:id/:section", path);
   if (oc) return <OrgConsole key={oc.id} me={me} orgId={oc.id!} section={oc.section ?? "overview"} />;
+  if (match("/admin/ops", path) && me.platformAdmin) return <OpsPage />;
   if (match("/admin/support", path)) return <SupportInbox onCount={(n) => onMe({ ...me, supportOpen: n })} />;
   if (match("/notifications", path)) return <NotificationsPage onUnread={(n) => onMe({ ...me, unread: n })} />;
   if (match("/settings", path)) return <Settings me={me} onSignOut={onSignOut} onMe={onMe} />;

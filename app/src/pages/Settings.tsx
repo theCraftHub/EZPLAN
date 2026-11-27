@@ -20,10 +20,11 @@ export function Settings({ me, onSignOut, onMe }: { me: Me; onSignOut: () => voi
   return (
     <>
       <PageTitle title="Settings" />
-      {consoles(me).length > 0 && (
+      {(consoles(me).length > 0 || me.platformAdmin) && (
         <Card aria-label="Admin console" className="flex flex-col gap-2">
-          <h2 className="m-0 text-lg font-bold">Admin console</h2>
+          <h2 className="m-0 text-lg font-bold">Admin</h2>
           {consoles(me).map((o) => <Link key={o.id} to={`/admin/org/${o.id}`} className="flex min-h-11 items-center gap-2 text-[15px] font-semibold text-primary-ink underline"><ConsoleIcon aria-hidden size={18} /> {o.name}</Link>)}
+          {me.platformAdmin && <Link to="/admin/ops" className="flex min-h-11 items-center gap-2 text-[15px] font-semibold text-primary-ink underline">Operations</Link>}
         </Card>
       )}
       {msg && <Notice tone={msg.tone}>{msg.text}</Notice>}

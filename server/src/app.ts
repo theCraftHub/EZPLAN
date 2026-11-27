@@ -44,6 +44,7 @@ import { masterContext, registerMasterRoutes, scheduleOf } from "./masters";
 import { audit, can, companyOf, isInsider, orgRole, registerOrgRoutes, type OrgRole } from "./orgs";
 import { registerOrgPeopleRoutes } from "./orgPeople";
 import { registerOffboardRoutes } from "./orgOffboard";
+import { countEvent, recordError, registerOpsRoutes } from "./opsPage";
 import { mailSettings, sendEmail } from "./mail";
 import { registerCollabRoutes } from "./comments";
 import { notify, registerNotificationRoutes, unreadCount, userForName } from "./notify";
@@ -71,6 +72,7 @@ export function createApp(ports: Ports) {
   const limited = async (c: Context, name: RateName, subject: string) => {
     const wait = await hit(db, clock.now(), name, subject, config.rateLimits);
     if (wait === null) return null;
+    await countEvent(db, clock.now(), `rate:${name}`);
     return c.json({ error: TOO_MANY }, 429, { "retry-after": String(wait) });
   };
 
@@ -250,6 +252,9 @@ export function createApp(ports: Ports) {
   registerOrgRoutes(app, { db, clock, http: ports.http, siteOrigin, notFound, email: orgEmail });
   registerOrgPeopleRoutes(app, { db, clock, siteOrigin, notFound, email: orgEmail });
   registerOffboardRoutes(app, { db, clock, rooms, notFound });
+  registerOpsRoutes(app, { db, clock, config, mailOn: !!ports.mail });
+  // Tests only: a route that fails, so error logging can be tested end to end.
+  if (ports.testAuth) app.get("/api/test/fail", () => { throw new Error("Test failure for ana@example.com with token abcdefghijklmnopqrstuvwxyz123456"); });
   registerSafetyCaseRoutes(app, { db, clock, config, ...(ports.mail ? { mail: ports.mail } : {}) });
   registerCollabRoutes(app, {
     db, clock, rooms, access, notFound,
@@ -822,8 +827,9 @@ export function createApp(ports: Ports) {
   });
 
   app.notFound((c) => c.json({ error: "Not found." }, 404));
-  app.onError((err, c) => {
+  app.onError(async (err, c) => {
     console.error(err);
+    await recordError(db, clock.now(), c.req.method, c.req.routePath || "?", err);
     return c.json({ error: "Something went wrong on our side. Try again." }, 500);
   });
 
