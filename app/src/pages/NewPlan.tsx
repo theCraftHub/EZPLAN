@@ -16,7 +16,8 @@ const MAX_FILE = 1_000_000;
 
 export function NewPlan({ me }: { me: Me }) {
   const { go } = useRouter();
-  const [step, setStep] = useState<Step>("start");
+  // "Reuse as template" from Home opens here with that plan chosen (/new?from=<id>).
+  const [step, setStep] = useState<Step>(() => (new URLSearchParams(location.search).get("from") ? "past" : "start"));
   const [prompt, setPrompt] = useState("");
   const [fromWizard, setFromWizard] = useState(false);
   const [text, setText] = useState("");
@@ -355,10 +356,16 @@ function TemplatePicker({ busy, onBack, onPick }: { busy: boolean; onBack: () =>
 
 function PastPicker({ busy, onBack, onPick, setError }: { busy: boolean; onBack: () => void; onPick: (text: string) => void; setError: (e: string) => void }) {
   const [plans, setPlans] = useState<PlanSummary[] | null>(null);
-  const [id, setId] = useState<string | null>(null);
+  const [id, setId] = useState<string | null>(() => new URLSearchParams(location.search).get("from"));
   const [title, setTitle] = useState("");
   const [start, setStart] = useState(todayLocal());
-  useEffect(() => { api.plans().then((r) => setPlans(r.plans)).catch((e: Error) => setError(e.message)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    api.plans().then((r) => {
+      setPlans(r.plans);
+      const chosen = r.plans.find((p) => p.id === id);
+      if (chosen) setTitle(`${chosen.title} (copy)`);
+    }).catch((e: Error) => setError(e.message));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const go = async () => {
     try {
       const d = await api.plan(id!);

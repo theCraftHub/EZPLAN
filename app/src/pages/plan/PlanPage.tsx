@@ -4,7 +4,7 @@ import { planPeople } from "@rakuplan/shared";
 import { api } from "../../lib/api";
 import { UpdateOverdue } from "../../ui/StatusUpdate";
 import { useDeferredValue, useMemo } from "react";
-import { ArrowLeft, Download, FileText, History as HistoryIcon, Printer, ShieldAlert, Sparkles, Users, Wifi, WifiOff } from "lucide-react";
+import { Archive, ArrowLeft, Download, FileText, History as HistoryIcon, Printer, ShieldAlert, Sparkles, Users, Wifi, WifiOff } from "lucide-react";
 import { canCommentRole, canEditRole, type Me } from "../../lib/api";
 import { PlanContext, type PlanCtx } from "./PlanContext";
 import { Activity } from "./Activity";
@@ -92,6 +92,10 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
           })}
         </nav>
       </header>
+      {room.detail.state === "archived" && (
+        <Notice tone="info"><span className="flex flex-wrap items-center justify-between gap-3"><span className="flex items-start gap-2"><Archive aria-hidden size={18} className="mt-0.5 shrink-0" />This plan is archived. It's read-only for everyone until it's restored.</span>
+          {room.detail.canArchive && <button onClick={() => void api.setPlanState(id, "active").then(() => location.reload())} className="min-h-11 rounded-xl bg-surface px-4 font-semibold text-ink ring-1 ring-line">Restore</button>}</span></Notice>
+      )}
       {room.detail.state === "review" && <Notice tone="warn"><span className="flex items-start gap-2"><ShieldAlert aria-hidden size={18} className="mt-0.5 shrink-0" />This plan is waiting for a safety review. AI features, sharing and exports are paused until then; everything else works.</span></Notice>}
       {room.notice && <Notice tone="warn"><span className="flex items-center justify-between gap-3">{room.notice}<button onClick={room.clearNotice} className="min-h-9 rounded-lg px-2 font-semibold">OK</button></span></Notice>}
       {updated > 0 && view === "" && <Notice tone="good">{updated} change{updated === 1 ? "" : "s"} from your AI assistant applied. The earlier plan is in History.</Notice>}

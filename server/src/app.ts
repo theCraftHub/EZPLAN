@@ -203,8 +203,8 @@ export function createApp(ports: Ports) {
    * and editors share the plan with others (people invited to one plan can't invite more).
    */
   async function access(planId: string, userId: string) {
-    const row = await db.first<{ workspace_id: string; ws_role: Role | null; plan_role: PlanRole | null; work_week: string; title: string; version: number }>(
-      `SELECT p.workspace_id, m.role AS ws_role, pm.role AS plan_role, w.work_week, p.title, p.version FROM plans p
+    const row = await db.first<{ workspace_id: string; ws_role: Role | null; plan_role: PlanRole | null; work_week: string; title: string; version: number; state: string; created_by: string }>(
+      `SELECT p.workspace_id, m.role AS ws_role, pm.role AS plan_role, w.work_week, p.title, p.version, p.state, p.created_by FROM plans p
        JOIN workspaces w ON w.id = p.workspace_id
        LEFT JOIN members m ON m.workspace_id = p.workspace_id AND m.user_id = ?
        LEFT JOIN plan_members pm ON pm.plan_id = p.id AND pm.user_id = ? AND (pm.expires_at IS NULL OR pm.expires_at > ?)
@@ -212,8 +212,10 @@ export function createApp(ports: Ports) {
       [userId, userId, clock.now(), planId],
     );
     if (!row) return null;
-    const role = strongest<Role>(row.ws_role, row.plan_role)!;
-    return { ...row, role, canShare: row.ws_role === "manager" || row.ws_role === "editor" };
+    const ownRole = strongest<Role>(row.ws_role, row.plan_role)!;
+    // An archived plan is read-only for everyone until it's restored.
+    const archived = row.state === "archived";
+    return { ...row, role: archived ? ("viewer" as Role) : ownRole, ownRole, archived, canShare: !archived && (row.ws_role === "manager" || row.ws_role === "editor") };
   }
   // Someone else's plan answers exactly like a missing one, so IDs can't be probed.
   const notFound = { error: "This plan doesn't exist or you don't have access to it." };
@@ -406,8 +408,8 @@ export function createApp(ports: Ports) {
 
   app.get("/api/plans", async (c) => {
     const user = c.get("user");
-    const rows = await db.all<{ id: string; title: string; state: string; version: number; workspace_id: string; updated_at: number; work_week: string; shared: number; kind: string; master_id: string | null; plans: number }>(
-      `SELECT p.id, p.title, p.state, p.version, p.workspace_id, p.updated_at, w.work_week, p.kind, p.master_id, (SELECT COUNT(*) FROM plans s WHERE s.master_id = p.id) AS plans, CASE WHEN m.user_id IS NULL THEN 1 ELSE 0 END AS shared FROM plans p
+    const rows = await db.all<{ id: string; title: string; state: string; version: number; workspace_id: string; updated_at: number; archived_at: number | null; created_by: string; work_week: string; shared: number; kind: string; master_id: string | null; plans: number }>(
+      `SELECT p.id, p.title, p.state, p.version, p.workspace_id, p.updated_at, p.archived_at, p.created_by, w.work_week, p.kind, p.master_id, (SELECT COUNT(*) FROM plans s WHERE s.master_id = p.id) AS plans, CASE WHEN m.user_id IS NULL THEN 1 ELSE 0 END AS shared FROM plans p
        JOIN workspaces w ON w.id = p.workspace_id
        LEFT JOIN members m ON m.workspace_id = p.workspace_id AND m.user_id = ?
        LEFT JOIN plan_members pm ON pm.plan_id = p.id AND pm.user_id = ? AND (pm.expires_at IS NULL OR pm.expires_at > ?)
@@ -418,7 +420,7 @@ export function createApp(ports: Ports) {
     const today = clock.today();
     // Home shows each plan's progress, health, finish and next milestone, computed by the same engine.
     const plans = await Promise.all(
-      rows.map(async ({ work_week, shared, kind, master_id, plans: inside, ...p }) => {
+      rows.map(async ({ work_week, shared, kind, master_id, plans: inside, archived_at, created_by, ...p }) => {
         const room = await loadRoom(db, p.id);
         if (!room) return { ...p, summary: null };
         const workWeek = parseWorkWeek(work_week);
@@ -435,12 +437,55 @@ export function createApp(ports: Ports) {
           ...(kind === "master" ? { master: { plans: Number(inside) } } : {}),
           ...(master_id ? { masterId: master_id } : {}),
           title: room.plan.title,
-          summary: { percent: progress.percent, doneCount: progress.doneCount, countedTasks: progress.countedTasks, overdueCount: progress.overdueCount, finish: schedule.finish, health: progress.suggestedHealth, nextMilestone: next ?? null, baselineVarianceDays: progress.baselineVarianceDays },
+          summary: { percent: progress.percent, doneCount: progress.doneCount, countedTasks: progress.countedTasks, overdueCount: progress.overdueCount, finish: schedule.finish, health: progress.suggestedHealth, nextMilestone: next ?? null, baselineVarianceDays: progress.baselineVarianceDays, start: room.plan.start ?? schedule.projectStart, checkScore: checkPlan(room.plan, { schedule, workWeek, today, level: true }).score, ...finishedStats(room.plan) },
+          archivedAt: archived_at === null ? null : Number(archived_at),
+          canArchive: created_by === user.id || (await db.first<{ role: string }>(`SELECT role FROM members WHERE workspace_id = ? AND user_id = ?`, [p.workspace_id, user.id]))?.role === "manager",
           statusUpdate: await updateState(db, clock.now(), p.id),
         };
       }),
     );
     return c.json({ plans });
+  });
+
+  /** For finished plans: when the last task was done, how long it took, against the baseline, and on-time tasks. */
+  function finishedStats(plan: Plan) {
+    const tasks = plan.phases.flatMap((ph) => ph.tasks);
+    const done = tasks.filter((t) => t.status === "done" && t.done);
+    if (!done.length) return {};
+    const day = (d: string) => Date.parse(`${d}T00:00:00Z`) / 86_400_000;
+    const finishedOn = done.map((t) => t.done!.date).sort().at(-1)!;
+    const starts = tasks.map((t) => t.planned?.start).filter((d): d is string => !!d).sort();
+    const ends = tasks.map((t) => t.planned?.end).filter((d): d is string => !!d).sort();
+    const begun = plan.start ?? starts[0] ?? done.map((t) => t.done!.date).sort()[0]!;
+    const judged = done.filter((t) => t.planned?.end || t.due);
+    return {
+      finishedOn,
+      tookDays: Math.max(1, day(finishedOn) - day(begun) + 1),
+      plannedDays: starts.length && ends.length ? Math.max(1, day(ends.at(-1)!) - day(starts[0]!) + 1) : null,
+      onTimePercent: judged.length ? Math.round((100 * judged.filter((t) => t.done!.date <= (t.planned?.end ?? t.due)!).length) / judged.length) : null,
+    };
+  }
+
+  // Archive or restore a plan: its workspace's managers and the person who made it. Archived plans
+  // are read-only for everyone; open screens reconnect with the new role.
+  app.put("/api/plans/:id/state", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    if (a.ws_role !== "manager" && a.created_by !== user.id) return c.json({ error: "Only the plan's maker or a manager of its workspace can archive it." }, 403);
+    const b = await c.req.json<{ state?: unknown }>().catch(() => null);
+    const state = b?.state === "archived" || b?.state === "active" ? b.state : null;
+    if (!state) return c.json({ error: "Choose archived or active." }, 400);
+    const now = clock.now();
+    if (a.state === "review") return c.json({ error: heldMessage }, 423);
+    await db.run(`UPDATE plans SET state = ?, archived_at = ? WHERE id = ?`, [state, state === "archived" ? now : null, id]);
+    await recordActivity(db, id, user, { kind: "sharing", summary: `${user.name} ${state === "archived" ? "archived" : "restored"} the plan` }, now);
+    const company = await companyOf(db, a.workspace_id);
+    if (company) await audit(db, now, company.orgId, { id: user.id, name: user.name }, state === "archived" ? "plan.archived" : "plan.restored", a.title, { planId: id });
+    const people = await db.all<{ user_id: string }>(`SELECT user_id FROM members WHERE workspace_id = ? UNION SELECT user_id FROM plan_members WHERE plan_id = ?`, [a.workspace_id, id]);
+    for (const p of people) await rooms.kick(id, p.user_id);
+    return c.json({ state });
   });
 
   app.get("/api/plans/:id", async (c) => {
@@ -460,7 +505,8 @@ export function createApp(ports: Ports) {
       id,
       version: room.seq,
       role: a.role,
-      state: (await db.first<{ state: string }>(`SELECT state FROM plans WHERE id = ?`, [id]))?.state ?? "active",
+      state: a.state,
+      canArchive: a.ws_role === "manager" || a.created_by === user.id,
       plan: room.plan,
       people,
       workWeek,

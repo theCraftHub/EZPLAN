@@ -110,7 +110,9 @@ export interface PlanSummary {
   workspace_id: string;
   updated_at: number;
   shared?: boolean;
-  summary: { percent: number; doneCount: number; countedTasks: number; overdueCount: number; finish: string; health: string; nextMilestone: { title: string; date: string } | null; baselineVarianceDays: number | null } | null;
+  summary: { percent: number; doneCount: number; countedTasks: number; overdueCount: number; finish: string; health: string; nextMilestone: { title: string; date: string } | null; baselineVarianceDays: number | null; start?: string; checkScore?: number; finishedOn?: string; tookDays?: number; plannedDays?: number | null; onTimePercent?: number | null } | null;
+  archivedAt?: number | null;
+  canArchive?: boolean;
   statusUpdate?: UpdateState;
   /** A master plan: how many plans are inside. */
   master?: { plans: number };
@@ -131,6 +133,8 @@ export interface PlanDetail {
   version: number;
   role: Role;
   state: string;
+  /** May archive or restore it (its maker or a workspace manager). */
+  canArchive?: boolean;
   plan: Plan;
   people: People;
   workWeek: WorkWeek;
@@ -209,6 +213,7 @@ export const api = {
   plans: () => call<{ plans: PlanSummary[] }>("/api/plans"),
   plan: (id: string) => call<PlanDetail>(`/api/plans/${encodeURIComponent(id)}`),
   preview: (text: string, people: People = {}, fileName?: string) => call<ImportPreview>("/api/plans/preview", { method: "POST", body: JSON.stringify({ text, people, ...(fileName ? { fileName } : {}) }) }),
+  setPlanState: (id: string, state: "archived" | "active") => call<{ state: string }>(`/api/plans/${encodeURIComponent(id)}/state`, { method: "PUT", body: JSON.stringify({ state }) }),
   createPlan: (text: string, people: People = {}, fileName?: string, workspaceId?: string) => call<{ id: string; notices: string[] }>("/api/plans", { method: "POST", body: JSON.stringify({ text, people, ...(fileName ? { fileName } : {}), ...(workspaceId ? { workspaceId } : {}) }) }),
   setPerson: (planId: string, name: string, a: PersonAvailability) => call<{ name: string }>(`/api/plans/${encodeURIComponent(planId)}/people/${encodeURIComponent(name)}`, { method: "PUT", body: JSON.stringify(a) }),
   workWeek: (workspaceId: string, w: WorkWeek, dryRun: boolean) => call<{ workWeek: WorkWeek; saved: boolean; impact: { planId: string; title: string; before: string; after: string }[] }>(`/api/workspaces/${encodeURIComponent(workspaceId)}/work-week`, { method: "PUT", body: JSON.stringify({ ...w, dryRun }) }),

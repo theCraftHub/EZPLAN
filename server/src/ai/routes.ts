@@ -175,6 +175,7 @@ export function registerAiRoutes(app: Hono<{ Variables: { user: User } }>, d: Ai
     if (!canEdit(a.role)) return c.json({ error: "Only people who can edit this plan can run AI checks." }, 403);
     if (!d.ai) return c.json({ error: "AI checks are off on this server. The free Plan Check still works." }, 503);
     if ((await stateOf(id)) === "review") return c.json({ error: heldMessage }, 423);
+    if ((await stateOf(id)) === "archived") return c.json({ error: "This plan is archived. Restore it to use AI." }, 423);
     const limit = await svc.blockedBy(a.workspace_id, user.id, "check");
     if (limit) return c.json({ error: limit }, 429);
     const room = await d.loadRoom(id);
@@ -244,6 +245,7 @@ export function registerAiRoutes(app: Hono<{ Variables: { user: User } }>, d: Ai
     if (!canEdit(a.role)) return c.json({ error: "Only people who can edit this plan can run AI reports." }, 403);
     if (!d.ai) return c.json({ facts, text: template, source: "template", note: "AI wording is off on this server, so this is the plain version." });
     if ((await stateOf(id)) === "review") return c.json({ error: heldMessage }, 423);
+    if ((await stateOf(id)) === "archived") return c.json({ error: "This plan is archived. Restore it to use AI." }, 423);
     const limit = await svc.blockedBy(a.workspace_id, user.id, "report");
     if (limit) return c.json({ error: limit }, 429);
     const ai = d.ai;

@@ -1,6 +1,6 @@
 import { UpdateOverdue } from "../ui/StatusUpdate";
 import { useEffect, useState } from "react";
-import { Building2, CalendarClock, Flag, Layers, Plus } from "lucide-react";
+import { Archive, ArchiveRestore, Building2, CalendarClock, Copy, Flag, Layers, Plus, Search } from "lucide-react";
 import { BRAND } from "@rakuplan/shared";
 import { api, ApiError, type Me, type PlanSummary } from "../lib/api";
 import { shortDate, plural } from "../lib/format";
@@ -19,7 +19,7 @@ export function Home({ me }: { me: Me }) {
     api.orgs().then((r) => setOrgs(r.orgs)).catch(() => setOrgs([]));
   }, []);
   const first = me.user.name.split(" ")[0];
-  const active = plans?.filter((p) => p.summary?.health !== "Complete") ?? [];
+  const active = plans?.filter((p) => p.state !== "archived" && p.summary?.health !== "Complete") ?? [];
   const overdue = active.reduce((n, p) => n + (p.summary?.overdueCount ?? 0), 0);
   return (
     <>
@@ -45,40 +45,7 @@ export function Home({ me }: { me: Me }) {
           <Button onClick={() => go("/new")}><Plus aria-hidden size={18} /> New plan</Button>
         </Card>
       )}
-      {plans && plans.length > 0 && (
-        <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2 xl:grid-cols-3" aria-label="Your plans">
-          {plans.map((p) => (
-            <li key={p.id}>
-              <Link to={p.master ? `/m/${p.id}` : `/p/${p.id}`} className="block h-full rounded-2xl bg-surface p-4 shadow-[0_1px_2px_rgba(15,23,42,0.06)] ring-1 ring-line/60 hover:ring-primary/50">
-                <div className="flex items-start gap-3">
-                  <ProgressRing percent={p.summary?.percent ?? 0} />
-                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                    <span className="text-[17px] leading-snug font-bold">{p.title}</span>
-                    <span className="flex flex-wrap gap-1.5">
-                      {p.summary && <HealthChip value={p.state === "review" ? "On hold" : p.summary.health} />}
-                      <UpdateOverdue state={p.statusUpdate} />
-                      {p.shared && <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary-ink">Shared with you</span>}
-                      {p.master && <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary-ink"><Layers aria-hidden size={12} /> Master plan · {plural(p.master.plans, "plan")} inside</span>}
-                      {p.masterId && <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-semibold text-ink-2 ring-1 ring-line">In a master plan</span>}
-                    </span>
-                  </div>
-                </div>
-                {p.summary && (
-                  <dl className="m-0 mt-3 grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-1.5 text-ink-2"><CalendarClock aria-hidden size={16} /><dt className="sr-only">Finish</dt><dd className="m-0">Finish {shortDate(p.summary.finish)}</dd></div>
-                    <div className="flex items-center gap-1.5 text-ink-2"><dt className="sr-only">Done</dt><dd className="m-0">{p.summary.doneCount} of {plural(p.summary.countedTasks, "task")} done</dd></div>
-                    {p.summary.nextMilestone && (
-                      <div className="col-span-2 flex items-center gap-1.5 text-ink-2"><Flag aria-hidden size={16} /><dt className="sr-only">Next milestone</dt><dd className="m-0 truncate">{p.summary.nextMilestone.title} · {shortDate(p.summary.nextMilestone.date)}</dd></div>
-                    )}
-                    {p.summary.overdueCount > 0 && <div className="col-span-2 font-semibold text-warn"><dt className="sr-only">Overdue</dt><dd className="m-0">{plural(p.summary.overdueCount, "task")} overdue</dd></div>}
-                  </dl>
-                )}
-                {p.state === "review" && <p className="m-0 mt-2 text-sm text-muted">Waiting for a safety review before it can be shared.</p>}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      {plans && plans.length > 0 && <Portfolio plans={plans} reload={() => api.plans().then((r) => setPlans(r.plans)).catch((e: Error) => setError(e.message))} />}
       {plans && orgs && orgs.length === 0 && (
         <p className="m-0 flex flex-wrap items-center gap-2 text-sm text-ink-2"><Building2 aria-hidden size={16} /> Planning for a company? <Link to="/business/start" className="font-semibold text-primary-ink underline">Start {BRAND.name} for your business</Link></p>
       )}
@@ -109,5 +76,83 @@ function NewMaster({ plans, onDone, onCancel }: { plans: PlanSummary[]; onDone: 
       {error && <Notice tone="bad">{error}</Notice>}
       <div className="flex flex-wrap gap-2"><Button onClick={() => void create()} disabled={busy || !title.trim() || picked.length === 0}>Make the master plan</Button><Button variant="secondary" onClick={onCancel}>Cancel</Button></div>
     </Card>
+  );
+}
+
+type Tab = "active" | "completed" | "archived";
+const tabOf = (p: PlanSummary): Tab => (p.state === "archived" ? "archived" : p.summary?.health === "Complete" ? "completed" : "active");
+
+/** Home's portfolio (approved Portfolio board): Active, Completed and Archived plans, with search. */
+function Portfolio({ plans, reload }: { plans: PlanSummary[]; reload: () => Promise<void> }) {
+  const { go } = useRouter();
+  const [tab, setTab] = useState<Tab>("active");
+  const [q, setQ] = useState("");
+  const [busy, setBusy] = useState("");
+  const count = (t: Tab) => plans.filter((p) => tabOf(p) === t).length;
+  const shown = plans.filter((p) => tabOf(p) === tab && (!q.trim() || p.title.toLowerCase().includes(q.trim().toLowerCase())));
+  const setState = async (p: PlanSummary, state: "archived" | "active") => { setBusy(p.id); try { await api.setPlanState(p.id, state); await reload(); } finally { setBusy(""); } };
+  const empty = { active: "No active plans.", completed: "No finished plans yet. A plan moves here when every task is done.", archived: "Nothing archived. Archive a plan you've stopped working on to keep Home tidy; you can restore it any time." }[tab];
+  return (
+    <section aria-label="Portfolio" className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <div role="tablist" aria-label="Plans by state" className="inline-flex gap-1 rounded-xl bg-surface-2 p-1 ring-1 ring-line">
+          {(["active", "completed", "archived"] as Tab[]).map((t) => (
+            <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={`min-h-10 rounded-lg px-3 text-[14px] ${tab === t ? "bg-surface font-semibold text-ink shadow-[0_1px_2px_rgba(15,23,42,0.08)]" : "font-medium text-ink-2"}`}>{t[0]!.toUpperCase() + t.slice(1)} · {count(t)}</button>
+          ))}
+        </div>
+        <label className="ml-auto flex min-w-0 flex-1 basis-48 items-center gap-2 rounded-xl border border-line bg-surface px-3 sm:max-w-xs"><Search aria-hidden size={16} className="text-muted" /><input type="search" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search plans" placeholder="Search plans" className="min-h-11 flex-1 bg-transparent text-base outline-none" /></label>
+      </div>
+      {shown.length === 0 ? <p className="m-0 text-[15px] text-ink-2">{q.trim() ? "No plans match." : empty}</p> : (
+        <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2 xl:grid-cols-3" aria-label="Your plans">
+          {shown.map((p) => (
+            <li key={p.id} className="flex flex-col rounded-2xl bg-surface shadow-[0_1px_2px_rgba(15,23,42,0.06)] ring-1 ring-line/60 hover:ring-primary/50">
+              <Link to={p.master ? `/m/${p.id}` : `/p/${p.id}`} className="block flex-1 rounded-t-2xl p-4">
+                <div className="flex items-start gap-3">
+                  <ProgressRing percent={p.summary?.percent ?? 0} />
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                    <span className="text-[17px] leading-snug font-bold">{p.title}</span>
+                    <span className="flex flex-wrap gap-1.5">
+                      {tab === "archived" ? <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-bold text-ink-2 ring-1 ring-line">Archived</span>
+                        : tab === "completed" ? <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${p.summary?.plannedDays && (p.summary.tookDays ?? 0) > p.summary.plannedDays ? "bg-surface-2 text-ink-2 ring-1 ring-line" : "bg-good-soft text-good"}`}>{p.summary?.plannedDays && (p.summary.tookDays ?? 0) > p.summary.plannedDays ? "Done late" : "Done"}</span>
+                        : p.summary && <HealthChip value={p.state === "review" ? "On hold" : p.summary.health} />}
+                      <UpdateOverdue state={p.statusUpdate} />
+                      {p.shared && <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary-ink">Shared with you</span>}
+                      {p.master && <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary-ink"><Layers aria-hidden size={12} /> Master plan · {plural(p.master.plans, "plan")} inside</span>}
+                      {p.masterId && <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-semibold text-ink-2 ring-1 ring-line">In a master plan</span>}
+                    </span>
+                  </div>
+                </div>
+                {p.summary && tab === "active" && (
+                  <dl className="m-0 mt-3 grid grid-cols-2 gap-2 text-sm">
+                    <div className="flex items-center gap-1.5 text-ink-2"><CalendarClock aria-hidden size={16} /><dt className="sr-only">Finish</dt><dd className="m-0">Finish {shortDate(p.summary.finish)}</dd></div>
+                    <div className="flex items-center gap-1.5 text-ink-2"><dt className="sr-only">Done</dt><dd className="m-0">{p.summary.doneCount} of {plural(p.summary.countedTasks, "task")} done</dd></div>
+                    {p.summary.nextMilestone && <div className="col-span-2 flex items-center gap-1.5 text-ink-2"><Flag aria-hidden size={16} /><dt className="sr-only">Next milestone</dt><dd className="m-0 truncate">{p.summary.nextMilestone.title} · {shortDate(p.summary.nextMilestone.date)}</dd></div>}
+                    {p.summary.overdueCount > 0 && <div className="col-span-2 font-semibold text-warn"><dt className="sr-only">Overdue</dt><dd className="m-0">{plural(p.summary.overdueCount, "task")} overdue</dd></div>}
+                    {p.summary.checkScore !== undefined && <div className="text-ink-2"><dt className="sr-only">Plan Check</dt><dd className="m-0">Plan Check {p.summary.checkScore}</dd></div>}
+                  </dl>
+                )}
+                {p.summary && tab === "completed" && (
+                  <dl className="m-0 mt-3 grid grid-cols-2 gap-2 text-sm text-ink-2">
+                    {p.summary.finishedOn && <div className="col-span-2"><dt className="sr-only">Finished</dt><dd className="m-0">Finished {shortDate(p.summary.finishedOn)}</dd></div>}
+                    {p.summary.tookDays && <div><dt className="sr-only">Took</dt><dd className="m-0">Took {plural(p.summary.tookDays, "day")}{p.summary.plannedDays ? ` (planned ${p.summary.plannedDays})` : ""}</dd></div>}
+                    {p.summary.onTimePercent !== null && p.summary.onTimePercent !== undefined && <div><dt className="sr-only">On time</dt><dd className="m-0">{p.summary.onTimePercent}% of tasks on time</dd></div>}
+                  </dl>
+                )}
+                {p.summary && tab === "archived" && (
+                  <p className="m-0 mt-3 text-sm text-ink-2">{p.archivedAt ? `Archived ${shortDate(new Date(p.archivedAt).toISOString().slice(0, 10))} · ` : ""}{p.summary.doneCount} of {plural(p.summary.countedTasks, "task")} done</p>
+                )}
+                {p.state === "review" && <p className="m-0 mt-2 text-sm text-muted">Waiting for a safety review before it can be shared.</p>}
+              </Link>
+              <div className="flex flex-wrap gap-1 border-t border-line px-2 py-1.5">
+                {!p.master && <Button variant="ghost" className="min-h-10 text-sm" onClick={() => go(`/new?from=${encodeURIComponent(p.id)}`)} aria-label={`Reuse ${p.title} as a template`}><Copy aria-hidden size={16} /> Reuse as template</Button>}
+                {p.canArchive && p.state !== "review" && (p.state === "archived"
+                  ? <Button variant="ghost" className="ml-auto min-h-10 text-sm" disabled={busy === p.id} onClick={() => void setState(p, "active")} aria-label={`Restore ${p.title}`}><ArchiveRestore aria-hidden size={16} /> Restore</Button>
+                  : <Button variant="ghost" className="ml-auto min-h-10 text-sm" disabled={busy === p.id} onClick={() => void setState(p, "archived")} aria-label={`Archive ${p.title}`}><Archive aria-hidden size={16} /> Archive</Button>)}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
