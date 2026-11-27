@@ -34,7 +34,7 @@ export interface User {
   email: string;
 }
 
-export type ApplyResult = { status: "applied"; applied: Applied; version: number } | { status: "duplicate"; version: number } | { status: "missing" };
+export type ApplyResult = { status: "applied"; applied: Applied; version: number } | { status: "duplicate"; version: number } | { status: "missing" } | { status: "denied"; error: string };
 
 /** Live editing: one room per plan; a room applies edits in order and saves the plan. */
 export interface RoomHost {

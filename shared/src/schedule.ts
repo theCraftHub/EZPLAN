@@ -4,7 +4,7 @@
  * suggested health, and workload per person per week.
  */
 import { Calendar, todayIso, toDay, type WorkCalendar } from "./calendar";
-import { allTasks, estimateToDays, isWaiting, planDayLength, type Plan, type Task, type WorkWeek } from "./schema";
+import { allTasks, awaitingApproval, countsAsDone, estimateToDays, isWaiting, planDayLength, type Plan, type Task, type WorkWeek } from "./schema";
 
 export type Health = "On track" | "At risk" | "Off track" | "On hold" | "Complete";
 
@@ -219,6 +219,8 @@ export interface Progress {
   /** Finish date projected from the pace of work done so far. */
   forecastFinish: string | null;
   suggestedHealth: Health;
+  /** Done tasks still waiting for their approver. */
+  awaitingApproval: number;
 }
 
 /**
@@ -241,11 +243,14 @@ export function progressOf(plan: Plan, schedule: Schedule, opts: ScheduleOptions
   const tasks = allTasks(plan).filter((t) => t.status !== "skipped");
   const work = (t: Task) => (t.milestone ? 0 : Math.max(schedule.tasks.get(t.id)?.durationDays ?? 0, 0));
   const totalWork = tasks.reduce((s, t) => s + work(t), 0);
-  const doneWork = tasks.filter((t) => t.status === "done").reduce((s, t) => s + work(t), 0);
+  // Done but waiting for approval counts as half, like work in progress.
+  const doneWork = tasks.filter(countsAsDone).reduce((s, t) => s + work(t), 0);
+  const waitingWork = tasks.filter(awaitingApproval).reduce((s, t) => s + work(t) / 2, 0);
   const inProgressWork = tasks.filter((t) => t.status === "progress").reduce((s, t) => s + work(t) / 2, 0);
   const counted = tasks.filter((t) => !t.milestone);
-  const doneCount = counted.filter((t) => t.status === "done").length;
-  const percent = totalWork > 0 ? Math.round(((doneWork + inProgressWork) / totalWork) * 100) : counted.length ? Math.round((doneCount / counted.length) * 100) : 0;
+  const doneCount = counted.filter(countsAsDone).length;
+  const awaiting = counted.filter(awaitingApproval).length;
+  const percent = totalWork > 0 ? Math.round(((doneWork + inProgressWork + waitingWork) / totalWork) * 100) : counted.length ? Math.round((doneCount / counted.length) * 100) : 0;
   const overdueCount = [...schedule.tasks.values()].filter((s) => s.overdue).length;
 
   const baselineEnds = allTasks(plan).map((t) => t.planned?.end).filter((d): d is string => !!d);
@@ -261,7 +266,7 @@ export function progressOf(plan: Plan, schedule: Schedule, opts: ScheduleOptions
     if (forecastFinish < schedule.finish) forecastFinish = schedule.finish;
   }
 
-  const allFinished = allTasks(plan).length > 0 && allTasks(plan).every((t) => t.status === "done" || t.status === "skipped");
+  const allFinished = allTasks(plan).length > 0 && allTasks(plan).every((t) => countsAsDone(t) || t.status === "skipped");
   let suggestedHealth: Health = "On track";
   if (allFinished) suggestedHealth = "Complete";
   else {
@@ -272,7 +277,7 @@ export function progressOf(plan: Plan, schedule: Schedule, opts: ScheduleOptions
     if (slip > Math.max(10, span * 0.1)) suggestedHealth = "Off track";
     else if (slip > 0 || overdueCount > 0) suggestedHealth = "At risk";
   }
-  return { percent, doneCount, countedTasks: counted.length, overdueCount, baselineVarianceDays, forecastFinish, suggestedHealth };
+  return { percent, doneCount, countedTasks: counted.length, overdueCount, baselineVarianceDays, forecastFinish, suggestedHealth, awaitingApproval: awaiting };
 }
 
 // ---------------------------------------------------------------- workload

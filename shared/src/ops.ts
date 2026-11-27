@@ -16,7 +16,7 @@
  */
 import type { Phase, Plan, Task, TaskStatus } from "./schema";
 
-export type EditableField = "title" | "owner" | "dept" | "due" | "notes" | "priority" | "estimate" | "depends" | "tags";
+export type EditableField = "title" | "owner" | "dept" | "due" | "notes" | "priority" | "estimate" | "depends" | "tags" | "approver";
 
 export type Op =
   | { kind: "setStatus"; taskId: string; status: TaskStatus }
@@ -24,6 +24,8 @@ export type Op =
   | { kind: "addTask"; phaseId: string; task: Task; afterId?: string; first?: true }
   | { kind: "moveTask"; taskId: string; phaseId: string; afterId?: string; first?: true }
   | { kind: "deleteTask"; taskId: string }
+  /** The approver approves a done task, or sends it back to Doing (with an optional note). */
+  | { kind: "approve"; taskId: string; decision: "approve" | "reject"; note?: string }
   | { kind: "restoreTask"; taskId: string }
   | { kind: "addPhase"; phase: { id: string; title: string; description?: string }; afterId?: string }
   | { kind: "setPhaseField"; phaseId: string; field: "title" | "description"; value: string | undefined }
@@ -45,6 +47,8 @@ export interface OpEnvelope {
 export interface Actor {
   userId: string;
   name: string;
+  /** Set by the server for plan managers: they may approve any task. */
+  approveAny?: boolean;
 }
 
 export interface RoomState {
@@ -146,7 +150,19 @@ export function applyOp(state: Pick<RoomState, "plan" | "trash" | "restoredForRe
   }
 
   switch (op.kind) {
+    case "approve": {
+      if (task.status !== "done" || !task.approver) return op;
+      if (op.decision === "approve") task.approved = { date: today, by: actor.name };
+      else {
+        task.status = "progress";
+        delete task.done;
+        delete task.approved;
+      }
+      return op;
+    }
     case "setStatus": {
+      // A change of status always needs a fresh approval.
+      if (task.status !== op.status) delete task.approved;
       task.status = op.status;
       task.done = op.status === "done" ? { date: today, by: actor.name } : undefined;
       task.skipped = op.status === "skipped" ? { date: today, by: actor.name } : undefined;
@@ -155,6 +171,8 @@ export function applyOp(state: Pick<RoomState, "plan" | "trash" | "restoredForRe
       return op;
     }
     case "setField": {
+      // Approval is for the work as it was: changing what it is or when clears it.
+      if (["title", "estimate", "due", "approver"].includes(op.field) && JSON.stringify((task as Record<string, unknown>)[op.field]) !== JSON.stringify(op.value)) delete task.approved;
       (task as Record<string, unknown>)[op.field] = structuredClone(op.value);
       if (op.value === undefined) delete (task as Record<string, unknown>)[op.field];
       return op;

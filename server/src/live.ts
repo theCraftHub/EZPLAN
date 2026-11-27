@@ -103,13 +103,15 @@ export class LiveRoom {
       }
       if (msg.t === "edit") {
         const opId = typeof msg.opId === "string" ? msg.opId : "";
-        if (!canEdit(peer.role)) return reply({ t: "ack", opId, status: "rejected", version: -1, error: "You can view this plan but not change it." });
         const op = parseOp(msg.op);
+        // Approving needs only a voice on the plan (commenters can be approvers); everything else needs edit rights.
+        if (op?.kind === "approve" ? peer.role === "viewer" : !canEdit(peer.role)) return reply({ t: "ack", opId, status: "rejected", version: -1, error: "You can view this plan but not change it." });
         const okId = (v: unknown) => typeof v === "string" && v.length > 0 && v.length <= 64;
         if (!op || !okId(msg.opId) || !okId(msg.clientId)) return reply({ t: "ack", opId, status: "rejected", version: -1, error: "This edit isn't valid." });
         // "Done by" comes from the connection's signed-in person, never the message.
         const result = await this.core.apply({ opId: msg.opId, clientId: msg.clientId, op }, peer.actor);
         if (result.status === "missing") return reply({ t: "error", error: "This plan no longer exists." });
+        if (result.status === "denied") return reply({ t: "ack", opId, status: "rejected", version: -1, error: result.error });
         reply({ t: "ack", opId, status: result.status, version: result.version });
         if (result.status === "applied") this.broadcast({ t: "applied", applied: result.applied, version: result.version });
         return;

@@ -67,6 +67,10 @@ export const Task = z.object({
   notes: z.array(z.string()),
   done: Attribution.optional(),
   skipped: Attribution.optional(),
+  /** Who must approve it before it counts as Done ("approver: Pat"). */
+  approver: z.string().optional(),
+  /** "Approved by": set only by the approver's action, never from a file a client sends. */
+  approved: Attribution.optional(),
   priority: Priority.optional(),
   tags: z.array(z.string()),
   subtasks: z.array(Subtask),
@@ -142,6 +146,17 @@ export function estimateToDays(e: Estimate | undefined, dayHours = HOURS_PER_DAY
   if (e.unit === "h") return e.amount / dayHours;
   if (e.unit === "w") return e.amount * daysPerWeek;
   return e.amount;
+}
+
+/** Done, but its approver hasn't approved it yet. */
+export const awaitingApproval = (t: Task) => t.status === "done" && !!t.approver && !t.approved;
+/** Done and, where an approval is needed, approved: what counts towards progress and health. */
+export const countsAsDone = (t: Task) => t.status === "done" && (!t.approver || !!t.approved);
+/** Whether a name refers to this person: the full name, or the first name ("Pat" for "Pat Lee"). */
+export function sameName(written: string | undefined, person: string): boolean {
+  const a = (written ?? "").trim().toLowerCase();
+  const b = person.trim().toLowerCase();
+  return !!a && (a === b || a === b.split(/\s+/)[0]);
 }
 
 export function allTasks(plan: Plan): Task[] {

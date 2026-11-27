@@ -3,7 +3,7 @@
  * saves the result. Both hosts use this unchanged: the cloud inside a Durable Object, the
  * self-hosted server in memory.
  */
-import { allTasks, describeOp, newRoom, serverApply, taskBefore, type Actor, type Applied, type OpEnvelope, type Plan, type RoomState } from "@rakuplan/shared";
+import { allTasks, awaitingApproval, describeOp, sameName, newRoom, serverApply, taskBefore, type Actor, type Applied, type OpEnvelope, type Plan, type RoomState } from "@rakuplan/shared";
 import { recordActivity } from "./activity";
 import { notify, userForName } from "./notify";
 import type { ApplyResult, Clock, Db } from "./ports";
@@ -64,10 +64,18 @@ export class PlanRoomCore {
     return this.state;
   }
 
-  async apply(envelope: OpEnvelope, actor: Actor): Promise<ApplyResult> {
+  async apply(envelope: OpEnvelope, from: Actor): Promise<ApplyResult> {
+    // The manager flag is only for the permission check below; history keeps just who did it.
+    const actor: Actor = { userId: from.userId, name: from.name };
     const state = await this.loaded();
     if (!state) return { status: "missing" };
     const before = taskBefore(envelope.op, state.plan);
+    // Only the named approver (or a plan manager) approves.
+    if (envelope.op.kind === "approve" && !state.appliedOpIds.has(envelope.opId)) {
+      const task = allTasks(state.plan).find((t) => t.id === (envelope.op as { taskId: string }).taskId);
+      const theirs = !!task?.approver && (sameName(task.approver, actor.name) || (await userForName(this.db, this.planId, task.approver)) === actor.userId);
+      if (!from.approveAny && !theirs) return { status: "denied", error: task?.approver ? `Only ${task.approver} or a manager can approve this.` : "This task doesn't need an approval." };
+    }
     const applied = serverApply(state, envelope, actor, this.clock.today());
     if (!applied) return { status: "duplicate", version: state.seq };
     state.log.push(applied);
@@ -78,6 +86,19 @@ export class PlanRoomCore {
     if (envelope.clientId !== "update" && envelope.clientId !== "restore") {
       const line = describeOp(applied.effective, before, state.plan, applied.actor.name);
       await recordActivity(this.db, this.planId, applied.actor, line, this.clock.now());
+      const now = this.clock.now();
+      const op = applied.effective;
+      const t = "taskId" in op ? allTasks(state.plan).find((x) => x.id === op.taskId) : undefined;
+      const link = t ? `/p/${this.planId}/checklist?task=${encodeURIComponent(t.id)}` : "";
+      // Done and waiting: the approver hears about it. Approved or sent back: the owner does.
+      if (t && op.kind === "setStatus" && op.status === "done" && awaitingApproval(t)) {
+        const to = await userForName(this.db, this.planId, t.approver);
+        if (to) await notify(this.db, now, { userId: to, planId: this.planId, kind: "assigned", text: `${t.title} is done and waiting for your approval (${state.plan.title})`, link }, applied.actor.userId);
+      }
+      if (t && op.kind === "approve") {
+        const to = await userForName(this.db, this.planId, t.owner);
+        if (to) await notify(this.db, now, { userId: to, planId: this.planId, kind: "assigned", text: op.decision === "approve" ? `${applied.actor.name} approved ${t.title}` : `${applied.actor.name} sent ${t.title} back${op.note ? `: ${op.note}` : ""}`, link }, applied.actor.userId);
+      }
       // "Assigned to you": the new owner's name is linked to an account on this plan.
       if (line?.owner && line.taskId) {
         const to = await userForName(this.db, this.planId, line.owner);

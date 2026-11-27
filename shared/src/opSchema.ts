@@ -20,6 +20,7 @@ const FIELD_VALUES = {
   estimate: Estimate.nullable(),
   depends: z.array(Dependency).max(200),
   tags: z.array(Text(60)).max(50),
+  approver: Text(120).nullable(),
 } as const;
 
 const setField = <F extends keyof typeof FIELD_VALUES>(field: F) =>
@@ -34,9 +35,10 @@ const SetField = z.union([
   setField("estimate"),
   setField("depends"),
   setField("tags"),
+  setField("approver"),
 ]);
 
-const NewTask = Task.extend({ id: Id, title: Text(500).min(1), done: z.undefined().optional(), skipped: z.undefined().optional() });
+const NewTask = Task.extend({ id: Id, title: Text(500).min(1), done: z.undefined().optional(), skipped: z.undefined().optional(), approved: z.undefined().optional() });
 
 export const OpSchema = z.union([
   z.object({ kind: z.literal("setStatus"), taskId: Id, status: TaskStatus }),
@@ -45,6 +47,7 @@ export const OpSchema = z.union([
   z.object({ kind: z.literal("addTask"), phaseId: Id, task: NewTask, afterId: Id.optional(), first: z.literal(true).optional() }),
   z.object({ kind: z.literal("moveTask"), taskId: Id, phaseId: Id, afterId: Id.optional(), first: z.literal(true).optional() }),
   z.object({ kind: z.literal("deleteTask"), taskId: Id }),
+  z.object({ kind: z.literal("approve"), taskId: Id, decision: z.enum(["approve", "reject"]), note: Text(500).optional() }),
   z.object({ kind: z.literal("restoreTask"), taskId: Id }),
   z.object({ kind: z.literal("addPhase"), phase: z.object({ id: Id, title: Text(300).min(1), description: Text(2000).optional() }).strict(), afterId: Id.optional() }),
   z.object({ kind: z.literal("setPhaseField"), phaseId: Id, field: z.enum(["title", "description"]), value: Text(2000).nullable() }),

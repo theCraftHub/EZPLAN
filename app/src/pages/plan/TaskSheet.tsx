@@ -3,7 +3,8 @@ import { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Comments } from "./Comments";
 import { Trash2, X } from "lucide-react";
-import { parseEstimate, type Op, type Plan, type Task } from "@rakuplan/shared";
+import { awaitingApproval, parseEstimate, sameName, type Op, type Plan, type Task } from "@rakuplan/shared";
+import { usePlanCtx } from "./PlanContext";
 import { longDate } from "../../lib/format";
 import { Button } from "../../ui/kit";
 import { STATUS } from "../../ui/Status";
@@ -15,6 +16,11 @@ export function TaskSheet({ task, plan, math, canEdit, edit, onClose, options, o
   const [title, setTitle] = useState(task.title);
   const [owner, setOwner] = useState(task.owner ?? "");
   const [dept, setDept] = useState(task.dept ?? "");
+  const [approver, setApprover] = useState(task.approver ?? "");
+  const [note, setNote] = useState("");
+  const [sendingBack, setSendingBack] = useState(false);
+  const { me, manager, canComment } = usePlanCtx();
+  const mayApprove = canComment && !!task.approver && (!!manager || sameName(task.approver, me ?? ""));
   const [due, setDue] = useState(task.due ?? "");
   const [estimate, setEstimate] = useState(task.estimate ? `${task.estimate.amount}${task.estimate.unit}` : "");
   const [notes, setNotes] = useState(task.notes.join("\n"));
@@ -28,6 +34,7 @@ export function TaskSheet({ task, plan, math, canEdit, edit, onClose, options, o
     if (title.trim() && title.trim() !== task.title) set("title", title.trim());
     if ((owner.trim() || null) !== (task.owner ?? null)) set("owner", owner.trim() || null);
     if ((dept.trim() || null) !== (task.dept ?? null)) set("dept", dept.trim() || null);
+    if ((approver.trim() || null) !== (task.approver ?? null)) set("approver", approver.trim() || null);
     if ((due || null) !== (task.due ?? null)) set("due", due || null);
     if (!estBad && JSON.stringify(est ?? null) !== JSON.stringify(task.estimate ?? null)) set("estimate", est ?? null);
     const n = notes.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -52,6 +59,27 @@ export function TaskSheet({ task, plan, math, canEdit, edit, onClose, options, o
             {s && !task.milestone ? math.why(task.id) : ""}
           </Dialog.Description>
           {task.done && <p className="m-0 text-sm font-semibold text-good">Done by {task.done.by ?? "someone"} · {longDate(task.done.date)}</p>}
+          {task.approved && <p className="m-0 text-sm font-semibold text-good">Approved by {task.approved.by ?? "someone"} · {longDate(task.approved.date)}</p>}
+          {awaitingApproval(task) && (
+            <section aria-label="Approval" className="flex flex-col gap-2 rounded-xl bg-primary-soft p-3 text-primary-ink">
+              <p className="m-0 text-sm font-semibold">Waiting for {task.approver}'s approval. It counts as done once approved.</p>
+              {mayApprove && !sendingBack && (
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={() => { edit({ kind: "approve", taskId: task.id, decision: "approve" }); onClose(); }}>Approve</Button>
+                  <Button variant="secondary" onClick={() => setSendingBack(true)}>Send back…</Button>
+                </div>
+              )}
+              {mayApprove && sendingBack && (
+                <div className="flex flex-col gap-2">
+                  <label className="flex flex-col gap-1.5 text-sm font-semibold">What needs changing? (optional)<input value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} className={field} /></label>
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={() => { edit({ kind: "approve", taskId: task.id, decision: "reject", ...(note.trim() ? { note: note.trim() } : {}) }); onClose(); }}>Send back to Doing</Button>
+                    <Button variant="secondary" onClick={() => setSendingBack(false)}>Cancel</Button>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
           <label className="flex flex-col gap-1.5 text-sm font-semibold">Task<input value={title} onChange={(e) => setTitle(e.target.value)} disabled={!canEdit} className={field} /></label>
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Owner
@@ -66,6 +94,7 @@ export function TaskSheet({ task, plan, math, canEdit, edit, onClose, options, o
             )}
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Due by<input type="date" value={due} onChange={(e) => setDue(e.target.value)} disabled={!canEdit} className={field} /></label>
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Department<input value={dept} onChange={(e) => setDept(e.target.value)} placeholder="e.g. IT" maxLength={60} disabled={!canEdit} className={field} /></label>
+            {!task.milestone && <label className="col-span-2 flex flex-col gap-1.5 text-sm font-semibold">Needs approval from<input value={approver} onChange={(e) => setApprover(e.target.value)} list="sheet-people" placeholder="Nobody (leave empty)" disabled={!canEdit} className={field} /></label>}
           </div>
           {canEdit && !task.milestone && (options || optionsLoading) && (
             <section aria-label="Best people for this task" className="flex flex-col gap-2">

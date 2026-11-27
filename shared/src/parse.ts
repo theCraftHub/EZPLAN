@@ -256,10 +256,10 @@ const BULLET_RE = /^(\s*)(?:[-*+•]|\d+[.)])\s+(.*)$/;
 const CHECKBOX_RE = /^(?:\[( |x|X|\/|-|~|>)\]|(☐|⬜|□)|(☑|✅|✔️?|☒|✓))\s*/;
 const TASK_ID_RE = /^(?:\*\*|__)?\s*([TtMm])(\d+)\s*[:.)\-–]\s*/;
 const PHASE_ID_RE = /^(?:P(\d+)|Phase\s+(\d+))\s*[:.)\-–]\s*(.*)$/i;
-const ATTR_LINE_RE = /^(planned|notes?|due|depends|owner|dept|done|skipped|priority|tags?)\s*:\s*(.*)$/i;
+const ATTR_LINE_RE = /^(planned|notes?|due|depends|owner|dept|done|skipped|approver|approved|priority|tags?)\s*:\s*(.*)$/i;
 /** Unknown attributes written by newer versions: lower_snake_case keys only, so ordinary notes aren't mistaken for them. */
 const EXTRA_ATTR_RE = /^([a-z][a-z0-9_]{1,29})\s*:\s+(.+)$/;
-const INLINE_KEYS = ["due", "depends", "done", "skipped", "after", "dept"] as const;
+const INLINE_KEYS = ["due", "depends", "done", "skipped", "after", "dept", "approver", "approved"] as const;
 
 function readBody(lines: Line[], plan: Plan, issues: ParseIssue[], strict: boolean): void {
   let phase: Phase | null = null;
@@ -511,6 +511,9 @@ function applyAttributeLine(t: Task, key: string, value: string, n: number, issu
     case "dept":
       if (v.trim()) t.dept = v.trim().slice(0, 60);
       break;
+    case "approver":
+      if (v.trim()) t.approver = v.trim().replace(/^@/, "").replace(/^"|"$/g, "").slice(0, 120);
+      break;
     case "priority": {
       const p = v.toLowerCase();
       if (p === "high" || p === "medium" || p === "low") t.priority = p;
@@ -521,13 +524,15 @@ function applyAttributeLine(t: Task, key: string, value: string, n: number, issu
       for (const tag of v.split(/[,\s]+/).map((x) => x.replace(/^#/, "").toLowerCase()).filter(Boolean)) if (!t.tags.includes(tag)) t.tags.push(tag);
       break;
     case "done":
-    case "skipped": {
+    case "skipped":
+    case "approved": {
       const a = parseAttribution(v);
       if (!a) {
         issues.push({ line: n, severity: "warning", message: `Couldn't read "${key}: ${clip(v)}". Use: ${key}: 2026-12-02 by Ana.` });
         break;
       }
       if (key === "done") t.done = a;
+      else if (key === "approved") t.approved = a;
       else t.skipped = a;
       break;
     }

@@ -530,16 +530,18 @@ export function createApp(ports: Ports) {
     const id = c.req.param("id");
     const a = await access(id, user.id);
     if (!a) return c.json(notFound, 404);
-    if (!canEdit(a.role)) return c.json({ error: "You can view this plan but not change it." }, 403);
     const body = await c.req.json<{ opId?: unknown; clientId?: unknown; op?: unknown }>().catch(() => null);
     const op = body ? parseOp(body.op) : null;
+    // Approving needs only a voice on the plan (commenters can be approvers); everything else needs edit rights.
+    if (op?.kind === "approve" ? a.role === "viewer" : !canEdit(a.role)) return c.json({ error: "You can view this plan but not change it." }, 403);
     const idOk = (v: unknown): v is string => typeof v === "string" && v.length > 0 && v.length <= 64;
     if (!body || !op || !idOk(body.opId) || !idOk(body.clientId)) return c.json({ error: "This edit isn't valid. Send { opId, clientId, op } with a supported change." }, 400);
     const envelope: OpEnvelope = { opId: body.opId, clientId: body.clientId, op };
     // "Done by" always comes from the signed-in person, never from the request.
-    const actor: Actor = { userId: user.id, name: user.name };
+    const actor: Actor = { userId: user.id, name: user.name, ...(a.role === "manager" ? { approveAny: true } : {}) };
     const result = await rooms.apply(id, envelope, actor);
     if (result.status === "missing") return c.json(notFound, 404);
+    if (result.status === "denied") return c.json({ error: result.error }, 403);
     return c.json(result);
   });
 
@@ -573,6 +575,7 @@ export function createApp(ports: Ports) {
     for (const [i, op] of ops.entries()) {
       const r = await rooms.apply(id, { opId: `update-${batch}-${i}`, clientId: "update", op: op! }, { userId: user.id, name: user.name });
       if (r.status === "missing") return c.json(notFound, 404);
+    if (r.status === "denied") return c.json({ error: r.error }, 403);
       version = r.version;
     }
     await recordActivity(db, id, user, { kind: "update", summary: `${user.name} applied ${ops.length === 1 ? "1 change" : `${ops.length} changes`} from an AI assistant` }, clock.now());
@@ -610,6 +613,7 @@ export function createApp(ports: Ports) {
     const plan = { ...(JSON.parse(row.snapshot) as Plan), id };
     const r = await rooms.apply(id, { opId: `restore-${crypto.randomUUID().slice(0, 8)}`, clientId: "restore", op: { kind: "replacePlan", plan } }, { userId: user.id, name: user.name });
     if (r.status === "missing") return c.json(notFound, 404);
+    if (r.status === "denied") return c.json({ error: r.error }, 403);
     await recordActivity(db, id, user, { kind: "replace", summary: `${user.name} restored version ${v} of the plan` }, clock.now());
     return c.json({ version: r.version, savedVersion: saved });
   });
@@ -631,6 +635,7 @@ export function createApp(ports: Ports) {
     const saved = await saveVersion(id, room.plan.baselineSet ? `Before replacing the baseline from ${room.plan.baselineSet}` : "Before setting the baseline", user.id);
     const r = await rooms.apply(id, { opId: `baseline-${crypto.randomUUID().slice(0, 8)}`, clientId: "baseline", op: { kind: "setBaseline", on: today, dates } }, { userId: user.id, name: user.name });
     if (r.status === "missing") return c.json(notFound, 404);
+    if (r.status === "denied") return c.json({ error: r.error }, 403);
     return c.json({ version: r.version, baselineSet: today, finish: schedule.finish, savedVersion: saved });
   });
 
@@ -790,7 +795,7 @@ export function createApp(ports: Ports) {
     const id = c.req.param("id");
     const a = await access(id, user.id);
     if (!a) return c.json(notFound, 404);
-    return rooms.connect(c.req.raw, id, { userId: user.id, name: user.name }, a.role);
+    return rooms.connect(c.req.raw, id, { userId: user.id, name: user.name, ...(a.role === "manager" ? { approveAny: true } : {}) }, a.role);
   });
 
   app.get("/api/plans/:id/export", async (c) => {

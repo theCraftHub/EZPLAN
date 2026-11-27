@@ -34,6 +34,8 @@ export function taskBefore(op: Op, plan: Plan): Task | undefined {
 export function describeOp(op: Op, before: Task | undefined, after: Plan, who: string): ActivityLine | null {
   const name = (id: string) => clip(findTask(after, id)?.title ?? before?.title ?? id);
   switch (op.kind) {
+    case "approve":
+      return { kind: "status", taskId: op.taskId, summary: op.decision === "approve" ? `${who} approved ${name(op.taskId)}` : `${who} sent ${name(op.taskId)} back${op.note ? `: ${clip(op.note)}` : ""}` };
     case "setStatus": {
       if (before?.status === op.status) return null;
       return { kind: "status", taskId: op.taskId, summary: op.status === "done" || op.status === "skipped" ? `${who} marked ${name(op.taskId)} ${STATUS_WORD[op.status]}` : `${who} set ${name(op.taskId)} to ${STATUS_WORD[op.status]}` };
