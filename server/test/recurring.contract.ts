@@ -8,7 +8,7 @@ const PLAN = `---\nrakuplan: 1\ntitle: Routine\n---\n## P1: Weekly\n- [ ] T1: Te
 export function recurringContract(hostName: string, factory: HostFactory) {
   describe(`Recurring tasks: ${hostName}`, () => {
     let host: TestHost;
-    const req = async (method: string, path: string, body: unknown) => {
+    const req = async (method: string, path: string, body?: unknown) => {
       const r = await host.fetch(path, { method, headers: { "content-type": "application/json" }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) }, ROSA);
       return { status: r.status, body: (await r.json().catch(() => ({}))) as Record<string, any> };
     };

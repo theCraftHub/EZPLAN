@@ -38,7 +38,7 @@ describe("repeating tasks", () => {
   });
 
   it("finishing one adds the next right after it, due one interval on; the finished one stops repeating", () => {
-    const state = { plan: parsePlan(FILE).plan as Plan, trash: { T3: { phaseId: "P1", task: {} as never } }, restoredForReview: [] as string[] };
+    const state = { plan: parsePlan(FILE).plan as Plan, trash: { T3: { phaseId: "P1", task: {} as never, deletedAt: "2027-01-01", by: "Kai" } }, restoredForReview: [] as string[] };
     applyOp(state, { kind: "setStatus", taskId: "T1", status: "done" }, kai, "2027-01-05");
     const tasks = allTasks(state.plan);
     expect(tasks.map((t) => [t.id, t.status, t.repeat ?? null, t.due ?? null])).toEqual([
