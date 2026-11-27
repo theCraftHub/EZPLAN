@@ -4,14 +4,14 @@
  */
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { ArrowLeft, Check, ClipboardCopy, Copy, FileUp, LayoutTemplate, MessagesSquare, PencilLine, Sparkles } from "lucide-react";
-import { BRAND, FILE_EXTENSIONS, generatePrompt, pastPlanText, TEMPLATES, templateText, WIZARD_QUESTIONS, wizardPrompt, type WizardAnswers } from "@rakuplan/shared";
+import { BRAND, FILE_EXTENSIONS, generatePrompt, pastPlanText, splitMasterText, TEMPLATES, templateText, WIZARD_QUESTIONS, wizardPrompt, type WizardAnswers } from "@rakuplan/shared";
 import { api, ApiError, type ImportPreview, type Me, type People, type PlanSummary } from "../lib/api";
 import { longDate, plural } from "../lib/format";
 import { useRouter } from "../lib/router";
 import { HoursPicker } from "../ui/HoursPicker";
 import { Button, Card, Notice, PageTitle } from "../ui/kit";
 
-type Step = "start" | "conversation" | "wizard" | "paste" | "template" | "past" | "preview";
+type Step = "start" | "conversation" | "wizard" | "paste" | "template" | "past" | "preview" | "master";
 const MAX_FILE = 1_000_000;
 
 export function NewPlan({ me }: { me: Me }) {
@@ -26,6 +26,7 @@ export function NewPlan({ me }: { me: Me }) {
   const [people, setPeople] = useState<People>({});
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [master, setMaster] = useState<Awaited<ReturnType<typeof api.importMaster>> | null>(null);
   const fullTime = me.workspaces[0]?.work_week.hoursPerWeek ?? 40;
 
   const check = async (body = text) => {
@@ -33,6 +34,12 @@ export function NewPlan({ me }: { me: Me }) {
     setBusy(true);
     try {
       setText(body);
+      // "# Plan:" headings: a whole master plan (several plans scheduled as one).
+      if (splitMasterText(body, BRAND.formatKey)) {
+        setMaster(await api.importMaster(body, true, new URLSearchParams(location.search).get("ws") ?? undefined));
+        setStep("master");
+        return;
+      }
       setPreview(await api.preview(body, {}, fileName));
       setPeople({});
       setStep("preview");
@@ -69,6 +76,20 @@ export function NewPlan({ me }: { me: Me }) {
       {step === "template" && <TemplatePicker busy={busy} onBack={back("start")} onPick={(body) => { setFileName(undefined); void check(body); }} />}
       {step === "past" && <PastPicker busy={busy} onBack={back("start")} onPick={(body) => { setFileName(undefined); void check(body); }} setError={setError} />}
       {step === "paste" && <Paste text={text} setText={setText} fileName={fileName} setFileName={setFileName} busy={busy} onBack={back(prompt ? "conversation" : "start")} onCheck={() => void check()} setError={setError} />}
+      {step === "master" && master && (
+        <Card aria-label="Master plan preview" className="flex flex-col gap-3">
+          <h2 className="m-0 text-lg font-bold">{master.title}: a master plan with {master.plans!.length - 1} {master.plans!.length === 2 ? "plan" : "plans"}</h2>
+          <p className="m-0 text-[15px] text-ink-2">Each plan keeps its own tasks and people; they're scheduled as one, so a delay in one moves what waits on it in the others.</p>
+          <ul className="m-0 flex list-none flex-col gap-1 p-0" aria-label="Plans in it">
+            {master.plans!.map((p) => <li key={p.key} className="flex justify-between gap-3 rounded-xl bg-surface-2 px-3 py-2 text-[15px]"><span className="font-semibold">{p.title}</span><span className="text-sm text-ink-2">{p.tasks} {p.tasks === 1 ? "task" : "tasks"}{p.key !== "master" ? ` · key ${p.key}` : ""}</span></li>)}
+          </ul>
+          {master.warnings!.length > 0 && <Notice tone="warn">{master.warnings!.join(" ")}</Notice>}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={back("paste")}><ArrowLeft aria-hidden size={18} /> Back</Button>
+            <Button disabled={busy} onClick={() => { setBusy(true); setError(""); api.importMaster(text, false, new URLSearchParams(location.search).get("ws") ?? undefined).then((r) => go(`/m/${r.id}`, { replace: true })).catch((e) => { setError(e instanceof ApiError ? e.message : "Couldn't save."); setBusy(false); }); }}>{busy ? "Saving…" : "Save the master plan"}</Button>
+          </div>
+        </Card>
+      )}
       {step === "preview" && preview && <Preview preview={preview} text={text} fileName={fileName} people={people} setPeople={setPeople} fullTime={fullTime} busy={busy} onBack={back("paste")} onSave={(p) => void save(p)} />}
     </>
   );

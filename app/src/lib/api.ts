@@ -279,6 +279,7 @@ export const api = {
   acceptJoin: (token: string) => call<{ orgId: string }>(`/api/join/${encodeURIComponent(token)}/accept`, { method: "POST", body: "{}" }),
   master: (id: string) => call<MasterData>(`/api/masters/${encodeURIComponent(id)}`),
   createMaster: (title: string, planIds: string[], start?: string) => call<{ id: string; keys: Record<string, string> }>("/api/masters", { method: "POST", body: JSON.stringify({ title, planIds, ...(start ? { start } : {}) }) }),
+  importMaster: (text: string, dryRun: boolean, workspaceId?: string) => call<{ id?: string; title?: string; plans?: { title: string; key: string; tasks: number; notices: string[] }[]; warnings?: string[] }>("/api/masters/import", { method: "POST", body: JSON.stringify({ text, dryRun, ...(workspaceId ? { workspaceId } : {}) }) }),
   addToMaster: (id: string, planId: string) => call<{ key: string }>(`/api/masters/${encodeURIComponent(id)}/plans`, { method: "POST", body: JSON.stringify({ planId }) }),
   removeFromMaster: (id: string, planId: string) => call<{ ok: true }>(`/api/masters/${encodeURIComponent(id)}/plans/${encodeURIComponent(planId)}`, { method: "DELETE" }),
   setPlanDepartments: (id: string, planId: string, lead: string | null, needs: string[]) => call<{ ok: true }>(`/api/masters/${encodeURIComponent(id)}/plans/${encodeURIComponent(planId)}/departments`, { method: "PUT", body: JSON.stringify({ lead, needs }) }),

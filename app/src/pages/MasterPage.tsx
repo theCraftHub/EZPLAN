@@ -16,6 +16,7 @@ const VIEWS = [
   { view: "", label: "Overview" },
   { view: "timeline", label: "Timeline" },
   { view: "departments", label: "Departments" },
+  { view: "report", label: "Report" },
   { view: "discussion", label: "Discussion" },
   { view: "activity", label: "Activity" },
 ];
@@ -36,7 +37,8 @@ export function MasterPage({ id, view }: { id: string; view: string }) {
   const [data, setData] = useState<MasterData | null>(null);
   const [error, setError] = useState("");
   const [whatIf, setWhatIf] = useState<WhatIf>({ kind: "none" });
-  useEffect(() => void api.master(id).then(setData).catch((e) => setError(e instanceof ApiError ? e.message : "Can't open this master plan.")), [id]);
+  const reload = () => api.master(id).then(setData).catch((e) => setError(e instanceof ApiError ? e.message : "Can't open this master plan."));
+  useEffect(() => void reload(), [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const calc = useMemo((): Calc | null => {
     if (!data) return null;
@@ -59,7 +61,7 @@ export function MasterPage({ id, view }: { id: string; view: string }) {
   const deptNames = [...new Set([...data.parts.flatMap((p) => [p.lead, ...p.needs]), ...data.parts.flatMap((p) => allTasks(p.plan).map((t) => t.dept))].filter((x): x is string => !!x))];
   const dept = (name: string) => DEPT_SLOTS[Math.max(0, deptNames.indexOf(name)) % DEPT_SLOTS.length]!;
   const DeptChip = ({ name, suffix = "" }: { name: string; suffix?: string }) => <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${dept(name).cls}`}><span aria-hidden className="h-2 w-2 rounded-[2px]" style={{ background: dept(name).c }} />{name}{suffix}</span>;
-  const shared: Shared = { id, data, calc, whatIf, setWhatIf, DeptChip, deptColor: (n) => dept(n).c, deptNames };
+  const shared: Shared = { id, data, calc, whatIf, setWhatIf, DeptChip, deptColor: (n) => dept(n).c, deptNames, reload };
   return (
     <div className="flex flex-col gap-4">
       <Link to="/" className="text-sm font-semibold text-primary underline">All plans</Link>
@@ -70,6 +72,7 @@ export function MasterPage({ id, view }: { id: string; view: string }) {
       {view === "" && <Overview {...shared} />}
       {view === "timeline" && <Timeline {...shared} />}
       {view === "departments" && <Departments {...shared} />}
+      {view === "report" && <RollUp {...shared} />}
       {view === "discussion" && <Discussion id={id} data={data} />}
       {view === "activity" && <Activity id={id} data={data} />}
     </div>
@@ -77,7 +80,7 @@ export function MasterPage({ id, view }: { id: string; view: string }) {
 }
 
 type Calc = { parts: MasterPart[]; base: ReturnType<typeof masterSchedule>; tried: ReturnType<typeof masterSchedule> | null; opts: { workWeek: MasterData["workWeek"]; today: string } };
-type Shared = { id: string; data: MasterData; calc: Calc; whatIf: WhatIf; setWhatIf: (w: WhatIf) => void; DeptChip: (p: { name: string; suffix?: string }) => ReactElement; deptColor: (name: string) => string; deptNames: string[] };
+type Shared = { id: string; data: MasterData; calc: Calc; whatIf: WhatIf; setWhatIf: (w: WhatIf) => void; DeptChip: (p: { name: string; suffix?: string }) => ReactElement; deptColor: (name: string) => string; deptNames: string[]; reload: () => Promise<unknown> };
 
 /** Per plan: its tasks, progress and health on the master's schedule. */
 function planSummaries({ data, calc }: Pick<Shared, "data" | "calc">) {
@@ -92,7 +95,7 @@ function planSummaries({ data, calc }: Pick<Shared, "data" | "calc">) {
   });
 }
 
-function Overview({ id, data, calc, whatIf, setWhatIf, DeptChip }: Shared) {
+function Overview({ id, data, calc, whatIf, setWhatIf, DeptChip, reload }: Shared) {
   const subs = planSummaries({ data, calc });
   const masterPart = data.parts.find((p) => p.key === MASTER_KEY)!;
   const all = calc.parts.flatMap((p) => allTasks(p.plan).filter((t) => !t.milestone));
@@ -157,6 +160,7 @@ function Overview({ id, data, calc, whatIf, setWhatIf, DeptChip }: Shared) {
           </Card>
         ))}
       </div>
+      {data.canEdit && <ManagePlans id={id} data={data} reload={reload} />}
       <Card aria-label="Waiting across plans" className="flex flex-col gap-2">
         <h2 className="m-0 text-lg font-bold">Waiting across plans</h2>
         {waiting.length === 0 ? <p className="m-0 text-[15px] text-ink-2">No plan is waiting on another right now.</p> : waiting.map((w) => (
@@ -241,9 +245,9 @@ function Departments({ id, data, calc, DeptChip, deptNames }: Shared) {
             <Button variant="secondary" aria-expanded={openDept === r.name} onClick={() => setOpenDept(openDept === r.name ? null : r.name)}>Tasks</Button>
           </div>
           {r.load.map((l) => (
-            <div key={l.person} className="grid grid-cols-[9rem_1fr] items-center gap-2">
+            <div key={l.person} className="grid grid-cols-1 items-center gap-1 sm:grid-cols-[9rem_1fr] sm:gap-2">
               <span className="text-sm font-semibold">{l.person} <span className="font-normal text-muted">· {l.perWeek} h/week</span></span>
-              <div className="grid grid-cols-8 gap-1">{l.byWeek.map((h, i) => <span key={i} title={`Week of ${shortDate(weeks[i]!)}: ${h} of ${l.perWeek} h`} aria-label={`${l.person}, week of ${shortDate(weeks[i]!)}: ${h} of ${l.perWeek} hours`} className={`flex h-7 items-center justify-center rounded-md text-[11px] font-semibold ${h === 0 ? "bg-surface-2 text-muted" : h >= l.perWeek - 0.5 ? "bg-bad-soft text-bad ring-1 ring-bad" : "bg-primary-soft text-primary-ink"}`}>{h || ""}</span>)}</div>
+              <div className="grid grid-cols-8 gap-0.5 sm:gap-1">{l.byWeek.map((h, i) => <span key={i} title={`Week of ${shortDate(weeks[i]!)}: ${h} of ${l.perWeek} h`} aria-label={`${l.person}, week of ${shortDate(weeks[i]!)}: ${h} of ${l.perWeek} hours`} className={`flex h-7 items-center justify-center rounded-md text-[11px] font-semibold ${h === 0 ? "bg-surface-2 text-muted" : h >= l.perWeek - 0.5 ? "bg-bad-soft text-bad ring-1 ring-bad" : "bg-primary-soft text-primary-ink"}`}>{h || ""}</span>)}</div>
             </div>
           ))}
           {openDept === r.name && (
@@ -348,3 +352,73 @@ function Activity({ id, data }: { id: string; data: MasterData }) {
   );
 }
 
+
+/** Add plans to the master, or take one out (its tasks and people stay; links to it stop counting). */
+function ManagePlans({ id, data, reload }: { id: string; data: MasterData; reload: () => Promise<unknown> }) {
+  const [plans, setPlans] = useState<{ id: string; title: string }[]>([]);
+  const [pick, setPick] = useState("");
+  const [confirm, setConfirm] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const load = () => api.plans().then((r) => setPlans(r.plans.filter((p) => !p.master && !p.masterId && !p.shared && p.state !== "archived" && p.id !== id).map((p) => ({ id: p.id, title: p.title })))).catch(() => {});
+  useEffect(() => { void load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const act = (fn: () => Promise<unknown>) => { setError(""); fn().then(() => Promise.all([reload(), load()])).catch((e) => setError(e instanceof ApiError ? e.message : "That didn't work.")).finally(() => { setConfirm(null); setPick(""); }); };
+  const subs = data.parts.filter((p) => p.key !== MASTER_KEY);
+  return (
+    <Card aria-label="Plans in this master" className="flex flex-col gap-3">
+      <h2 className="m-0 text-lg font-bold">Plans in this master</h2>
+      <ul className="m-0 flex list-none flex-col gap-1 p-0">
+        {subs.map((p) => (
+          <li key={p.key} className="flex flex-wrap items-center gap-2 rounded-xl bg-surface-2 px-3 py-2">
+            <Link to={`/p/${p.planId}`} className="min-w-0 flex-1 font-semibold underline">{p.title}</Link>
+            {confirm === p.planId ? (
+              <span className="flex flex-wrap items-center gap-2 text-sm"><span>Take it out? Its tasks stay; links from other plans to it stop counting.</span><Button variant="danger" onClick={() => act(() => api.removeFromMaster(id, p.planId))}>Take out</Button><Button variant="secondary" onClick={() => setConfirm(null)}>Cancel</Button></span>
+            ) : <Button variant="ghost" disabled={subs.length <= 1} onClick={() => setConfirm(p.planId)} aria-label={`Take ${p.title} out`}>Take out…</Button>}
+          </li>
+        ))}
+      </ul>
+      {plans.length > 0 ? (
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-sm font-semibold">Add a plan<select value={pick} onChange={(e) => setPick(e.target.value)} className="min-h-11 rounded-xl border border-line bg-surface px-3 text-base font-normal"><option value="">Choose one of your plans…</option>{plans.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
+          <Button disabled={!pick} onClick={() => act(() => api.addToMaster(id, pick))}>Add to the master</Button>
+        </div>
+      ) : <p className="m-0 text-sm text-muted">No other plans of yours to add. New plans can be added once made.</p>}
+      {error && <Notice tone="bad">{error}</Notice>}
+    </Card>
+  );
+}
+
+/** One report across every plan: where the whole thing stands, to copy or print. */
+function RollUp({ data, calc }: Shared) {
+  const [copied, setCopied] = useState(false);
+  const subs = planSummaries({ data, calc });
+  const all = calc.parts.flatMap((p) => allTasks(p.plan).filter((t) => !t.milestone));
+  const done = all.filter((t) => t.status === "done").length;
+  const percent = all.length ? Math.round((done / all.length) * 100) : 0;
+  const late = subs.filter((s) => s.progress.suggestedHealth === "At risk" || s.progress.suggestedHealth === "Off track");
+  const masterPart = data.parts.find((p) => p.key === MASTER_KEY)!;
+  const milestones = allTasks(masterPart.plan).filter((t) => t.milestone).map((t) => ({ t, s: calc.base.task(MASTER_KEY, t.id) }));
+  const overdue = calc.parts.flatMap((p) => allTasks(p.plan).filter((t) => calc.base.task(p.key, t.id)?.overdue && t.status !== "done" && t.status !== "skipped").map((t) => `${p.title === masterPart.title ? "Whole building" : p.title}: ${t.title}`));
+  const health = late.some((s) => s.progress.suggestedHealth === "Off track") ? "Off track" : late.length ? "At risk" : percent === 100 ? "Complete" : "On track";
+  const lines = [
+    `${data.title}: status ${shortDate(data.today)}`,
+    `Overall: ${health}. ${percent}% done (${done} of ${plural(all.length, "task")}), finishing ${shortDate(calc.base.finish)}.`,
+    "",
+    "Plans:",
+    ...subs.map((s) => `- ${s.title}: ${s.progress.suggestedHealth}, ${s.progress.percent}% done, ${shortDate(s.start)} to ${shortDate(s.finish)}${s.critical ? ", decides the finish" : ""}${s.waits.length ? `; waits on ${s.waits.map((w) => w.title).join(", ")}` : ""}`),
+    ...(milestones.length ? ["", "Milestones:", ...milestones.map(({ t, s }) => `- ${t.title}: ${t.status === "done" ? "done" : s ? shortDate(s.end) : "not scheduled"}`)] : []),
+    ...(overdue.length ? ["", "Overdue:", ...overdue.map((o) => `- ${o}`)] : []),
+    ...(late.length ? ["", `Needs attention: ${late.map((s) => s.title).join(", ")}.`] : []),
+  ];
+  const text = lines.join("\n");
+  return (
+    <Card aria-label="Roll-up report" className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="m-0 flex-1 text-lg font-bold">Report across all plans</h2>
+        <Button variant="secondary" onClick={() => void navigator.clipboard.writeText(text).then(() => setCopied(true)).catch(() => {})}>{copied ? "Copied" : "Copy the report"}</Button>
+        <Button variant="secondary" onClick={() => print()}>Print</Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-2"><HealthChip value={health} /><span className="text-[15px]">{percent}% done · finishing {shortDate(calc.base.finish)}</span></div>
+      <pre className="m-0 overflow-x-auto rounded-xl bg-surface-2 p-4 font-sans text-[15px] leading-relaxed whitespace-pre-wrap ring-1 ring-line">{text}</pre>
+    </Card>
+  );
+}

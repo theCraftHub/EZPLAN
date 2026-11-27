@@ -184,3 +184,32 @@ export function localSchedule(ms: MasterSchedule, parts: MasterPart[], key: stri
     unplaceable: ms.schedule.unplaceable.filter((id) => id.startsWith(pre)).map(strip),
   };
 }
+
+/**
+ * A whole master plan written as one text (from an AI assistant or by hand): the usual header and
+ * whole-building tasks first, then each plan under its own `# Plan: Title` heading. Links between
+ * plans use the plan's key (`reception/T2`, from its title). Returns null when the text has no
+ * `# Plan:` headings (an ordinary plan).
+ */
+export function splitMasterText(text: string, formatKey: string): { master: string; title: string; plans: { title: string; key: string; text: string }[] } | null {
+  const src = text.replace(/\r\n/g, "\n");
+  const heads = [...src.matchAll(/^#[ \t]+Plan:[ \t]*(.+?)[ \t]*$/gim)];
+  if (!heads.length) return null;
+  const head = src.slice(0, heads[0]!.index);
+  const front = /^\s*---\n([\s\S]*?)\n---\n?/.exec(head);
+  const fields = front ? front[1]! : "";
+  const title = /^title:\s*(.+)$/im.exec(fields)?.[1]?.trim() || "Master plan";
+  const start = /^start:\s*(\d{4}-\d{2}-\d{2})/im.exec(fields)?.[1];
+  const body = front ? head.slice(front[0].length) : head;
+  const masterBody = /^##\s/m.test(body) ? body : `${body.trim() ? `${body.trim()}\n` : ""}## P1: Whole building\n`;
+  const master = `---\n${fields.trim() || `${formatKey}: 1\ntitle: ${title}`}\n---\n${masterBody}`;
+  const taken: string[] = [MASTER_KEY];
+  const plans = heads.map((h, i) => {
+    const t = h[1]!.trim().slice(0, 120);
+    const key = planKey(t, taken);
+    taken.push(key);
+    const part = src.slice(h.index! + h[0].length, i + 1 < heads.length ? heads[i + 1]!.index : src.length).replace(/^\n+/, "");
+    return { title: t, key, text: `---\n${formatKey}: 1\ntitle: ${t}\n${start ? `start: ${start}\n` : ""}---\n${part.trim()}\n` };
+  });
+  return { master, title, plans };
+}

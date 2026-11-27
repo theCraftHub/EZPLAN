@@ -12,6 +12,10 @@ import {
   exportPlan,
   hoursPerDay,
   importPlan,
+  splitMasterText,
+  crossRef,
+  MASTER_KEY,
+  allTasks as allTasksOf,
   levelPlan,
   MAX_PLAN_PEOPLE,
   parseAvailability,
@@ -339,6 +343,58 @@ export function createApp(ports: Ports) {
       suggestedPeople: r.preview.suggestedPeople,
       sensitiveFlags: r.preview.sensitiveFlags,
     });
+  });
+
+  // A whole master plan from one text (`# Plan: Title` sections): each part goes through the same
+  // import checks as a single plan; with dryRun, only the check.
+  app.post("/api/masters/import", async (c) => {
+    const user = c.get("user");
+    const body = await c.req.json<{ text?: unknown; workspaceId?: unknown; dryRun?: unknown }>().catch(() => null);
+    if (!body || typeof body.text !== "string") return c.json({ error: "Send the master plan as text." }, 400);
+    if (body.text.length > MAX_BODY_CHARS) return c.json({ error: "This text is too long (over 1,000,000 characters)." }, 413);
+    const split = splitMasterText(body.text, BRAND.formatKey);
+    if (!split) return c.json({ error: "This isn't a master plan: it has no \"# Plan:\" headings." }, 400);
+    if (split.plans.length > 30) return c.json({ error: "A master plan can hold up to 30 plans." }, 400);
+    const workspace = await db.first<{ workspace_id: string; role: Role }>(
+      typeof body.workspaceId === "string"
+        ? `SELECT m.workspace_id, m.role FROM members m WHERE m.user_id = ? AND m.workspace_id = ?`
+        : `SELECT m.workspace_id, m.role FROM members m JOIN workspaces w ON w.id = m.workspace_id WHERE m.user_id = ? ORDER BY w.created_at LIMIT 1`,
+      typeof body.workspaceId === "string" ? [user.id, body.workspaceId] : [user.id],
+    );
+    if (!workspace) return c.json({ error: "That workspace doesn't exist or you aren't in it." }, 404);
+    if (workspace.role === "viewer") return c.json({ error: "Viewers can't add plans to this workspace." }, 403);
+    const members = (await db.all<{ name: string }>(`SELECT u.name FROM members m JOIN users u ON u.id = m.user_id WHERE m.workspace_id = ?`, [workspace.workspace_id])).map((m) => m.name);
+    const moderate = ai.moderator(user, workspace.workspace_id);
+    const check = async (text: string) => importPlan({ source: "paste", text }, { importerName: user.name, editablePlanIds: new Set(), memberNames: members, today: clock.today(), ...(moderate ? { moderate } : {}) });
+    const parts = [{ title: split.title, key: MASTER_KEY, text: split.master }, ...split.plans];
+    const previews = [];
+    for (const p of parts) {
+      const preview = await check(p.text);
+      if (!preview.ok || !preview.plan) return c.json({ error: `${p.key === MASTER_KEY ? "The whole-building part" : `"${p.title}"`}: ${preview.notices[0] ?? "couldn't be read."}` }, 422);
+      previews.push({ ...p, preview, plan: preview.plan });
+    }
+    // Links to plans that aren't in the text.
+    const keys = new Set(parts.map((p) => p.key));
+    const warnings = [...new Set(previews.flatMap((p) => allTasksOf(p.plan).flatMap((t) => t.depends.map((d) => crossRef(d.id)).filter((x): x is NonNullable<typeof x> => !!x && !keys.has(x.key)).map((x) => `${p.title} waits on "${x.key}/${x.id}", but there's no plan with the key "${x.key}". Keys: ${[...keys].join(", ")}.`))))];
+    if (body.dryRun === true) {
+      return c.json({ dryRun: true, title: split.title, plans: previews.map((p) => ({ title: p.key === MASTER_KEY ? "Whole building" : p.title, key: p.key, tasks: allTasksOf(p.plan).length, notices: p.preview.notices })), warnings });
+    }
+    const now = clock.now();
+    const masterId = crypto.randomUUID();
+    const ids: string[] = [];
+    for (const p of previews) {
+      const id = p.key === MASTER_KEY ? masterId : crypto.randomUUID();
+      const plan = { ...p.plan, id };
+      const state = p.preview.moderation.verdict === "review" ? "review" : "active";
+      await db.batch([
+        { sql: `INSERT INTO plans (id, workspace_id, title, state, room, version, created_by, created_at, updated_at, kind, master_id, plan_key) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`, params: [id, workspace.workspace_id, plan.title, state, newRoomJson(plan), user.id, now, now, p.key === MASTER_KEY ? "master" : "plan", p.key === MASTER_KEY ? null : masterId, p.key === MASTER_KEY ? null : p.key] },
+        { sql: `INSERT INTO plan_versions (plan_id, version, reason, snapshot, created_by, created_at) VALUES (?, 0, 'import', ?, ?, ?)`, params: [id, JSON.stringify(plan), user.id, now] },
+      ]);
+      if (state === "review") await ai.hold(id, user, "moderation", p.preview.moderation.category ?? null, body0(p.plan));
+      ids.push(id);
+    }
+    await recordActivity(db, masterId, user, { kind: "plan", summary: `${user.name} made the master plan with ${split.plans.length === 1 ? "1 plan" : `${split.plans.length} plans`}` }, now);
+    return c.json({ id: masterId, plans: ids.slice(1) }, 201);
   });
 
   app.post("/api/plans", async (c) => {

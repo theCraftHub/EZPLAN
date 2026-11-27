@@ -95,3 +95,29 @@ Indented lines under a task:
 
 ## 6. Not in the file (app only)
 Comments, time logs and activity history. Reserved for later versions: costs (`cost:`), constraints (`start_after:`, `finish_by:`), `recurring:`, `approval:`, multiple named baselines and a `## RAID` section.
+
+## 7. Approvals, repeats and master plans (Nov 27)
+
+Task attributes (inline or on their own line under the task):
+- `approver: Pat` names who must approve the task before it counts as done. `approved: 2027-01-12 by Pat` records the approval; only the app writes it.
+- `repeat: weekly` (also `daily`, `weekdays`, `every 2 weeks`, `monthly`, `quarterly`, `yearly`, `every 3 days`): when the task is done or skipped, the next one is added right after it, due one interval later.
+
+A whole master plan can be one text: the usual header and any whole-building tasks first, then each plan under its own `# Plan: Title` heading. A task in one plan waits on a task in another with the other plan's key, made from its title (`Office 2` → `office-2`), and `master/M1` for the whole-building tasks:
+
+```
+---
+rakuplan: 1
+title: HQ remodel
+start: 2027-02-01
+---
+## P1: Whole building
+- [ ] M1: Permit approved (milestone)
+
+# Plan: Reception
+## P1: Front
+- [ ] T1: Demolish desk (2d) @Kai dept: Facilities depends: master/M1
+
+# Plan: Office 2
+## P1: Rooms
+- [ ] T1: Walls (3d) @Kai depends: reception/T1
+```
