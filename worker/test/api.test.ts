@@ -26,6 +26,7 @@ import { offboardContract } from "../../server/test/offboard.contract";
 import { securityContract } from "../../server/test/security.contract";
 import { portfolioContract } from "../../server/test/portfolio.contract";
 import { approvalsContract } from "../../server/test/approvals.contract";
+import { recurringContract } from "../../server/test/recurring.contract";
 import { signInContract } from "../../server/test/signin.contract";
 
 let bundled: Promise<string> | null = null;
@@ -119,3 +120,4 @@ offboardContract("cloud (Workers + D1 + Durable Objects)", factory);
 securityContract("cloud (Workers + D1 + Durable Objects)", factory);
 portfolioContract("cloud (Workers + D1 + Durable Objects)", factory);
 approvalsContract("cloud (Workers + D1 + Durable Objects)", factory);
+recurringContract("cloud (Workers + D1 + Durable Objects)", factory);

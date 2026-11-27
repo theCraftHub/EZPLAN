@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
-import { Link2, MessageCircle, MessageSquareText, Plus } from "lucide-react";
-import { parseQuickAdd, type Op, type Phase, type Plan, type Task, awaitingApproval } from "@rakuplan/shared";
+import { Link2, MessageCircle, MessageSquareText, Plus, Repeat } from "lucide-react";
+import { parseQuickAdd, type Op, type Phase, type Plan, type Task, awaitingApproval, repeatLabel } from "@rakuplan/shared";
 import { shortDate } from "../../lib/format";
 import { Card } from "../../ui/kit";
 import { MilestoneMark, StatusButton } from "../../ui/Status";
@@ -78,6 +78,7 @@ const TaskRow = memo(function TaskRow({ t, when: s, waits, slip, comments, canEd
           {t.dept && <span className={`${chip} ring-1 ring-line`} aria-label={`Department: ${t.dept}`}>{t.dept}</span>}
           {awaitingApproval(t) && <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary-ink">Waiting for {t.approver}'s approval</span>}
           {t.approved && <span className="rounded-full bg-good-soft px-2 py-0.5 text-xs font-bold text-good">Approved</span>}
+          {t.repeat && <span className={chip} aria-label={`Repeats: ${repeatLabel(t.repeat)}`}><Repeat aria-hidden size={12} /> {repeatLabel(t.repeat)}</span>}
           {s && <span className="text-xs text-muted">{t.milestone ? shortDate(s.end) : `${shortDate(s.start)} to ${shortDate(s.end)}`}</span>}
           {est(t) && !t.milestone && <span className={chip}>{est(t)}</span>}
           {waits.length > 0 && !finished && <span className={chip}><Link2 aria-hidden size={12} /> <span className="max-w-[14rem] truncate">waits on {waits[0]}{waits.length > 1 ? ` +${waits.length - 1}` : ""}</span></span>}

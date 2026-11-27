@@ -3,7 +3,7 @@ import { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Comments } from "./Comments";
 import { Trash2, X } from "lucide-react";
-import { awaitingApproval, parseEstimate, sameName, type Op, type Plan, type Task } from "@rakuplan/shared";
+import { awaitingApproval, parseEstimate, repeatLabel, sameName, type Op, type Plan, type Task } from "@rakuplan/shared";
 import { usePlanCtx } from "./PlanContext";
 import { longDate } from "../../lib/format";
 import { Button } from "../../ui/kit";
@@ -17,6 +17,7 @@ export function TaskSheet({ task, plan, math, canEdit, edit, onClose, options, o
   const [owner, setOwner] = useState(task.owner ?? "");
   const [dept, setDept] = useState(task.dept ?? "");
   const [approver, setApprover] = useState(task.approver ?? "");
+  const [repeat, setRepeat] = useState(task.repeat ?? "");
   const [note, setNote] = useState("");
   const [sendingBack, setSendingBack] = useState(false);
   const { me, manager, canComment } = usePlanCtx();
@@ -35,6 +36,7 @@ export function TaskSheet({ task, plan, math, canEdit, edit, onClose, options, o
     if ((owner.trim() || null) !== (task.owner ?? null)) set("owner", owner.trim() || null);
     if ((dept.trim() || null) !== (task.dept ?? null)) set("dept", dept.trim() || null);
     if ((approver.trim() || null) !== (task.approver ?? null)) set("approver", approver.trim() || null);
+    if ((repeat || null) !== (task.repeat ?? null)) set("repeat", repeat || null);
     if ((due || null) !== (task.due ?? null)) set("due", due || null);
     if (!estBad && JSON.stringify(est ?? null) !== JSON.stringify(task.estimate ?? null)) set("estimate", est ?? null);
     const n = notes.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -94,6 +96,15 @@ export function TaskSheet({ task, plan, math, canEdit, edit, onClose, options, o
             )}
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Due by<input type="date" value={due} onChange={(e) => setDue(e.target.value)} disabled={!canEdit} className={field} /></label>
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Department<input value={dept} onChange={(e) => setDept(e.target.value)} placeholder="e.g. IT" maxLength={60} disabled={!canEdit} className={field} /></label>
+            {!task.milestone && task.status !== "done" && task.status !== "skipped" && (
+              <label className="col-span-2 flex flex-col gap-1.5 text-sm font-semibold">Repeats
+                <select value={repeat} onChange={(e) => setRepeat(e.target.value)} disabled={!canEdit} className={field}>
+                  <option value="">Doesn't repeat</option>
+                  {[...new Set(["daily", "weekdays", "weekly", "every 2 weeks", "monthly", "quarterly", "yearly", ...(task.repeat ? [task.repeat] : [])])].map((r) => <option key={r} value={r}>{repeatLabel(r)}</option>)}
+                </select>
+                {repeat && <span className="font-normal text-ink-2">When it's done, the next one is added right after it, due {repeatLabel(repeat).toLowerCase().replace(/^every /, "a ").replace(/^a (\d)/, "$1")} later.</span>}
+              </label>
+            )}
             {!task.milestone && <label className="col-span-2 flex flex-col gap-1.5 text-sm font-semibold">Needs approval from<input value={approver} onChange={(e) => setApprover(e.target.value)} list="sheet-people" placeholder="Nobody (leave empty)" disabled={!canEdit} className={field} /></label>}
           </div>
           {canEdit && !task.milestone && (options || optionsLoading) && (

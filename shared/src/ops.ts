@@ -15,8 +15,9 @@
  *    authenticated user, never taken from the client.
  */
 import type { Phase, Plan, Task, TaskStatus } from "./schema";
+import { nextOccurrence } from "./repeat";
 
-export type EditableField = "title" | "owner" | "dept" | "due" | "notes" | "priority" | "estimate" | "depends" | "tags" | "approver";
+export type EditableField = "title" | "owner" | "dept" | "due" | "notes" | "priority" | "estimate" | "depends" | "tags" | "approver" | "repeat";
 
 export type Op =
   | { kind: "setStatus"; taskId: string; status: TaskStatus }
@@ -163,7 +164,16 @@ export function applyOp(state: Pick<RoomState, "plan" | "trash" | "restoredForRe
     case "setStatus": {
       // A change of status always needs a fresh approval.
       if (task.status !== op.status) delete task.approved;
+      const finishing = (op.status === "done" || op.status === "skipped") && task.status !== op.status;
       task.status = op.status;
+      // A repeating task, once finished, hands its repeat on to the next one, added right after it.
+      if (finishing && task.repeat) {
+        const id = freeTaskId(state);
+        const next = nextOccurrence(task, id, today);
+        const phase = state.plan.phases.find((p) => p.tasks.includes(task!));
+        if (next && phase) insertAfter(phase, next, task.id);
+        delete task.repeat;
+      }
       task.done = op.status === "done" ? { date: today, by: actor.name } : undefined;
       task.skipped = op.status === "skipped" ? { date: today, by: actor.name } : undefined;
       if (!task.done) delete task.done;
@@ -207,6 +217,14 @@ function findTask(plan: Plan, id: string): { task: Task; phase: Phase; index: nu
 }
 
 /** After `afterId`, at the start when `first`, else at the end. */
+/** The next "T" number not used by any task, in the plan or the trash. */
+function freeTaskId(state: Pick<RoomState, "plan" | "trash">): string {
+  const used = new Set([...state.plan.phases.flatMap((p) => p.tasks.map((t) => t.id.toUpperCase())), ...Object.keys(state.trash).map((k) => k.toUpperCase())]);
+  let n = 1;
+  for (const id of used) { const m = /^T(\d+)$/.exec(id); if (m) n = Math.max(n, Number(m[1]) + 1); }
+  return `T${n}`;
+}
+
 function insertAfter(phase: Phase, task: Task, afterId?: string, first?: true): void {
   if (!afterId && first) {
     phase.tasks.unshift(task);

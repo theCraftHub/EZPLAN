@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { Dependency, Estimate, IsoDate, Priority, Task, TaskStatus } from "./schema";
 import type { Op } from "./ops";
+import { parseRepeat } from "./repeat";
 
 const Id = z.string().min(1).max(64);
 const Text = (max: number) => z.string().max(max);
@@ -21,6 +22,7 @@ const FIELD_VALUES = {
   depends: z.array(Dependency).max(200),
   tags: z.array(Text(60)).max(50),
   approver: Text(120).nullable(),
+  repeat: Text(40).refine((v) => !!parseRepeat(v), "Not a repeat rule").nullable(),
 } as const;
 
 const setField = <F extends keyof typeof FIELD_VALUES>(field: F) =>
@@ -36,6 +38,7 @@ const SetField = z.union([
   setField("depends"),
   setField("tags"),
   setField("approver"),
+  setField("repeat"),
 ]);
 
 const NewTask = Task.extend({ id: Id, title: Text(500).min(1), done: z.undefined().optional(), skipped: z.undefined().optional(), approved: z.undefined().optional() });

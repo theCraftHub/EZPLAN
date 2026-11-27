@@ -21,3 +21,4 @@ export * from "./report";
 export * from "./activity";
 export * from "./master";
 export * from "./people";
+export * from "./repeat";

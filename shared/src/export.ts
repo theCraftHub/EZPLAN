@@ -87,6 +87,7 @@ function taskLines(t: Task): string[] {
   if (t.depends.length) line += ` depends: ${formatDepends(t.depends)}`;
   if (t.done) line += ` done: ${t.done.date}${t.done.by ? ` by ${t.done.by}` : ""}`;
   if (t.skipped) line += ` skipped: ${t.skipped.date}${t.skipped.by ? ` by ${t.skipped.by}` : ""}`;
+  if (t.repeat) line += ` repeat: ${t.repeat}`;
   if (t.approver) line += ` approver: ${/\s/.test(t.approver) ? `"${t.approver}"` : t.approver}`;
   if (t.approved) line += ` approved: ${t.approved.date}${t.approved.by ? ` by ${t.approved.by}` : ""}`;
   const lines = [line];

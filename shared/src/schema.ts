@@ -71,6 +71,8 @@ export const Task = z.object({
   approver: z.string().optional(),
   /** "Approved by": set only by the approver's action, never from a file a client sends. */
   approved: Attribution.optional(),
+  /** Repeats when done ("weekly", "every 2 weeks", "monthly", "weekdays"…). */
+  repeat: z.string().optional(),
   priority: Priority.optional(),
   tags: z.array(z.string()),
   subtasks: z.array(Subtask),
