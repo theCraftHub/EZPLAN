@@ -129,6 +129,10 @@ export interface WorkWeek {
   hoursPerWeek: number;
   /** Working days, 0 = Sunday ... 6 = Saturday. */
   workdays: number[];
+  /** Public holidays of this country are days off (step N3). */
+  holidayCountry?: string;
+  /** The holiday dates themselves (filled in by the server from the country). */
+  holidays?: string[];
 }
 export const DEFAULT_WORK_WEEK: WorkWeek = { hoursPerWeek: 40, workdays: [1, 2, 3, 4, 5] };
 

@@ -1,5 +1,6 @@
 /** The workspace's standard week ("Full time"), with a preview of every plan's new finish date. */
 import { useState } from "react";
+import { HOLIDAY_COUNTRIES } from "@rakuplan/shared";
 import { Minus, Plus } from "lucide-react";
 import type { WorkWeek as Week } from "@rakuplan/shared";
 import { api, type Me } from "../lib/api";
@@ -13,6 +14,7 @@ export function WorkWeekCard({ me, onSaved }: { me: Me; onSaved: (w: Week) => vo
   const ws = me.workspaces[0];
   const [hours, setHours] = useState(ws?.work_week.hoursPerWeek ?? 40);
   const [days, setDays] = useState<number[]>(ws?.work_week.workdays ?? [1, 2, 3, 4, 5]);
+  const [country, setCountry] = useState(ws?.work_week.holidayCountry ?? "");
   const [draft, setDraft] = useState(String(hours));
   const [impact, setImpact] = useState<Impact | null>(null);
   const [msg, setMsg] = useState<{ tone: "good" | "bad"; text: string } | null>(null);
@@ -21,13 +23,13 @@ export function WorkWeekCard({ me, onSaved }: { me: Me; onSaved: (w: Week) => vo
   const manager = ws.role === "manager";
   const n = Number(draft);
   const valid = draft.trim() !== "" && n >= 1 && n <= 60 && Math.round(n * 2) === n * 2 && days.length > 0;
-  const changed = n !== ws.work_week.hoursPerWeek || JSON.stringify(days) !== JSON.stringify(ws.work_week.workdays);
+  const changed = n !== ws.work_week.hoursPerWeek || JSON.stringify(days) !== JSON.stringify(ws.work_week.workdays) || country !== (ws.work_week.holidayCountry ?? "");
   const setH = (v: number) => { setHours(v); setDraft(String(v)); setImpact(null); };
   const run = async (dryRun: boolean) => {
     setBusy(true);
     setMsg(null);
     try {
-      const r = await api.workWeek(ws.id, { hoursPerWeek: n, workdays: days }, dryRun);
+      const r = await api.workWeek(ws.id, { hoursPerWeek: n, workdays: days, holidayCountry: (country || null) as unknown as string }, dryRun);
       if (dryRun) setImpact(r.impact);
       else {
         setImpact(null);
@@ -67,6 +69,13 @@ export function WorkWeekCard({ me, onSaved }: { me: Me; onSaved: (w: Week) => vo
           {[1, 2, 3, 4, 5, 6, 0].map((d) => <button key={d} type="button" aria-pressed={days.includes(d)} onClick={() => { setDays(days.includes(d) ? days.filter((x) => x !== d) : [...days, d].sort()); setImpact(null); }} className={`${chip(days.includes(d))} min-w-12`}>{DAY_NAMES[d]}</button>)}
         </div>
       </fieldset>
+      <label className="flex flex-col gap-1.5 text-sm font-semibold">Public holidays (days off for everyone)
+        <select aria-label="Public holidays" value={country} disabled={!manager} onChange={(e) => { setCountry(e.target.value); setImpact(null); }} className="min-h-11 max-w-sm rounded-xl border border-line bg-surface px-3 text-base font-normal">
+          <option value="">None</option>
+          {Object.entries(HOLIDAY_COUNTRIES).map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+        </select>
+        <span className="font-normal text-muted">National holidays only. Add regional ones as days off for people.</span>
+      </label>
       {!manager && <p className="m-0 text-sm text-muted">Only workspace managers can change this.</p>}
       {impact && (
         <div className="flex flex-col gap-2 rounded-xl bg-warn-soft p-3 text-warn">

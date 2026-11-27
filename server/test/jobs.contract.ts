@@ -63,7 +63,7 @@ export function jobsContract(hostName: string, factory: HostFactory) {
       expect((await run(at("10:00", "2027-02-01"))).body.weeklySummaries).toBe(1); // a Monday
       expect((await notes())[0]!.text).toBe("Weekly summary of Fitout");
       const runs = (await req("GET", "/api/ops", undefined, `u-own|Owner|owner@example.com`)).body.jobs as { name: string; runs: number; lastError: string | null }[];
-      expect(runs.map((r) => r.name)).toEqual(["digests", "statusReminders", "weeklySummaries"]);
+      expect(runs.map((r) => r.name)).toEqual(["calendarSync", "digests", "statusReminders", "weeklySummaries"]);
       expect(runs.every((r) => r.lastError === null && r.runs > 0)).toBe(true);
     });
   });

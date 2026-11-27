@@ -41,6 +41,8 @@ const { app: site, rooms, db, runScheduled } = createSelfHost({
     const u = new URL(req.url);
     if (u.origin === fake.issuer) return fake.handle(req);
     // Domain checks: answers as if each company had already added its TXT record.
+    // Calendar busy times (step N3): one all-day busy event on Jan 5, 2027.
+    if (u.hostname === "calendar.google.com") return new Response(["BEGIN:VCALENDAR", "BEGIN:VEVENT", "SUMMARY:Private", "DTSTART;VALUE=DATE:20270105", "DTEND;VALUE=DATE:20270106", "END:VEVENT", "END:VCALENDAR"].join("\r\n"), { headers: { "content-type": "text/calendar" } });
     if (u.hostname === "cloudflare-dns.com") {
       const rows = await db.all<{ token: string }>(`SELECT token FROM org_domains WHERE domain = ?`, [u.searchParams.get("name") ?? ""]);
       return Response.json({ Status: 0, Answer: rows.map((r) => ({ type: 16, data: `"${BRAND.name.toLowerCase()}-verify=${r.token}"` })) });

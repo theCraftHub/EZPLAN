@@ -22,3 +22,5 @@ export * from "./activity";
 export * from "./master";
 export * from "./people";
 export * from "./repeat";
+export * from "./holidays";
+export * from "./ics";

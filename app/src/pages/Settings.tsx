@@ -6,6 +6,7 @@ import { ConsoleIcon, consoles } from "./admin/OrgConsole";
 import { Link } from "../lib/router";
 import { WorkWeekCard } from "./WorkWeek";
 import { RemindersCard } from "./Reminders";
+import { CalendarsCard } from "./Calendars";
 import { AiUsageCard } from "./AiUsage";
 import { AdminLinks } from "./Safety";
 import { CompanySupportCard } from "./Help";
@@ -33,6 +34,7 @@ export function Settings({ me, onSignOut, onMe }: { me: Me; onSignOut: () => voi
       <AdminLinks manages={me.workspaces.filter((w) => w.role === "manager")} platformAdmin={!!me.platformAdmin} safetyOpen={me.safetyOpen ?? 0} supportOpen={me.supportOpen ?? 0} />
       <CompanySupportCard me={me} />
       <RemindersCard />
+      <CalendarsCard />
       <WorkWeekCard me={me} onSaved={(w) => onMe({ ...me, workspaces: me.workspaces.map((x, i) => (i === 0 ? { ...x, work_week: w } : x)) })} />
       <Card aria-label="Your account" className="flex flex-col gap-4">
         <h2 className="m-0 text-lg font-bold">Your account</h2>

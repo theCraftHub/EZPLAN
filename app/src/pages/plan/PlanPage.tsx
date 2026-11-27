@@ -6,7 +6,7 @@ import { UpdateOverdue } from "../../ui/StatusUpdate";
 import { useDeferredValue, useMemo, useState } from "react";
 import { Present } from "../../ui/Present";
 import { ShareLinks } from "./ShareLinks";
-import { Archive, ArrowLeft, Download, MonitorPlay, FileText, History as HistoryIcon, Printer, ShieldAlert, Sparkles, Users, Wifi, WifiOff } from "lucide-react";
+import { Archive, ArrowLeft, CalendarPlus, Download, MonitorPlay, FileText, History as HistoryIcon, Printer, ShieldAlert, Sparkles, Users, Wifi, WifiOff } from "lucide-react";
 import { canCommentRole, canEditRole, type Me } from "../../lib/api";
 import { PlanContext, type PlanCtx } from "./PlanContext";
 import { Activity } from "./Activity";
@@ -82,6 +82,7 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
         <div className="flex flex-wrap gap-2" role="group" aria-label="Plan actions">
           {canEdit && <Link to={`/p/${id}/update`} className={`${action} border-primary/40 text-primary-ink`}><Sparkles aria-hidden size={16} /> Update with my AI</Link>}
           <a href={`/api/plans/${id}/export`} download className={action}><Download aria-hidden size={16} /> Download plan file</a>
+          <a href={`/api/plans/${id}/calendar.ics`} download className={action}><CalendarPlus aria-hidden size={16} /> Add to calendar</a>
           <Link to={`/p/${id}/print`} className={action}><Printer aria-hidden size={16} /> Print summary</Link>
           <button onClick={() => setPresenting(true)} disabled={!math} className={action}><MonitorPlay aria-hidden size={16} /> Present</button>
           <Link to={`/p/${id}/report`} className={action}><FileText aria-hidden size={16} /> Status report</Link>

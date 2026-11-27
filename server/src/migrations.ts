@@ -241,6 +241,14 @@ export const MIGRATIONS: Migration[] = [
       `CREATE TABLE plan_follows (plan_id TEXT NOT NULL REFERENCES plans(id), user_id TEXT NOT NULL REFERENCES users(id), created_at INTEGER NOT NULL, PRIMARY KEY (plan_id, user_id))`,
     ],
   },
+  {
+    id: 23,
+    name: "calendars: busy hours from people's own calendars (never event details), and private calendar feeds",
+    statements: [
+      `CREATE TABLE calendar_sources (user_id TEXT PRIMARY KEY REFERENCES users(id), url TEXT NOT NULL, host TEXT NOT NULL, busy TEXT NOT NULL, synced_at INTEGER, error TEXT)`,
+      `CREATE TABLE calendar_feeds (user_id TEXT PRIMARY KEY REFERENCES users(id), token_hash TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL)`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

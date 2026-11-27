@@ -10,7 +10,8 @@
  * - Weekly summaries: people who follow a plan get a one-page summary each Monday.
  */
 import { allTasks, awaitingApproval, sameName, type LeveledSchedule, type Plan } from "@rakuplan/shared";
-import type { Clock, Db } from "./ports";
+import type { Clock, Db, HttpFetch } from "./ports";
+import { syncCalendars } from "./calendars";
 import { notify } from "./notify";
 import { updateState } from "./statusUpdates";
 
@@ -20,6 +21,7 @@ export const DEFAULT_DIGEST: DigestPref = { mode: "daily", hour: 8, tz: "UTC", w
 export interface JobDeps {
   db: Db;
   clock: Clock;
+  http: HttpFetch;
   /** A plan with its schedule as of a given day (the same engine the app uses). */
   plan: (planId: string, today: string) => Promise<{ plan: Plan; schedule: LeveledSchedule } | null>;
   email: (to: string, subject: string, text: string) => Promise<void>;
@@ -165,7 +167,7 @@ async function weeklySummaries(d: JobDeps, now: number, only?: JobFilter) {
   return sent;
 }
 
-const JOBS: Record<string, (d: JobDeps, now: number, only?: JobFilter) => Promise<number>> = { digests, statusReminders, weeklySummaries };
+const JOBS: Record<string, (d: JobDeps, now: number, only?: JobFilter) => Promise<number>> = { calendarSync: (d, now) => syncCalendars(d, now), digests, statusReminders, weeklySummaries };
 
 /** Runs every job once; each failure is kept for the Operations page and doesn't stop the others. */
 export async function runJobs(d: JobDeps, now = d.clock.now(), only?: JobFilter): Promise<Record<string, number | string>> {

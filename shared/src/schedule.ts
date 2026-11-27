@@ -47,7 +47,7 @@ export interface ScheduleOptions {
 
 /** Calendar settings with the work week's days filled in when no calendar workdays are given. */
 export function calendarOf(opts: ScheduleOptions) {
-  return { ...opts.calendar, workdays: opts.calendar?.workdays ?? opts.workWeek?.workdays };
+  return { ...opts.calendar, workdays: opts.calendar?.workdays ?? opts.workWeek?.workdays, holidays: opts.calendar?.holidays ?? opts.workWeek?.holidays };
 }
 
 const EPS = 1e-9;

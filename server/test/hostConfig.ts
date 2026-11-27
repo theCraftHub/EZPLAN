@@ -32,6 +32,8 @@ export function testEnv(fake?: FakeOidc): Record<string, string> {
 
 /** TXT records tests publish for domain checks (answered as Cloudflare DNS-over-HTTPS would). */
 export const FAKE_DNS: Record<string, string[]> = {};
+/** Calendar files the fake calendar service serves, by path (step N3). */
+export const FAKE_ICS: Record<string, string> = {};
 
 export function testHttp(fake?: FakeOidc): HttpFetch {
   return async (req) => {
@@ -39,6 +41,10 @@ export function testHttp(fake?: FakeOidc): HttpFetch {
     if (u.hostname === "cloudflare-dns.com") {
       const records = FAKE_DNS[u.searchParams.get("name") ?? ""] ?? [];
       return Response.json({ Status: 0, Answer: records.map((r) => ({ type: 16, data: `"${r}"` })) });
+    }
+    if (u.hostname === "calendar.google.com") {
+      const body = FAKE_ICS[u.pathname];
+      return body === undefined ? new Response("not found", { status: 404 }) : new Response(body, { headers: { "content-type": "text/calendar" } });
     }
     if (fake && new URL(req.url).origin === fake.issuer) return fake.handle(req);
     return new Response("Tests don't reach the internet.", { status: 599 });

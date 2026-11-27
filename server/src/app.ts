@@ -12,6 +12,8 @@ import {
   exportPlan,
   hoursPerDay,
   importPlan,
+  HOLIDAY_COUNTRIES,
+  holidayDates,
   splitMasterText,
   crossRef,
   MASTER_KEY,
@@ -51,6 +53,7 @@ import { registerOffboardRoutes } from "./orgOffboard";
 import { countEvent, recordError, registerOpsRoutes } from "./opsPage";
 import { registerPublicShareRoute, registerShareRoutes } from "./shares";
 import { runJobs, type JobDeps, type JobFilter } from "./jobs";
+import { busyByName, registerCalendarRoutes, registerPublicCalendarRoute } from "./calendars";
 import { mailSettings, sendEmail } from "./mail";
 import { registerCollabRoutes } from "./comments";
 import { notify, registerNotificationRoutes, unreadCount, userForName } from "./notify";
@@ -171,6 +174,13 @@ export function createApp(ports: Ports) {
     limited: async (c: Context, _subject: string) => { await ensureReady(); return limited(c, "shareView", clientIp(c.req.raw)); },
   };
   registerPublicShareRoute(app as unknown as Hono, shareDeps);
+  const calendarDeps = {
+    db, clock, http: ports.http, siteOrigin, access,
+    notFound: { error: "This plan doesn't exist or you don't have access to it." },
+    plan: (planId: string, today: string) => planWithSchedule(planId, today),
+    limited: async (c: Context) => { await ensureReady(); return limited(c, "shareView", clientIp(c.req.raw)); },
+  };
+  registerPublicCalendarRoute(app as unknown as Hono, calendarDeps);
 
   app.use("/api/*", async (c, next) => {
     await ensureReady();
@@ -272,16 +282,8 @@ export function createApp(ports: Ports) {
   registerShareRoutes(app, shareDeps);
 
   // Scheduled jobs (digests, reminders, weekly summaries): run by each host every 15 minutes.
-  const jobDeps: JobDeps = {
-    db, clock, email: orgEmail,
-    plan: async (planId, today) => {
-      const room = await loadRoom(db, planId);
-      if (!room) return null;
-      const ws = await db.first<{ work_week: string }>(`SELECT w.work_week FROM plans p JOIN workspaces w ON w.id = p.workspace_id WHERE p.id = ?`, [planId]);
-      const schedule = await scheduleOf(db, planId, room.plan, { workWeek: parseWorkWeek(ws?.work_week ?? "{}"), today, people: await loadPeople(planId) }, levelPlan);
-      return { plan: room.plan, schedule };
-    },
-  };
+  const jobDeps: JobDeps = { db, clock, http: ports.http, email: orgEmail, plan: (planId, today) => planWithSchedule(planId, today) };
+  registerCalendarRoutes(app, calendarDeps);
   const runScheduled = async (at?: number, only?: JobFilter) => { await ensureReady(); return runJobs(jobDeps, at ?? clock.now(), only); };
   // Tests only: run the jobs now, as if at a given time.
   if (ports.testAuth) app.post("/api/test/run-jobs", async (c) => { const b = await c.req.json<{ at?: number }>().catch(() => ({}) as { at?: number }); return c.json(await runScheduled(typeof b.at === "number" ? b.at : undefined)); });
@@ -329,9 +331,25 @@ export function createApp(ports: Ports) {
   });
 
   /** Availability saved for a plan, by name (what the scheduler and Plan Check use). */
+  /** A plan with its schedule as of a day (jobs, calendar feeds). */
+  async function planWithSchedule(planId: string, today: string) {
+    const room = await loadRoom(db, planId);
+    if (!room) return null;
+    const ws = await db.first<{ work_week: string }>(`SELECT w.work_week FROM plans p JOIN workspaces w ON w.id = p.workspace_id WHERE p.id = ?`, [planId]);
+    const schedule = await scheduleOf(db, planId, room.plan, { workWeek: parseWorkWeek(ws?.work_week ?? "{}"), today, people: await loadPeople(planId) }, levelPlan);
+    return { plan: room.plan, schedule };
+  }
+
   async function loadPeople(planId: string): Promise<Record<string, PersonAvailability>> {
     const rows = await db.all<{ name: string; availability: string }>(`SELECT name, availability FROM plan_people WHERE plan_id = ?`, [planId]);
-    return Object.fromEntries(rows.map((r) => [r.name, JSON.parse(r.availability) as PersonAvailability]));
+    const people: Record<string, PersonAvailability> = Object.fromEntries(rows.map((r) => [r.name, JSON.parse(r.availability) as PersonAvailability]));
+    // Busy hours from people's own connected calendars count as taken (step N3).
+    if (await db.first(`SELECT 1 AS x FROM calendar_sources LIMIT 1`)) {
+      const room = await loadRoom(db, planId);
+      const names = [...new Set([...Object.keys(people), ...(room ? planPeople(room.plan) : [])])];
+      for (const [name, busy] of Object.entries(await busyByName(db, planId, names))) people[name] = { ...(people[name] ?? {}), busy };
+    }
+    return people;
   }
 
   /** Reads and checks a pasted or uploaded plan (shared by preview and save). Nothing is stored. */
@@ -488,13 +506,15 @@ export function createApp(ports: Ports) {
     const m = await db.first<{ role: Role; work_week: string }>(`SELECT m.role, w.work_week FROM members m JOIN workspaces w ON w.id = m.workspace_id WHERE m.user_id = ? AND m.workspace_id = ?`, [user.id, wsId]);
     if (!m) return c.json({ error: "That workspace doesn't exist or you aren't in it." }, 404);
     if (m.role !== "manager") return c.json({ error: "Only workspace managers can change the work week." }, 403);
-    const body = await c.req.json<{ hoursPerWeek?: unknown; workdays?: unknown; dryRun?: unknown }>().catch(() => null);
+    const body = await c.req.json<{ hoursPerWeek?: unknown; workdays?: unknown; holidayCountry?: unknown; dryRun?: unknown }>().catch(() => null);
     const hours = Number(body?.hoursPerWeek);
     const days = Array.isArray(body?.workdays) ? [...new Set((body!.workdays as unknown[]).map(Number))].sort() : [];
     if (!(hours >= 1 && hours <= 60) || Math.round(hours * 2) !== hours * 2 || days.length < 1 || days.some((d) => !Number.isInteger(d) || d < 0 || d > 6)) {
       return c.json({ error: "Use 1 to 60 hours a week (whole or half hours) and at least one working day." }, 400);
     }
-    const next: WorkWeek = { hoursPerWeek: hours, workdays: days };
+    if (body?.holidayCountry !== undefined && body.holidayCountry !== null && !(typeof body.holidayCountry === "string" && HOLIDAY_COUNTRIES[body.holidayCountry])) return c.json({ error: "Choose a country from the list, or none." }, 400);
+    const country = body?.holidayCountry === undefined ? (JSON.parse(m.work_week || "{}") as Partial<WorkWeek>).holidayCountry : (body.holidayCountry as string | null) ?? undefined;
+    const next: WorkWeek = withHolidays({ hoursPerWeek: hours, workdays: days }, country);
     const before = parseWorkWeek(m.work_week);
     const today = clock.today();
     const plans = await db.all<{ id: string }>(`SELECT id FROM plans WHERE workspace_id = ? AND state != 'archived' ORDER BY updated_at DESC LIMIT 200`, [wsId]);
@@ -507,7 +527,8 @@ export function createApp(ports: Ports) {
       const will = levelPlan(room.plan, { workWeek: next, today, people }).finish;
       impact.push({ planId: p.id, title: room.plan.title, before: was, after: will });
     }
-    if (body?.dryRun !== true) await db.run(`UPDATE workspaces SET work_week = ? WHERE id = ?`, [JSON.stringify(next), wsId]);
+    // Only the country is stored; the dates are worked out when read.
+    if (body?.dryRun !== true) await db.run(`UPDATE workspaces SET work_week = ? WHERE id = ?`, [JSON.stringify({ hoursPerWeek: next.hoursPerWeek, workdays: next.workdays, ...(next.holidayCountry ? { holidayCountry: next.holidayCountry } : {}) }), wsId]);
     return c.json({ workWeek: next, saved: body?.dryRun !== true, impact });
   });
 
@@ -944,8 +965,16 @@ function body0(plan: Plan): string {
 function parseWorkWeek(json: string): WorkWeek {
   try {
     const w = JSON.parse(json) as Partial<WorkWeek>;
-    return { hoursPerWeek: Number(w.hoursPerWeek) || DEFAULT_WORK_WEEK.hoursPerWeek, workdays: Array.isArray(w.workdays) && w.workdays.length ? w.workdays.map(Number) : DEFAULT_WORK_WEEK.workdays };
+    const base: WorkWeek = { hoursPerWeek: Number(w.hoursPerWeek) || DEFAULT_WORK_WEEK.hoursPerWeek, workdays: Array.isArray(w.workdays) && w.workdays.length ? w.workdays.map(Number) : DEFAULT_WORK_WEEK.workdays };
+    return withHolidays(base, typeof w.holidayCountry === "string" ? w.holidayCountry : undefined);
   } catch {
     return DEFAULT_WORK_WEEK;
   }
+}
+
+/** A work week with its country's public holidays filled in (last year to three years ahead). */
+function withHolidays(week: WorkWeek, country: string | undefined): WorkWeek {
+  if (!country || !HOLIDAY_COUNTRIES[country]) return { hoursPerWeek: week.hoursPerWeek, workdays: week.workdays };
+  const y = new Date().getUTCFullYear();
+  return { hoursPerWeek: week.hoursPerWeek, workdays: week.workdays, holidayCountry: country, holidays: holidayDates(country, y - 1, y + 3) };
 }
