@@ -6,6 +6,7 @@ import { api } from "../lib/api";
 import { BRAND } from "@rakuplan/shared";
 import { Link, useRouter } from "../lib/router";
 import type { Me } from "../lib/api";
+import { ConsoleIcon, consoles } from "../pages/admin/OrgConsole";
 
 const NAV = [
   { to: "/", label: "Home", Icon: Home },
@@ -26,7 +27,9 @@ export function Shell({ me, onSignOut, onUnread, children }: { me: Me; onSignOut
   const unread = me.unread ?? 0;
   const bellLabel = unread ? `Notifications, ${unread} unread` : "Notifications";
   const badge = unread > 0 && <span className="ml-auto min-w-6 rounded-full bg-amber-300 px-1.5 text-center text-xs font-bold text-slate-900">{unread > 99 ? "99+" : unread}</span>;
-  const manages = me.workspaces.filter((w) => w.role === "manager");
+  // Company workspaces are managed from their company's admin console; personal ones stay here.
+  const manages = me.workspaces.filter((w) => w.role === "manager" && !w.org_id);
+  const orgConsoles = consoles(me);
   const current = (to: string) => (to === "/" ? path === "/" || path.startsWith("/p/") : path.startsWith(to));
   return (
     <div className="min-h-dvh lg:flex">
@@ -45,9 +48,17 @@ export function Shell({ me, onSignOut, onUnread, children }: { me: Me; onSignOut
             </Link>
           ))}
         </nav>
-        {(manages.length > 0 || me.platformAdmin) && (
+        {(manages.length > 0 || orgConsoles.length > 0 || me.platformAdmin) && (
           <nav aria-label="Admin" className="mt-5 flex flex-col gap-1">
             <span className="px-3 pb-1 text-xs font-bold tracking-wide text-slate-400 uppercase">Admin</span>
+            {orgConsoles.map((o) => {
+              const on = path.startsWith(`/admin/org/${o.id}`);
+              return (
+                <Link key={o.id} to={`/admin/org/${o.id}`} aria-current={on ? "page" : undefined} className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium ${on ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5"}`}>
+                  <ConsoleIcon aria-hidden size={18} /> <span className="truncate">{orgConsoles.length > 1 ? o.name : "Admin console"}</span>
+                </Link>
+              );
+            })}
             {manages.flatMap((w) => {
               const on = path.startsWith(`/admin/ai/${w.id}`);
               const spend = on && path.startsWith(`/admin/ai/${w.id}/spending`);

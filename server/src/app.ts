@@ -39,7 +39,8 @@ import { registerStatusUpdateRoutes, updateState } from "./statusUpdates";
 import { registerPrefRoutes } from "./prefs";
 import { raidOpen, registerRaidRoutes } from "./raid";
 import { masterContext, registerMasterRoutes, scheduleOf } from "./masters";
-import { audit, companyOf, isInsider, orgRole, registerOrgRoutes } from "./orgs";
+import { audit, can, companyOf, isInsider, orgRole, registerOrgRoutes, type OrgRole } from "./orgs";
+import { registerOrgPeopleRoutes } from "./orgPeople";
 import { mailSettings, sendEmail } from "./mail";
 import { registerCollabRoutes } from "./comments";
 import { notify, registerNotificationRoutes, unreadCount, userForName } from "./notify";
@@ -205,14 +206,13 @@ export function createApp(ports: Ports) {
   registerPrefRoutes(app, { db, clock });
   registerRaidRoutes(app, { db, clock, access, notFound });
   registerMasterRoutes(app, { db, clock, access, notFound, workWeekOf: aiDeps.workWeekOf });
-  registerOrgRoutes(app, {
-    db, clock, http: ports.http, siteOrigin, notFound,
-    // Invite emails go through the outbox like every email (sent once a mailer is set up).
-    email: async (to, subject, text) => {
-      const settings = mailSettings(config, BRAND.name);
-      await sendEmail(db, clock, settings, ports.mail, { to, subject, text, replyTo: settings.from, headers: {} }, null, null);
-    },
-  });
+  // Company emails (invites, reminders) go through the outbox like every email (sent once a mailer is set up).
+  const orgEmail = async (to: string, subject: string, text: string) => {
+    const settings = mailSettings(config, BRAND.name);
+    await sendEmail(db, clock, settings, ports.mail, { to, subject, text, replyTo: settings.from, headers: {} }, null, null);
+  };
+  registerOrgRoutes(app, { db, clock, http: ports.http, siteOrigin, notFound, email: orgEmail });
+  registerOrgPeopleRoutes(app, { db, clock, siteOrigin, notFound, email: orgEmail });
   registerSafetyCaseRoutes(app, { db, clock, config, ...(ports.mail ? { mail: ports.mail } : {}) });
   registerCollabRoutes(app, {
     db, clock, rooms, access, notFound,
@@ -228,10 +228,14 @@ export function createApp(ports: Ports) {
 
   app.get("/api/me", async (c) => {
     const user = c.get("user");
-    const workspaces = await db.all(`SELECT w.id, w.name, m.role, w.work_week FROM workspaces w JOIN members m ON m.workspace_id = w.id WHERE m.user_id = ? ORDER BY w.created_at`, [user.id]);
+    const workspaces = await db.all(`SELECT w.id, w.name, m.role, w.work_week, w.org_id FROM workspaces w JOIN members m ON m.workspace_id = w.id WHERE m.user_id = ? ORDER BY w.created_at`, [user.id]);
     const platformAdmin = isPlatformAdmin(config, user);
+    // "Last active" for company admins (Licenses reclaims seats unused for 60 days); at most hourly.
+    const now = clock.now();
+    await db.run(`UPDATE org_members SET last_active_at = ? WHERE user_id = ? AND status = 'active' AND (last_active_at IS NULL OR last_active_at < ?)`, [now, user.id, now - 3_600_000]);
+    const orgs = (await db.all<{ id: string; name: string; role: OrgRole }>(`SELECT o.id, o.name, m.role FROM organizations o JOIN org_members m ON m.org_id = o.id WHERE m.user_id = ? AND m.status = 'active' ORDER BY o.name`, [user.id])).map((o) => ({ ...o, console: can.console(o.role) }));
     const safetyOpen = platformAdmin ? Number((await db.first<{ n: number }>(`SELECT COUNT(*) AS n FROM safety_holds WHERE status = 'held'`))?.n ?? 0) : 0;
-    return c.json({ user, platformAdmin, safetyOpen, supportOpen: platformAdmin ? await supportOpen(db) : 0, unread: await unreadCount(db, user.id), workspaces: workspaces.map((w) => ({ ...w, work_week: JSON.parse(String(w.work_week)) })) });
+    return c.json({ user, platformAdmin, safetyOpen, supportOpen: platformAdmin ? await supportOpen(db) : 0, unread: await unreadCount(db, user.id), orgs, workspaces: workspaces.map((w) => ({ ...w, work_week: JSON.parse(String(w.work_week)) })) });
   });
 
   /** Availability saved for a plan, by name (what the scheduler and Plan Check use). */

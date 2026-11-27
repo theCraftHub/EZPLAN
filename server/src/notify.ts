@@ -7,7 +7,7 @@ import { allTasks } from "@rakuplan/shared";
 import type { Clock, Db, User } from "./ports";
 import { loadRoom } from "./room";
 
-export type NoticeKind = "mention" | "comment" | "assigned" | "invited" | "ai-low" | "credit-request" | "credit-answer" | "safety" | "support" | "status";
+export type NoticeKind = "mention" | "comment" | "assigned" | "invited" | "ai-low" | "credit-request" | "credit-answer" | "safety" | "support" | "status" | "company";
 
 export interface Notice { userId: string; planId?: string | null; kind: NoticeKind; text: string; link: string }
 

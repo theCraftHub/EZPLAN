@@ -10,6 +10,7 @@ import type { Clock, Db, HttpFetch, User } from "./ports";
 import { EMAIL_RE, INVITE_DAYS, maskEmail } from "./invites";
 import { randomToken, sha256 } from "./sessions";
 import { notify } from "./notify";
+import { peopleOf, reclaimable } from "./orgPeople";
 
 export const ORG_ROLES = ["owner", "admin", "dept_admin", "helpdesk", "auditor", "member", "guest"] as const;
 export type OrgRole = (typeof ORG_ROLES)[number];
@@ -221,6 +222,24 @@ function cleanPeople(v: unknown): InviteRequest[] | null {
 }
 export const onboardingOf = (org: OrgRow): Onboarding => { try { return JSON.parse(org.onboarding || "{}") as Onboarding; } catch { return {}; } };
 
+/** Numbers for the console's Overview. */
+async function orgStats(db: Db, orgId: string, now: number) {
+  const people = await peopleOf(db, orgId, now);
+  const active = people.filter((p) => p.kind === "person" && p.status === "active");
+  const departments = new Map<string, number>();
+  for (const p of active) departments.set(p.department ?? "", (departments.get(p.department ?? "") ?? 0) + 1);
+  return {
+    active: active.length,
+    invited: people.filter((p) => p.status === "invited").length,
+    expired: people.filter((p) => p.status === "expired").length,
+    deactivated: people.filter((p) => p.status === "deactivated").length,
+    activeThisWeek: active.filter((p) => (p.lastActiveAt ?? 0) >= now - 7 * 86_400_000).length,
+    admins: active.filter((p) => p.role === "owner" || p.role === "admin").length,
+    reclaimable: reclaimable(people, now).length,
+    departments: [...departments].map(([name, people]) => ({ name: name || null, people })).sort((a, b) => b.people - a.people),
+  };
+}
+
 // ---------------------------------------------------------------- routes
 
 export function registerOrgRoutes(app: Hono<{ Variables: { user: User } }>, d: OrgDeps & { email: (to: string, subject: string, text: string) => Promise<void> }) {
@@ -275,7 +294,7 @@ export function registerOrgRoutes(app: Hono<{ Variables: { user: User } }>, d: O
     return c.json({
       id: x.org.id, name: x.org.name, industry: x.org.industry, role: x.role,
       seats: { total: Number(x.org.seats), taken: await seatsTaken(db, x.org.id, now) },
-      workspaces, rules: rulesOf(x.org.settings), onboarding: onboardingOf(x.org),
+      workspaces, rules: rulesOf(x.org.settings), onboarding: onboardingOf(x.org), stats: await orgStats(db, x.org.id, now),
       domains: domains.map((r) => ({ domain: r.domain, record: `${BRAND.name.toLowerCase()}-verify=${r.token}`, verified: !!r.verified_at, verifiedAt: r.verified_at === null ? null : Number(r.verified_at) })),
       can: { settings: can.manageSettings(x.role), seats: can.manageSeats(x.role), people: can.managePeople(x.role), support: can.supportPeople(x.role), audit: can.readAudit(x.role) },
     });

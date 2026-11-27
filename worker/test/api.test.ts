@@ -21,6 +21,7 @@ import { statusContract } from "../../server/test/status.contract";
 import { mastersContract } from "../../server/test/masters.contract";
 import { orgsContract } from "../../server/test/orgs.contract";
 import { onboardingContract } from "../../server/test/onboarding.contract";
+import { consoleContract } from "../../server/test/console.contract";
 import { signInContract } from "../../server/test/signin.contract";
 
 let bundled: Promise<string> | null = null;
@@ -109,3 +110,4 @@ statusContract("cloud (Workers + D1 + Durable Objects)", factory);
 mastersContract("cloud (Workers + D1 + Durable Objects)", factory);
 orgsContract("cloud (Workers + D1 + Durable Objects)", factory);
 onboardingContract("cloud (Workers + D1 + Durable Objects)", factory);
+consoleContract("cloud (Workers + D1 + Durable Objects)", factory);

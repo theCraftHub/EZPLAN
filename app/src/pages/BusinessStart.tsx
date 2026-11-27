@@ -4,13 +4,14 @@
  * Go live. Progress is saved after every step, so setup can be left and picked up from Home.
  * Nothing goes to employees until Go live.
  */
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, Check, ClipboardCopy, FileUp, Trash2 } from "lucide-react";
-import { BRAND, parsePeople, TEMPLATES, templateText, type ParsedPeople } from "@rakuplan/shared";
-import { api, ApiError, type Me, type OnboardingStep, type OrgDetail, type OrgInviteCheck, type OrgInviteRequest, type OrgRole, type PlanSummary, type RulePreset } from "../lib/api";
+import { useEffect, useState, type ReactNode } from "react";
+import { ArrowLeft, Check, ClipboardCopy } from "lucide-react";
+import { BRAND, TEMPLATES, templateText } from "@rakuplan/shared";
+import { api, ApiError, type Me, type OnboardingStep, type OrgDetail, type OrgInviteCheck, type OrgRole, type PlanSummary, type RulePreset } from "../lib/api";
 import { plural } from "../lib/format";
 import { Link, useRouter } from "../lib/router";
 import { Button, Card, Notice, Spinner } from "../ui/kit";
+import { PeopleEditor, ROLE_WORD, usePeopleList } from "../ui/PeopleEditor";
 
 const STEPS: { key: OnboardingStep; label: string; mins: number }[] = [
   { key: "company", label: "Company", mins: 2 },
@@ -24,8 +25,6 @@ const STEP_KEYS = STEPS.map((s) => s.key);
 const INDUSTRIES = ["Construction", "Events", "Marketing", "Software", "Professional services", "Healthcare", "Education", "Manufacturing", "Nonprofit", "Other"];
 const INDUSTRY_TEMPLATE: Record<string, string> = { Construction: "construction", Events: "event", Marketing: "marketing", Software: "launch", Education: "research", Healthcare: "research" };
 const PERSONAL_MAIL = new Set(["gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "live.com", "yahoo.com", "icloud.com", "me.com", "aol.com", "proton.me", "protonmail.com", "example.com"]);
-export const ROLE_WORD: Record<OrgRole, string> = { owner: "Owner", admin: "Admin", dept_admin: "Department admin", helpdesk: "Helpdesk", auditor: "Auditor", member: "Member", guest: "Guest" };
-const GRANTABLE: OrgRole[] = ["member", "admin", "dept_admin", "helpdesk", "auditor", "guest"];
 
 export const RULES: Record<RulePreset, { label: string; hint: string; means: string[] }> = {
   standard: {
@@ -227,103 +226,23 @@ function DomainStep({ me, org, goTo, reload }: StepProps) {
 
 // ---------------------------------------------------------------- 3. people
 
-type Row = OrgInviteRequest & { key: number };
-
 function PeopleStep({ org, goTo }: StepProps) {
-  const [text, setText] = useState("");
-  const [parsed, setParsed] = useState<ParsedPeople | null>(null);
-  const [rows, setRows] = useState<Row[]>(() => (org.onboarding.people ?? []).map((p, i) => ({ ...p, key: i })));
-  const [checks, setChecks] = useState<OrgInviteCheck[] | null>(null);
-  const [seatsLeft, setSeatsLeft] = useState<number | null>(null);
-  const [dirty, setDirty] = useState(false);
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const nextKey = useRef(1000);
-  const file = useRef<HTMLInputElement>(null);
-
-  const check = async (list: Row[]) => {
-    setError("");
-    if (!list.length) { setChecks(null); setDirty(false); return; }
-    setBusy(true);
-    try {
-      const r = await api.checkPeople(org.id, list.map(({ key: _k, ...p }) => p));
-      setChecks(r.rows);
-      setSeatsLeft(r.seatsLeft);
-      setDirty(false);
-    } catch (e) { setError(message(e, "Couldn't check the list. Try again.")); } finally { setBusy(false); }
-  };
-  useEffect(() => { if (rows.length) void check(rows); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const read = (source: string) => {
-    const p = parsePeople(source);
-    setParsed(p);
-    const byName = new Map(org.workspaces.map((w) => [w.name.toLowerCase(), w.id]));
-    const added: Row[] = p.rows.map((r) => ({
-      key: nextKey.current++, email: r.email,
-      ...(r.name ? { name: r.name } : {}), ...(r.department ? { department: r.department } : {}),
-      ...(r.role && r.role !== "owner" ? { role: r.role as OrgRole } : {}),
-      ...(r.workspace && byName.get(r.workspace.toLowerCase()) ? { workspaceId: byName.get(r.workspace.toLowerCase())! } : {}),
-    }));
-    const all = [...rows, ...added];
-    setRows(all);
-    setText("");
-    void check(all);
-  };
-  const edit = (key: number, patch: Partial<Row>) => { setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r))); setDirty(true); };
-  const remove = (key: number) => { const next = rows.filter((r) => r.key !== key); setRows(next); void check(next); };
-  const ready = checks?.filter((c) => c.ok).length ?? 0;
-
+  const { list, view } = usePeopleList(org, org.onboarding.people ?? []);
   return (
     <Frame
       step="people" kicker="BRING YOUR PEOPLE" title="Who should join?"
       lead="Paste names and email addresses, or upload a spreadsheet. We check every row and show you the result before anyone is added."
-      error={error}
-      back={() => void goTo("domain", { people: rows.map(({ key: _k, ...p }) => p) })}
-      nextLabel={rows.length ? "Continue" : "Skip, add people later"}
-      nextDisabled={busy || dirty}
-      next={() => goTo("rules", { people: rows.map(({ key: _k, ...p }) => p) })}
+      back={() => void goTo("domain", { people: list.requests })}
+      nextLabel={list.rows.length ? "Continue" : "Skip, add people later"}
+      nextDisabled={list.busy || list.dirty}
+      next={() => goTo("rules", { people: list.requests })}
     >
-      <label className="flex flex-col gap-1.5 text-sm font-semibold">Paste names and emails, one person per line
-        <textarea value={text} onChange={(e) => setText(e.target.value)} rows={4} placeholder={"Ivan Petrov <ivan@northfield.com>\nmei@northfield.com"} className="rounded-xl border border-line bg-surface p-3 font-mono text-[14px] leading-relaxed font-normal" />
-      </label>
-      <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" disabled={!text.trim() || busy} onClick={() => read(text)}>Check the list</Button>
-        <Button variant="secondary" onClick={() => file.current?.click()}><FileUp aria-hidden size={18} /> Upload a spreadsheet (CSV)</Button>
-        <input ref={file} type="file" accept=".csv,.tsv,.txt,text/csv" className="hidden" aria-label="Spreadsheet file" onChange={(e) => { const f = e.target.files?.[0]; if (f) void f.text().then(read); e.target.value = ""; }} />
-      </div>
-      {parsed?.columns && <p className="m-0 text-sm text-ink-2">Columns matched: {Object.entries(parsed.columns).map(([k, v]) => `${COLUMN_WORD[k] ?? k} from “${v}”`).join(", ")}.</p>}
-      {parsed && parsed.skipped.length > 0 && <Notice tone="warn">{parsed.skipped.map((s) => `Line ${s.line} has no email address (“${s.text.slice(0, 60)}”)`).join(". ")}. Those lines were left out.</Notice>}
-
-      {rows.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <p className="m-0 text-[15px] font-semibold" role="status">{busy ? "Checking…" : checks ? `${plural(ready, "person", "people")} ready${checks.length - ready ? `, ${checks.length - ready} to fix` : ""}${seatsLeft !== null ? ` · ${plural(Math.max(0, seatsLeft), "seat")} left after these` : ""}` : ""}</p>
-          <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-label="People to invite">
-            {rows.map((r, i) => {
-              const c = !dirty ? checks?.[i] : undefined;
-              return (
-                <li key={r.key} className={`flex flex-col gap-2 rounded-xl p-3 ring-1 ${c && !c.ok ? "bg-warn-soft/40 ring-warn/40" : "bg-surface ring-line"}`} aria-label={r.name || r.email}>
-                  <div className="grid gap-2 sm:grid-cols-[1fr_1.3fr_auto_auto]">
-                    <input aria-label="Name" value={r.name ?? ""} onChange={(e) => edit(r.key, { name: e.target.value })} placeholder="Name" className={`${input} min-w-0`} />
-                    <input aria-label="Email" value={r.email} onChange={(e) => edit(r.key, { email: e.target.value })} className={`${input} min-w-0`} />
-                    <select aria-label="Role" value={r.role ?? "member"} onChange={(e) => edit(r.key, { role: e.target.value as OrgRole })} className={input}>{GRANTABLE.map((g) => <option key={g} value={g}>{ROLE_WORD[g]}</option>)}</select>
-                    <Button variant="ghost" onClick={() => remove(r.key)} aria-label={`Remove ${r.name || r.email}`}><Trash2 aria-hidden size={18} /></Button>
-                  </div>
-                  <span className={`text-sm font-semibold ${c ? (c.ok ? "text-good" : "text-warn") : "text-muted"}`}>
-                    {c ? (c.ok ? `✓ Ready${r.department ? ` · ${r.department}` : ""}` : c.problem) : dirty ? "Changed: check again" : ""}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-          {dirty && <Button variant="secondary" className="self-start" onClick={() => void check(rows)} disabled={busy}>Check again</Button>}
-        </div>
-      )}
+      <PeopleEditor view={view} />
       <Note title="A second admin (recommended)">So someone can still manage people when you're away, set one person's role to Admin.</Note>
       <Note title="Nobody is emailed yet">Invites go out only when you press Go live, at the end.</Note>
     </Frame>
   );
 }
-const COLUMN_WORD: Record<string, string> = { email: "Email", name: "Name", first: "First name", last: "Last name", department: "Department", role: "Role", workspace: "Workspace" };
 
 // ---------------------------------------------------------------- 4. rules
 

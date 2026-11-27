@@ -16,12 +16,14 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export interface Me {
   user: { id: string; name: string; email: string };
-  workspaces: { id: string; name: string; role: "manager" | "editor" | "viewer"; work_week: WorkWeek }[];
+  workspaces: { id: string; name: string; role: "manager" | "editor" | "viewer"; work_week: WorkWeek; org_id?: string | null }[];
   /** On the owner's team (PLATFORM_ADMINS): sees the safety review queue. */
   platformAdmin?: boolean;
   safetyOpen?: number;
   unread?: number;
   supportOpen?: number;
+  /** Companies I'm in; `console` when my role opens the admin console. */
+  orgs?: { id: string; name: string; role: OrgRole; console: boolean }[];
 }
 
 export interface SupportContact { team: string; email: string | null; phone: string | null; url: string | null; hours: string | null; note: string | null; route: "direct" | "it_only" }
@@ -242,6 +244,14 @@ export const api = {
   addDomain: (id: string, domain: string) => call<{ domain: string; record: string }>(`/api/orgs/${encodeURIComponent(id)}/domains`, { method: "POST", body: JSON.stringify({ domain }) }),
   checkDomain: (id: string, domain: string) => call<{ verified: boolean; reason?: string }>(`/api/orgs/${encodeURIComponent(id)}/domains/${encodeURIComponent(domain)}/check`, { method: "POST", body: "{}" }),
   checkPeople: (id: string, people: OrgInviteRequest[]) => call<{ rows: OrgInviteCheck[]; seatsLeft: number; willInvite: number; skipped: number }>(`/api/orgs/${encodeURIComponent(id)}/invites`, { method: "POST", body: JSON.stringify({ people, dryRun: true }) }),
+  orgPeople: (id: string) => call<{ people: OrgPerson[]; reclaimable: string[]; inactiveDays: number }>(`/api/orgs/${encodeURIComponent(id)}/people`),
+  bulkPeople: (id: string, action: BulkAction, ids: string[], value: string | undefined, dryRun: boolean) => call<BulkResult>(`/api/orgs/${encodeURIComponent(id)}/people/bulk`, { method: "POST", body: JSON.stringify({ action, ids, value, dryRun }) }),
+  undoBulk: (id: string, batch: string) => call<{ ok: true; restored: number }>(`/api/orgs/${encodeURIComponent(id)}/undo/${encodeURIComponent(batch)}`, { method: "POST", body: "{}" }),
+  orgPerson: (id: string, userId: string) => call<{ person: OrgPerson; plans: { id: string; title: string }[]; sessions: number; activity: { at: number; actor: string; action: string; target: string }[] }>(`/api/orgs/${encodeURIComponent(id)}/people/${encodeURIComponent(userId)}`),
+  signOutPerson: (id: string, userId: string) => call<{ ended: number }>(`/api/orgs/${encodeURIComponent(id)}/people/${encodeURIComponent(userId)}/signout`, { method: "POST", body: "{}" }),
+  addWorkspace: (id: string, name: string) => call<{ id: string; name: string }>(`/api/orgs/${encodeURIComponent(id)}/workspaces`, { method: "POST", body: JSON.stringify({ name }) }),
+  invitePeople: (id: string, people: OrgInviteRequest[]) => call<{ invited: { email: string; link: string; role: OrgRole }[]; skipped: OrgInviteCheck[] }>(`/api/orgs/${encodeURIComponent(id)}/invites`, { method: "POST", body: JSON.stringify({ people }) }),
+  setSeats: (id: string, seats: number) => call<{ ok: true }>(`/api/orgs/${encodeURIComponent(id)}/seats`, { method: "PUT", body: JSON.stringify({ seats }) }),
   goLive: (id: string, dryRun: boolean) => call<{ willInvite?: OrgInviteCheck[]; invited?: { email: string; name: string | null; role: string; link: string }[]; skipped: OrgInviteCheck[] }>(`/api/orgs/${encodeURIComponent(id)}/golive`, { method: "POST", body: JSON.stringify({ dryRun }) }),
   joinInfo: (token: string) => call<{ org: string | null; inviter: string; role: string; email: string; problem: string | null; accepted: boolean }>(`/api/join/${encodeURIComponent(token)}`),
   acceptJoin: (token: string) => call<{ orgId: string }>(`/api/join/${encodeURIComponent(token)}/accept`, { method: "POST", body: "{}" }),
@@ -310,5 +320,18 @@ export interface OrgDetail {
   workspaces: { id: string; name: string }[];
   rules: OrgRules; onboarding: Onboarding;
   domains: { domain: string; record: string; verified: boolean; verifiedAt: number | null }[];
+  stats: { active: number; invited: number; expired: number; deactivated: number; activeThisWeek: number; admins: number; reclaimable: number; departments: { name: string | null; people: number }[] };
   can: { settings: boolean; seats: boolean; people: boolean; support: boolean; audit: boolean };
+}
+export interface OrgPerson {
+  id: string; kind: "person" | "invite"; name: string; email: string; role: OrgRole;
+  status: "active" | "invited" | "expired" | "deactivated";
+  department: string | null; workspaces: string[]; source: string;
+  joinedAt: number | null; lastActiveAt: number | null; seat: boolean;
+}
+export type BulkAction = "role" | "department" | "workspace" | "deactivate" | "reactivate" | "resend" | "cancel";
+export interface BulkResult {
+  changes: { id: string; name: string; email: string; from: string; to: string }[];
+  skipped: { id: string; name: string; email: string; reason: string }[];
+  undoId?: string | null; undoUntil?: number | null; links?: { email: string; link: string }[];
 }

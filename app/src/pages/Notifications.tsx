@@ -1,12 +1,12 @@
 /** Your notifications, newest unread first, plus your tasks that are overdue or due soon. */
 import { useEffect, useState } from "react";
-import { AtSign, Bell, CalendarClock, LifeBuoy, MessageCircle, ShieldAlert, Sparkles, UserPlus, UserRoundCheck } from "lucide-react";
+import { AtSign, Bell, Building2, CalendarClock, LifeBuoy, MessageCircle, ShieldAlert, Sparkles, UserPlus, UserRoundCheck } from "lucide-react";
 import { api, type Notifications as Data } from "../lib/api";
 import { shortDate } from "../lib/format";
 import { Link, useRouter } from "../lib/router";
 import { Button, Card, Notice, PageTitle, Spinner } from "../ui/kit";
 
-const ICON: Record<string, typeof Bell> = { mention: AtSign, comment: MessageCircle, assigned: UserRoundCheck, invited: UserPlus, "ai-low": Sparkles, "credit-request": Sparkles, "credit-answer": Sparkles, safety: ShieldAlert, support: LifeBuoy };
+const ICON: Record<string, typeof Bell> = { mention: AtSign, comment: MessageCircle, assigned: UserRoundCheck, invited: UserPlus, "ai-low": Sparkles, "credit-request": Sparkles, "credit-answer": Sparkles, safety: ShieldAlert, support: LifeBuoy, company: Building2 };
 const when = (ms: number) => new Date(ms).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 export function NotificationsPage({ onUnread }: { onUnread: (n: number) => void }) {

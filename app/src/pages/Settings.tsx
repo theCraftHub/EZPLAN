@@ -2,6 +2,8 @@ import { useState } from "react";
 import { LogOut, MonitorSmartphone } from "lucide-react";
 import { ApiError, type Me } from "../lib/api";
 import { Button, Card, Notice, PageTitle } from "../ui/kit";
+import { ConsoleIcon, consoles } from "./admin/OrgConsole";
+import { Link } from "../lib/router";
 import { WorkWeekCard } from "./WorkWeek";
 import { AiUsageCard } from "./AiUsage";
 import { AdminLinks } from "./Safety";
@@ -18,6 +20,12 @@ export function Settings({ me, onSignOut, onMe }: { me: Me; onSignOut: () => voi
   return (
     <>
       <PageTitle title="Settings" />
+      {consoles(me).length > 0 && (
+        <Card aria-label="Admin console" className="flex flex-col gap-2">
+          <h2 className="m-0 text-lg font-bold">Admin console</h2>
+          {consoles(me).map((o) => <Link key={o.id} to={`/admin/org/${o.id}`} className="flex min-h-11 items-center gap-2 text-[15px] font-semibold text-primary-ink underline"><ConsoleIcon aria-hidden size={18} /> {o.name}</Link>)}
+        </Card>
+      )}
       {msg && <Notice tone={msg.tone}>{msg.text}</Notice>}
       <AiUsageCard me={me} />
       <AdminLinks manages={me.workspaces.filter((w) => w.role === "manager")} platformAdmin={!!me.platformAdmin} safetyOpen={me.safetyOpen ?? 0} supportOpen={me.supportOpen ?? 0} />
