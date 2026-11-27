@@ -80,7 +80,7 @@ export interface BulkDeps { db: Db; clock: Clock; siteOrigin: string; email: (to
 const statusWord = (p: PersonEntry) => ({ active: "Active", invited: "Invited", expired: "Invite expired", deactivated: "Deactivated" })[p.status];
 
 /** Works out what one bulk action would do to each chosen entry; changes nothing. */
-async function plan(db: Db, now: number, orgId: string, actor: User, actorRole: OrgRole, action: BulkAction, ids: string[], value: string | undefined) {
+export async function planBulk(db: Db, now: number, orgId: string, actor: User, actorRole: OrgRole, action: BulkAction, ids: string[], value: string | undefined) {
   const org = (await orgOf(db, orgId))!;
   const people = await peopleOf(db, orgId, now);
   const byId = new Map(people.map((p) => [p.id, p]));
@@ -206,7 +206,7 @@ export function registerOrgPeopleRoutes(app: Hono<{ Variables: { user: User } }>
     const value = typeof b?.value === "string" ? b.value : undefined;
     if (action === "role" && !(ORG_ROLES as readonly string[]).includes(value ?? "")) return c.json({ error: "Choose a role." }, 400);
     const now = clock.now();
-    const p = await plan(db, now, x.org.id, user, x.role, action, ids, value);
+    const p = await planBulk(db, now, x.org.id, user, x.role, action, ids, value);
     if (b?.dryRun === true) return c.json({ dryRun: true, changes: p.changes, skipped: p.skipped });
     if (!p.changes.length) return c.json({ changes: [], skipped: p.skipped, undoId: null, links: [] });
 

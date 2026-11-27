@@ -41,6 +41,7 @@ import { raidOpen, registerRaidRoutes } from "./raid";
 import { masterContext, registerMasterRoutes, scheduleOf } from "./masters";
 import { audit, can, companyOf, isInsider, orgRole, registerOrgRoutes, type OrgRole } from "./orgs";
 import { registerOrgPeopleRoutes } from "./orgPeople";
+import { registerOffboardRoutes } from "./orgOffboard";
 import { mailSettings, sendEmail } from "./mail";
 import { registerCollabRoutes } from "./comments";
 import { notify, registerNotificationRoutes, unreadCount, userForName } from "./notify";
@@ -213,6 +214,7 @@ export function createApp(ports: Ports) {
   };
   registerOrgRoutes(app, { db, clock, http: ports.http, siteOrigin, notFound, email: orgEmail });
   registerOrgPeopleRoutes(app, { db, clock, siteOrigin, notFound, email: orgEmail });
+  registerOffboardRoutes(app, { db, clock, rooms, notFound });
   registerSafetyCaseRoutes(app, { db, clock, config, ...(ports.mail ? { mail: ports.mail } : {}) });
   registerCollabRoutes(app, {
     db, clock, rooms, access, notFound,

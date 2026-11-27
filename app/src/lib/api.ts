@@ -251,6 +251,11 @@ export const api = {
   signOutPerson: (id: string, userId: string) => call<{ ended: number }>(`/api/orgs/${encodeURIComponent(id)}/people/${encodeURIComponent(userId)}/signout`, { method: "POST", body: "{}" }),
   addWorkspace: (id: string, name: string) => call<{ id: string; name: string }>(`/api/orgs/${encodeURIComponent(id)}/workspaces`, { method: "POST", body: JSON.stringify({ name }) }),
   invitePeople: (id: string, people: OrgInviteRequest[]) => call<{ invited: { email: string; link: string; role: OrgRole }[]; skipped: OrgInviteCheck[] }>(`/api/orgs/${encodeURIComponent(id)}/invites`, { method: "POST", body: JSON.stringify({ people }) }),
+  offboard: (id: string, userId: string, body: { dryRun?: boolean; transferTo?: string; planOwners?: Record<string, string> }) => call<OffboardSummary>(`/api/orgs/${encodeURIComponent(id)}/offboard/${encodeURIComponent(userId)}`, { method: "POST", body: JSON.stringify(body) }),
+  orphans: (id: string) => call<{ plans: { id: string; title: string; workspace: string; maker: string | null }[]; recipients: { id: string; name: string }[] }>(`/api/orgs/${encodeURIComponent(id)}/orphans`),
+  setPlanOwner: (id: string, planId: string, userId: string) => call<{ ok: true }>(`/api/orgs/${encodeURIComponent(id)}/plans/${encodeURIComponent(planId)}/owner`, { method: "POST", body: JSON.stringify({ userId }) }),
+  rulesPreview: (id: string, preset: RulePreset) => call<{ before: OrgRules; after: OrgRules; guestsNow: number; inviters: { before: number; after: number }; exporters: { before: number; after: number } }>(`/api/orgs/${encodeURIComponent(id)}/settings/preview?preset=${preset}`),
+  audit: (id: string, q: string, action: string) => call<{ items: { seq: number; at: number; actor: string; action: string; target: string; detail: Record<string, unknown> }[]; total: number; intact: boolean; brokenAt: number | null; actions: string[] }>(`/api/orgs/${encodeURIComponent(id)}/audit?q=${encodeURIComponent(q)}&action=${encodeURIComponent(action)}`),
   setSeats: (id: string, seats: number) => call<{ ok: true }>(`/api/orgs/${encodeURIComponent(id)}/seats`, { method: "PUT", body: JSON.stringify({ seats }) }),
   goLive: (id: string, dryRun: boolean) => call<{ willInvite?: OrgInviteCheck[]; invited?: { email: string; name: string | null; role: string; link: string }[]; skipped: OrgInviteCheck[] }>(`/api/orgs/${encodeURIComponent(id)}/golive`, { method: "POST", body: JSON.stringify({ dryRun }) }),
   joinInfo: (token: string) => call<{ org: string | null; inviter: string; role: string; email: string; problem: string | null; accepted: boolean }>(`/api/join/${encodeURIComponent(token)}`),
@@ -334,4 +339,12 @@ export interface BulkResult {
   changes: { id: string; name: string; email: string; from: string; to: string }[];
   skipped: { id: string; name: string; email: string; reason: string }[];
   undoId?: string | null; undoUntil?: number | null; links?: { email: string; link: string }[];
+}
+export interface OffboardSummary {
+  dryRun?: boolean; done?: boolean;
+  person: { id: string; name: string; email: string; status: string };
+  sessions: number; invites: number;
+  plans: { id: string; title: string }[];
+  tasks: { planId: string; title: string; count: number }[];
+  recipients: { id: string; name: string }[];
 }

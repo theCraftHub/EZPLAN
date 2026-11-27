@@ -5,15 +5,16 @@
  * same paste/CSV check as onboarding) and Licenses (seats; freeing seats unused for 60 days).
  */
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Check, ClipboardCopy, LayoutGrid, Menu, RotateCcw, X } from "lucide-react";
+import { Check, ClipboardCopy, LayoutGrid, Menu, RotateCcw, Search, X } from "lucide-react";
 import { BRAND } from "@rakuplan/shared";
 import { api, ApiError, type BulkAction, type BulkResult, type Me, type OrgDetail, type OrgPerson, type OrgRole } from "../../lib/api";
 import { plural, shortDate } from "../../lib/format";
 import { Link, useRouter } from "../../lib/router";
 import { Button, Card, Notice, PageTitle, Spinner } from "../../ui/kit";
 import { PeopleEditor, ROLE_WORD, usePeopleList } from "../../ui/PeopleEditor";
+import { AuditLog, CommandBar, Domains, Offboarding, Rules } from "./ConsoleMore";
 
-const SECTIONS = ["overview", "people", "add", "licenses"] as const;
+const SECTIONS = ["overview", "people", "add", "offboard", "licenses", "rules", "domains", "audit"] as const;
 type Section = (typeof SECTIONS)[number];
 const DAY = 86_400_000;
 const input = "min-h-11 rounded-xl border border-line bg-surface px-3 text-base font-normal";
@@ -27,7 +28,14 @@ export function lastActive(at: number | null, now = Date.now()): string {
 }
 
 export function OrgConsole({ me, orgId, section }: { me: Me; orgId: string; section: string }) {
-  const { go } = useRouter();
+  const { go, path } = useRouter();
+  const [bar, setBar] = useState(false);
+  // Ctrl+K (Cmd+K on a Mac) opens the command bar anywhere in the console.
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setBar(true); } };
+    addEventListener("keydown", key);
+    return () => removeEventListener("keydown", key);
+  }, []);
   const [org, setOrg] = useState<OrgDetail | null>(null);
   const [people, setPeople] = useState<{ people: OrgPerson[]; reclaimable: string[]; inactiveDays: number } | null>(null);
   const [error, setError] = useState("");
@@ -44,16 +52,20 @@ export function OrgConsole({ me, orgId, section }: { me: Me; orgId: string; sect
   if (error) return <Notice tone="bad">{error}</Notice>;
   if (!org || !people) return <Spinner label="Loading the admin console" />;
 
-  const titles: Record<Section, string> = { overview: "Overview", people: "People", add: "Add people", licenses: "Licenses" };
+  const titles: Record<Section, string> = { overview: "Overview", people: "People", add: "Add people", offboard: "Offboarding", licenses: "Licenses", rules: "Rules", domains: "Domains", audit: "Audit log" };
   const managedWs = me.workspaces.filter((w) => w.org_id === org.id && w.role === "manager");
   const groups: { heading: string; items: { to: string; label: string; cur: boolean; badge?: number }[] }[] = [
     { heading: "Manage", items: [
       { to: `/admin/org/${org.id}`, label: "Overview", cur: at === "overview" },
       { to: `/admin/org/${org.id}/people`, label: "People", cur: at === "people", ...(org.stats.invited ? { badge: org.stats.invited } : {}) },
       ...(org.can.people ? [{ to: `/admin/org/${org.id}/add`, label: "Add people", cur: at === "add" }] : []),
+      { to: `/admin/org/${org.id}/offboard`, label: "Offboarding", cur: at === "offboard" },
     ] },
     { heading: "Security and billing", items: [
       ...(!org.onboarding.done && org.can.settings ? [{ to: `/business/${org.id}`, label: "Finish setup", cur: false }] : []),
+      { to: `/admin/org/${org.id}/rules`, label: "Rules", cur: at === "rules" },
+      { to: `/admin/org/${org.id}/domains`, label: "Domains", cur: at === "domains" },
+      ...(org.can.audit ? [{ to: `/admin/org/${org.id}/audit`, label: "Audit log", cur: at === "audit" }] : []),
       { to: `/admin/org/${org.id}/licenses`, label: "Licenses", cur: at === "licenses", ...(org.stats.reclaimable ? { badge: org.stats.reclaimable } : {}) },
       ...managedWs.flatMap((w) => [
         { to: `/admin/ai/${w.id}`, label: `AI credits${managedWs.length > 1 ? ` · ${w.name}` : ""}`, cur: false },
@@ -82,7 +94,10 @@ export function OrgConsole({ me, orgId, section }: { me: Me; orgId: string; sect
       <PageTitle
         title={titles[at]}
         sub={`${org.name} · admin console · you're ${ROLE_WORD[org.role]}`}
-        actions={<Button variant="secondary" className="lg:hidden" onClick={() => setMenu(true)} aria-haspopup="dialog"><Menu aria-hidden size={18} /> Sections</Button>}
+        actions={<>
+          <Button variant="secondary" onClick={() => setBar(true)} aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K"><Search aria-hidden size={18} /> Search<kbd className="hidden rounded border border-line px-1.5 text-xs text-muted sm:inline">{/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K"}</kbd></Button>
+          <Button variant="secondary" className="lg:hidden" onClick={() => setMenu(true)} aria-haspopup="dialog"><Menu aria-hidden size={18} /> Sections</Button>
+        </>}
       />
       {menu && (
         <div className="fixed inset-0 z-40 flex items-end bg-black/40 lg:hidden" onClick={() => setMenu(false)}>
@@ -94,13 +109,18 @@ export function OrgConsole({ me, orgId, section }: { me: Me; orgId: string; sect
       )}
       <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
         <aside className="hidden lg:block">{panel}</aside>
-        <div className="flex min-w-0 flex-col gap-4">
+        <div key={path} className="flex min-w-0 flex-col gap-4">
           {at === "overview" && <Overview org={org} people={people.people} reload={reload} />}
           {at === "people" && <People org={org} people={people.people} reclaimable={people.reclaimable} reload={reload} />}
           {at === "add" && <AddPeople org={org} reload={reload} done={() => go(`/admin/org/${org.id}/people`)} />}
+          {at === "offboard" && <Offboarding org={org} people={people.people} me={me.user.id} reload={reload} />}
+          {at === "rules" && <Rules org={org} reload={reload} />}
+          {at === "domains" && <Domains org={org} reload={reload} />}
+          {at === "audit" && <AuditLog org={org} />}
           {at === "licenses" && <Licenses org={org} people={people.people} reclaimable={people.reclaimable} inactiveDays={people.inactiveDays} reload={reload} />}
         </div>
       </div>
+      {bar && <CommandBar org={org} people={people.people} sections={groups.flatMap((g) => g.items.map((i) => ({ label: i.label, to: i.to })))} onClose={() => setBar(false)} />}
     </>
   );
 }
@@ -303,7 +323,7 @@ function People({ org, people, reclaimable, reload }: { org: OrgDetail; people: 
   const [value, setValue] = useState("");
   const [running, setRunning] = useState<{ action: BulkAction; ids: string[]; value?: string } | null>(null);
   const [result, setResult] = useState<BulkResult | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(() => new URLSearchParams(location.search).get("person"));
   const ws = new Map(org.workspaces.map((w) => [w.id, w.name]));
   const departments = [...new Set(people.map((p) => p.department).filter((d): d is string => !!d))].sort();
   const idle = new Set(reclaimable);
@@ -435,7 +455,7 @@ function PersonPanel({ org, userId, onClose, onChanged }: { org: OrgDetail; user
             )}
             {org.can.people && (
               <div className="flex flex-wrap gap-2">
-                {p.status === "active" ? <Button variant="danger" onClick={() => setRun("deactivate")}>Deactivate…</Button> : <Button variant="secondary" onClick={() => setRun("reactivate")}>Reactivate…</Button>}
+                {p.status === "active" ? <><Link to={`/admin/org/${org.id}/offboard?person=${encodeURIComponent(p.id)}`} className="inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-[15px] font-semibold hover:bg-surface-2">Offboard…</Link><Button variant="danger" onClick={() => setRun("deactivate")}>Deactivate only…</Button></> : <Button variant="secondary" onClick={() => setRun("reactivate")}>Reactivate…</Button>}
               </div>
             )}
             {run && <BulkRun org={org} action={run} ids={[p.id]} onDone={onChanged} onCancel={() => setRun(null)} />}

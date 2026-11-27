@@ -58,3 +58,32 @@ test("big plan: open, switch views, edit", async ({ page }) => {
   console.log(`${test.info().project.name} team DOM nodes: ${dom}`);
   expect(dom).toBeLessThan(8000);
 });
+
+test("admin console People with 1,000 people: open, filter, select all, preview", async ({ page }, info) => {
+  test.setTimeout(180_000);
+  await signIn(page, "Dana Reyes");
+  const org = (await (await page.request.post("/api/orgs", { data: { name: `Big Co ${info.project.name}${Date.now() % 100000}`, people: 1001 } })).json()) as { id: string };
+  const people = Array.from({ length: 1000 }, (_, i) => ({ email: `person${i}@bigco.example`, name: `Person ${String(i).padStart(4, "0")}`, department: ["Field Ops", "Office", "Estimating", "Safety"][i % 4] }));
+  const sent = await page.request.post(`/api/orgs/${org.id}/invites`, { data: { people }, timeout: 120_000 });
+  expect(sent.status(), await sent.text()).toBe(201);
+  const time = async (label: string, fn: () => Promise<void>, budget = 1500) => {
+    const t0 = Date.now();
+    await fn();
+    const ms = Date.now() - t0;
+    console.log(`${info.project.name} ${label}: ${ms} ms`);
+    expect(ms, `${label} within ${budget} ms`).toBeLessThan(budget);
+  };
+  await time("open People (1,001)", async () => { await page.goto(`/admin/org/${org.id}/people`); await page.getByText("Showing 1001 people").waitFor(); }, 2500);
+  await time("filter by department", async () => { await page.getByRole("button", { name: "Office", exact: true }).click(); await page.getByText("Showing 250 people of 1001").waitFor(); });
+  await time("search", async () => { await page.getByLabel("Search").fill("Person 09"); await page.getByText(/^Showing 2[05] people of 1001$/).waitFor(); });
+  await page.getByLabel("Search").fill("");
+  await page.getByRole("button", { name: "All", exact: true }).click();
+  await time("select all", async () => { await page.getByLabel("Select everyone shown").check(); await page.getByText("1001 people selected").waitFor(); });
+  await time("preview a change for everyone", async () => {
+    const bar = page.getByRole("region", { name: "Change selected people" });
+    await bar.getByLabel("Change", { exact: true }).selectOption("department");
+    await bar.getByLabel("Department").fill("Everyone");
+    await bar.getByRole("button", { name: "Preview" }).click();
+    await bar.getByText("1001 people will change").waitFor();
+  }, 3000);
+});

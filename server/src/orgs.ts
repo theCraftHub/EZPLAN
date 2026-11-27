@@ -486,6 +486,7 @@ export function registerOrgRoutes(app: Hono<{ Variables: { user: User } }>, d: O
       return new Response(csv, { headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="audit-log.csv"` } });
     }
     const broken = await auditBreak(db, x.org.id);
-    return c.json({ items: items.slice(0, 500), total: items.length, intact: broken === null, brokenAt: broken });
+    const actions = (await db.all<{ action: string }>(`SELECT DISTINCT action FROM audit_log WHERE org_id = ? ORDER BY action`, [x.org.id])).map((r) => r.action);
+    return c.json({ items: items.slice(0, 500), total: items.length, intact: broken === null, brokenAt: broken, actions });
   });
 }
