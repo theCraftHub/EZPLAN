@@ -59,6 +59,7 @@ export function registerOpsRoutes(app: Hono<{ Variables: { user: User } }>, d: {
     const errors = await db.all<{ at: number; method: string; route: string; name: string; message: string }>(`SELECT at, method, route, name, message FROM server_errors ORDER BY at DESC LIMIT 50`);
     const byRoute = await db.all<{ route: string; method: string; n: number; last: number }>(`SELECT route, method, COUNT(*) AS n, MAX(at) AS last FROM server_errors WHERE at >= ? GROUP BY route, method ORDER BY n DESC LIMIT 20`, [now - 7 * DAY]);
     const events = await db.all<{ kind: string; count: number }>(`SELECT kind, count FROM ops_events WHERE day = ?`, [today]);
+    const jobs = (await db.all<{ name: string; last_run: number; last_ok: number | null; last_error: string | null; runs: number }>(`SELECT * FROM job_runs ORDER BY name`)).map((j) => ({ name: j.name, lastRun: Number(j.last_run), lastOk: j.last_ok === null ? null : Number(j.last_ok), lastError: j.last_error, runs: Number(j.runs) }));
     return c.json({
       at: now,
       people: {
@@ -83,6 +84,7 @@ export function registerOpsRoutes(app: Hono<{ Variables: { user: User } }>, d: {
       },
       queues: { safety: await n(db, `SELECT COUNT(*) AS n FROM safety_holds WHERE status = 'held'`), support: await supportOpen(db) },
       limits: { refusedToday: events.filter((e) => e.kind.startsWith("rate:")).reduce((s, e) => s + Number(e.count), 0), byRule: Object.fromEntries(events.filter((e) => e.kind.startsWith("rate:")).map((e) => [e.kind.slice(5), Number(e.count)])) },
+      jobs,
       database: { migrations: applied.length, latest: applied.at(-1) ?? 0, expected: MIGRATIONS.length, upToDate: applied.length === MIGRATIONS.length },
       errors: {
         last24h: await n(db, `SELECT COUNT(*) AS n FROM server_errors WHERE at >= ?`, [now - DAY]),

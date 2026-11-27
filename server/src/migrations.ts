@@ -232,6 +232,15 @@ export const MIGRATIONS: Migration[] = [
       `CREATE INDEX share_links_plan ON share_links(plan_id)`,
     ],
   },
+  {
+    id: 22,
+    name: "scheduled jobs: what was sent (so nothing is sent twice), job runs, plans people follow",
+    statements: [
+      `CREATE TABLE sent_log (key TEXT PRIMARY KEY, at INTEGER NOT NULL)`,
+      `CREATE TABLE job_runs (name TEXT PRIMARY KEY, last_run INTEGER NOT NULL, last_ok INTEGER, last_error TEXT, runs INTEGER NOT NULL)`,
+      `CREATE TABLE plan_follows (plan_id TEXT NOT NULL REFERENCES plans(id), user_id TEXT NOT NULL REFERENCES users(id), created_at INTEGER NOT NULL, PRIMARY KEY (plan_id, user_id))`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

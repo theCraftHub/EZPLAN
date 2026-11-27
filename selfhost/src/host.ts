@@ -39,5 +39,5 @@ export function createSelfHost(opts: SelfHostOptions) {
     ...(opts.testAuth ? { testAuth: true } : {}),
     ...(opts.testAi ? { ai: new FakeEngine() } : opts.ai ? { ai: opts.ai } : {}),
   });
-  return { app: withStatic(app, opts.staticDir), rooms, db, close: () => db.close() };
+  return { app: withStatic(app, opts.staticDir), rooms, db, close: () => db.close(), runScheduled: app.runScheduled };
 }

@@ -223,12 +223,15 @@ export const api = {
     queues: { safety: number; support: number };
     limits: { refusedToday: number; byRule: Record<string, number> };
     database: { migrations: number; latest: number; expected: number; upToDate: boolean };
+    jobs: { name: string; lastRun: number; lastOk: number | null; lastError: string | null; runs: number }[];
     errors: { last24h: number; recent: { at: number; method: string; route: string; name: string; message: string }[]; byRoute: { route: string; method: string; n: number; last: number }[] };
   }>("/api/ops"),
   shares: (planId: string) => call<{ canShare: boolean; reason: string | null; links: { id: string; by: string; createdAt: number; expiresAt: number | null; lastOpenedAt: number | null; opens: number }[] }>(`/api/plans/${encodeURIComponent(planId)}/shares`),
   makeShare: (planId: string, days: number | null) => call<{ id: string; url: string; expiresAt: number | null }>(`/api/plans/${encodeURIComponent(planId)}/shares`, { method: "POST", body: JSON.stringify({ days }) }),
   revokeShare: (planId: string, id: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/shares/${encodeURIComponent(id)}`, { method: "DELETE" }),
   publicShare: (token: string, since?: number) => call<{ version: number; unchanged?: true; plan?: Plan; people?: People; workWeek?: WorkWeek; today?: string; expiresAt?: number | null }>(`/api/share/${encodeURIComponent(token)}${since !== undefined ? `?since=${since}` : ""}`),
+  follow: (planId: string) => call<{ following: boolean }>(`/api/plans/${encodeURIComponent(planId)}/follow`),
+  setFollow: (planId: string, following: boolean) => call<{ following: boolean }>(`/api/plans/${encodeURIComponent(planId)}/follow`, { method: "PUT", body: JSON.stringify({ following }) }),
   setPlanState: (id: string, state: "archived" | "active") => call<{ state: string }>(`/api/plans/${encodeURIComponent(id)}/state`, { method: "PUT", body: JSON.stringify({ state }) }),
   createPlan: (text: string, people: People = {}, fileName?: string, workspaceId?: string) => call<{ id: string; notices: string[] }>("/api/plans", { method: "POST", body: JSON.stringify({ text, people, ...(fileName ? { fileName } : {}), ...(workspaceId ? { workspaceId } : {}) }) }),
   setPerson: (planId: string, name: string, a: PersonAvailability) => call<{ name: string }>(`/api/plans/${encodeURIComponent(planId)}/people/${encodeURIComponent(name)}`, { method: "PUT", body: JSON.stringify(a) }),

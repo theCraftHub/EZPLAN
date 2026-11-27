@@ -3,6 +3,7 @@
  * post it as a status update (red / amber / green), which goes into the plan's history (step J1).
  */
 import { useEffect, useState } from "react";
+import { FollowSwitch } from "../Reminders";
 import { Check, ClipboardCopy, FileText, History, Send } from "lucide-react";
 import type { ReportText, StatusFacts } from "@rakuplan/shared";
 import { api, ApiError, type Rag, type StatusUpdate } from "../../lib/api";
@@ -16,6 +17,7 @@ export function Report({ planId, today, canEdit, onPosted }: { planId: string; t
   useEffect(loadHistory, [planId]);
   return (
     <div className="flex flex-col gap-4">
+      <FollowSwitch planId={planId} />
       <Writer planId={planId} today={today} canEdit={canEdit} onPosted={() => { loadHistory(); onPosted?.(); }} />
       <Card aria-label="Status updates" className="flex flex-col gap-2">
         <h2 className="m-0 flex flex-wrap items-center gap-2 text-lg font-bold"><History aria-hidden size={20} /> Status updates <UpdateOverdue state={history ? { last: null, overdue: history.overdue } : undefined} /></h2>

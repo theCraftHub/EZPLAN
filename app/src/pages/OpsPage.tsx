@@ -50,6 +50,15 @@ export function OpsPage() {
         <Link to="/admin/safety" className="font-semibold text-primary-ink underline">Safety review queue</Link>
         <Link to="/admin/support" className="font-semibold text-primary-ink underline">Support inbox</Link>
       </div>
+      <Card aria-label="Scheduled jobs" className="flex flex-col gap-2">
+        <h2 className="m-0 text-lg font-bold">Scheduled jobs</h2>
+        <p className="m-0 text-sm text-ink-2">Digests, status-update reminders and weekly summaries, run every 15 minutes.</p>
+        {o.jobs.length === 0 ? <p className="m-0 text-[15px] text-ink-2">Not run yet.</p> : (
+          <ul className="m-0 flex list-none flex-col gap-1 p-0 text-sm">
+            {o.jobs.map((j) => <li key={j.name} className="flex flex-wrap justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2"><span className="font-semibold">{j.name}</span><span className={j.lastError ? "text-bad" : "text-ink-2"}>{j.lastError ? `Failed ${when(j.lastRun)}: ${j.lastError}` : `OK, last run ${when(j.lastRun)} · ${j.runs} runs`}</span></li>)}
+          </ul>
+        )}
+      </Card>
       <Card aria-label="Server errors" className="flex flex-col gap-3">
         <h2 className="m-0 text-lg font-bold">Server errors</h2>
         <p className="m-0 text-sm text-ink-2">Kept for 90 days, without request contents or personal data: the time, the route and a cleaned-up message.</p>

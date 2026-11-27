@@ -12,7 +12,7 @@ import { createSelfHost } from "./host";
 import { startServer } from "./server";
 
 const port = Number(process.env.PORT ?? 8080);
-const { app, rooms, close } = createSelfHost({
+const { app, rooms, close, runScheduled } = createSelfHost({
   dataDir: process.env.DATA_DIR ?? "./data",
   config: configFromEnv(process.env),
   testAuth: testAuthEnabled(process.env.TEST_AUTH),
@@ -23,7 +23,14 @@ const { app, rooms, close } = createSelfHost({
 });
 const server = startServer({ app, rooms, port, trustProxy: process.env.TRUST_PROXY === "1", onListen: (p) => console.log(`Listening on port ${p}`) });
 
+// Scheduled jobs (digests, reminders, weekly summaries) every 15 minutes, plus once shortly after start.
+const jobs = () => void runScheduled().catch((e) => console.error("scheduled jobs failed", e));
+const firstJobs = setTimeout(jobs, 60_000);
+const jobTimer = setInterval(jobs, 15 * 60_000);
+
 const stop = () => {
+  clearTimeout(firstJobs);
+  clearInterval(jobTimer);
   void server.close().then(() => {
     close();
     process.exit(0);

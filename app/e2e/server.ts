@@ -30,7 +30,7 @@ export const PEOPLE: Record<string, { sub: string; name: string; email: string }
 };
 
 const fake = await FakeOidc.create(() => Date.now(), `http://127.0.0.1:${idPort}`);
-const { app: site, rooms, db } = createSelfHost({
+const { app: site, rooms, db, runScheduled } = createSelfHost({
   dataDir: mkdtempSync(join(tmpdir(), "e2e-")),
   config: { defaultWorkWeek: DEFAULT_WORK_WEEK, publicUrl, providers: [fake.provider({ label: "Test ID" })], secureCookies: false, platformAdmins: ["pat@example.com"],
     // Browser tests sign in hundreds of times from one address and make many companies.
@@ -58,6 +58,13 @@ const { app: site, rooms, db } = createSelfHost({
 const app = {
   fetch: async (req: Request) => {
     const url = new URL(req.url);
+    // Test-only: run the scheduled jobs now, as if at a given time.
+    if (req.method === "POST" && url.pathname === "/e2e/run-jobs") {
+      const b = (await req.json().catch(() => ({}))) as { at?: number; jobs?: string[]; emails?: string[] };
+      // Only the jobs and people a test names, so other tests' accounts aren't touched.
+      const ids = b.emails ? (await db.all<{ id: string }>(`SELECT id FROM users WHERE email IN (${b.emails.map(() => "?").join(",")})`, b.emails)).map((r) => r.id) : undefined;
+      return Response.json(await runScheduled(b.at, { ...(b.jobs ? { jobs: b.jobs } : {}), ...(ids ? { userIds: ids } : {}) }));
+    }
     if (req.method === "POST" && url.pathname === "/e2e/join") {
       const b = (await req.json()) as { person: string; intoWorkspaceOf: string };
       const ws = await db.first<{ workspace_id: string }>(`SELECT m.workspace_id FROM members m JOIN users u ON u.id = m.user_id WHERE u.email = ? AND m.role = 'manager'`, [b.intoWorkspaceOf]);

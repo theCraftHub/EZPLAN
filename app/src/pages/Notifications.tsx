@@ -6,7 +6,7 @@ import { shortDate } from "../lib/format";
 import { Link, useRouter } from "../lib/router";
 import { Button, Card, Notice, PageTitle, Spinner } from "../ui/kit";
 
-const ICON: Record<string, typeof Bell> = { mention: AtSign, comment: MessageCircle, assigned: UserRoundCheck, invited: UserPlus, "ai-low": Sparkles, "credit-request": Sparkles, "credit-answer": Sparkles, safety: ShieldAlert, support: LifeBuoy, company: Building2 };
+const ICON: Record<string, typeof Bell> = { mention: AtSign, comment: MessageCircle, assigned: UserRoundCheck, invited: UserPlus, "ai-low": Sparkles, "credit-request": Sparkles, "credit-answer": Sparkles, safety: ShieldAlert, support: LifeBuoy, company: Building2, digest: CalendarClock, status: CalendarClock };
 const when = (ms: number) => new Date(ms).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 export function NotificationsPage({ onUnread }: { onUnread: (n: number) => void }) {

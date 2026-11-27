@@ -3,6 +3,7 @@ import { BusinessStart } from "./pages/BusinessStart";
 import { OrgConsole } from "./pages/admin/OrgConsole";
 import { OpsPage } from "./pages/OpsPage";
 import { SharedPlan } from "./pages/SharedPlan";
+import { rememberZone } from "./pages/Reminders";
 import { MasterPage } from "./pages/MasterPage";
 import { SafetyCasePage } from "./pages/SafetyCases";
 import { useCallback, useEffect, useState } from "react";
@@ -65,7 +66,7 @@ function Root() {
   const [error, setError] = useState("");
   const load = useCallback(() => {
     api.me()
-      .then((m) => { setMe(m); void offline.me(m); })
+      .then((m) => { setMe(m); void offline.me(m); void rememberZone(); })
       .catch(async (e) => {
         if (e instanceof ApiError && e.status === 401) return setMe("signed-out");
         // Offline: carry on as the person last signed in on this device (their plans are kept here).

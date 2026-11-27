@@ -36,29 +36,37 @@ function clockFor(env: Env): Clock {
 // One app per isolate, so migrations are checked once rather than on every request.
 let cached: { env: Env; app: ReturnType<typeof createApp> } | null = null;
 
+function appFor(env: Env): ReturnType<typeof createApp> {
+  if (!cached || cached.env !== env) {
+    const db = new D1Db(env.DB);
+    cached = {
+      env,
+      app: createApp({
+        db,
+        blobs: new R2Blobs(env.FILES),
+        rooms: new DurableRoomHost(env.PLAN_ROOM),
+        clock: clockFor(env),
+        config: configFromEnv(env as unknown as Record<string, string | undefined>),
+        http: (req) => fetch(req),
+        ...(testAuthEnabled(env.TEST_AUTH) ? { testAuth: true } : {}),
+        ...(testAuthEnabled(env.TEST_AI)
+          ? { ai: new FakeEngine() }
+          : env.ANTHROPIC_API_KEY
+            ? { ai: new AnthropicEngine({ apiKey: env.ANTHROPIC_API_KEY, ...(env.AI_MODEL ? { model: env.AI_MODEL } : {}), ...(env.AI_REPORT_MODEL ? { reportModel: env.AI_REPORT_MODEL } : {}) }) }
+            : {}),
+      }),
+    };
+  }
+  return cached.app;
+}
+
 export default {
   fetch(request: Request, env: Env): Response | Promise<Response> {
-    if (!cached || cached.env !== env) {
-      const db = new D1Db(env.DB);
-      cached = {
-        env,
-        app: createApp({
-          db,
-          blobs: new R2Blobs(env.FILES),
-          rooms: new DurableRoomHost(env.PLAN_ROOM),
-          clock: clockFor(env),
-          config: configFromEnv(env as unknown as Record<string, string | undefined>),
-          http: (req) => fetch(req),
-          ...(testAuthEnabled(env.TEST_AUTH) ? { testAuth: true } : {}),
-          ...(testAuthEnabled(env.TEST_AI)
-            ? { ai: new FakeEngine() }
-            : env.ANTHROPIC_API_KEY
-              ? { ai: new AnthropicEngine({ apiKey: env.ANTHROPIC_API_KEY, ...(env.AI_MODEL ? { model: env.AI_MODEL } : {}), ...(env.AI_REPORT_MODEL ? { reportModel: env.AI_REPORT_MODEL } : {}) }) }
-              : {}),
-        }),
-      };
-    }
-    return cached.app.fetch(request);
+    return appFor(env).fetch(request);
+  },
+  // Every 15 minutes (wrangler.toml [triggers]): digests, reminders, weekly summaries.
+  scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(appFor(env).runScheduled().then(() => undefined));
   },
 } satisfies ExportedHandler<Env>;
 

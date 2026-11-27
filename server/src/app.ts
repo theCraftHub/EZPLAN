@@ -50,6 +50,7 @@ import { registerOrgPeopleRoutes } from "./orgPeople";
 import { registerOffboardRoutes } from "./orgOffboard";
 import { countEvent, recordError, registerOpsRoutes } from "./opsPage";
 import { registerPublicShareRoute, registerShareRoutes } from "./shares";
+import { runJobs, type JobDeps, type JobFilter } from "./jobs";
 import { mailSettings, sendEmail } from "./mail";
 import { registerCollabRoutes } from "./comments";
 import { notify, registerNotificationRoutes, unreadCount, userForName } from "./notify";
@@ -269,6 +270,37 @@ export function createApp(ports: Ports) {
   registerOffboardRoutes(app, { db, clock, rooms, notFound });
   registerOpsRoutes(app, { db, clock, config, mailOn: !!ports.mail });
   registerShareRoutes(app, shareDeps);
+
+  // Scheduled jobs (digests, reminders, weekly summaries): run by each host every 15 minutes.
+  const jobDeps: JobDeps = {
+    db, clock, email: orgEmail,
+    plan: async (planId, today) => {
+      const room = await loadRoom(db, planId);
+      if (!room) return null;
+      const ws = await db.first<{ work_week: string }>(`SELECT w.work_week FROM plans p JOIN workspaces w ON w.id = p.workspace_id WHERE p.id = ?`, [planId]);
+      const schedule = await scheduleOf(db, planId, room.plan, { workWeek: parseWorkWeek(ws?.work_week ?? "{}"), today, people: await loadPeople(planId) }, levelPlan);
+      return { plan: room.plan, schedule };
+    },
+  };
+  const runScheduled = async (at?: number, only?: JobFilter) => { await ensureReady(); return runJobs(jobDeps, at ?? clock.now(), only); };
+  // Tests only: run the jobs now, as if at a given time.
+  if (ports.testAuth) app.post("/api/test/run-jobs", async (c) => { const b = await c.req.json<{ at?: number }>().catch(() => ({}) as { at?: number }); return c.json(await runScheduled(typeof b.at === "number" ? b.at : undefined)); });
+
+  // Following a plan: a summary each Monday (in the app, and by email once sending is set up).
+  app.get("/api/plans/:id/follow", async (c) => {
+    const user = c.get("user");
+    if (!(await access(c.req.param("id"), user.id))) return c.json(notFound, 404);
+    return c.json({ following: !!(await db.first(`SELECT 1 AS x FROM plan_follows WHERE plan_id = ? AND user_id = ?`, [c.req.param("id"), user.id])) });
+  });
+  app.put("/api/plans/:id/follow", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    if (!(await access(id, user.id))) return c.json(notFound, 404);
+    const b = await c.req.json<{ following?: unknown }>().catch(() => null);
+    if (b?.following === true) await db.run(`INSERT INTO plan_follows (plan_id, user_id, created_at) VALUES (?, ?, ?) ON CONFLICT (plan_id, user_id) DO NOTHING`, [id, user.id, clock.now()]);
+    else await db.run(`DELETE FROM plan_follows WHERE plan_id = ? AND user_id = ?`, [id, user.id]);
+    return c.json({ following: b?.following === true });
+  });
   // Tests only: a route that fails, so error logging can be tested end to end.
   if (ports.testAuth) app.get("/api/test/fail", () => { throw new Error("Test failure for ana@example.com with token abcdefghijklmnopqrstuvwxyz123456"); });
   registerSafetyCaseRoutes(app, { db, clock, config, ...(ports.mail ? { mail: ports.mail } : {}) });
@@ -901,7 +933,7 @@ export function createApp(ports: Ports) {
     return c.json({ error: "Something went wrong on our side. Try again." }, 500);
   });
 
-  return app;
+  return Object.assign(app, { runScheduled });
 }
 
 /** A short excerpt of a plan for the safety review queue (only what's needed to judge it). */

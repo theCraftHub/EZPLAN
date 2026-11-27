@@ -13,3 +13,4 @@ export { AnthropicEngine } from "./ai/anthropic";
 export { FakeEngine } from "./ai/fake";
 export { MIGRATIONS, migrate } from "./migrations";
 export * from "./security";
+export * from "./jobs";

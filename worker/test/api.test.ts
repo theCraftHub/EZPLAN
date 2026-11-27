@@ -30,6 +30,7 @@ import { recurringContract } from "../../server/test/recurring.contract";
 import { opsContract } from "../../server/test/ops.contract";
 import { masterImportContract } from "../../server/test/masterImport.contract";
 import { sharesContract } from "../../server/test/shares.contract";
+import { jobsContract } from "../../server/test/jobs.contract";
 import { signInContract } from "../../server/test/signin.contract";
 
 let bundled: Promise<string> | null = null;
@@ -127,3 +128,4 @@ recurringContract("cloud (Workers + D1 + Durable Objects)", factory);
 opsContract("cloud (Workers + D1 + Durable Objects)", factory);
 masterImportContract("cloud (Workers + D1 + Durable Objects)", factory);
 sharesContract("cloud (Workers + D1 + Durable Objects)", factory);
+jobsContract("cloud (Workers + D1 + Durable Objects)", factory);
