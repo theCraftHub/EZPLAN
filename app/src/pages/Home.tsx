@@ -2,6 +2,7 @@ import { UpdateOverdue } from "../ui/StatusUpdate";
 import { useEffect, useState } from "react";
 import { Archive, ArchiveRestore, Building2, CalendarClock, Copy, Flag, Layers, Plus, Search } from "lucide-react";
 import { BRAND } from "@rakuplan/shared";
+import { isNetworkError, offline } from "../lib/offline";
 import { api, ApiError, type Me, type PlanSummary } from "../lib/api";
 import { shortDate, plural } from "../lib/format";
 import { Link, useRouter } from "../lib/router";
@@ -13,9 +14,15 @@ export function Home({ me }: { me: Me }) {
   const [plans, setPlans] = useState<PlanSummary[] | null>(null);
   const [error, setError] = useState("");
   const [grouping, setGrouping] = useState(false);
+  const [offlineSince, setOfflineSince] = useState<number | null>(null);
   const [orgs, setOrgs] = useState<Awaited<ReturnType<typeof api.orgs>>["orgs"] | null>(null);
   useEffect(() => {
-    api.plans().then((r) => setPlans(r.plans)).catch((e: Error) => setError(e.message));
+    api.plans()
+      .then((r) => { setPlans(r.plans); void offline.plans(me.user.id, r.plans); })
+      .catch(async (e: Error) => {
+        const last = isNetworkError(e) ? await offline.lastPlans(me.user.id) : undefined;
+        if (last) { setPlans(last.list); setOfflineSince(last.savedAt); } else setError(e.message);
+      });
     api.orgs().then((r) => setOrgs(r.orgs)).catch(() => setOrgs([]));
   }, []);
   const first = me.user.name.split(" ")[0];
@@ -36,6 +43,7 @@ export function Home({ me }: { me: Me }) {
           <Button onClick={() => go(`/business/${o.id}/${o.setup!.step}`)}>Continue setup</Button>
         </Card>
       ))}
+      {offlineSince && <Notice tone="warn">You're offline. These are your plans as of {new Date(offlineSince).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}. Plans you've opened on this device work offline; others need a connection.</Notice>}
       {error && <Notice tone="bad">{error}</Notice>}
       {!plans && !error && <Spinner label="Loading your plans" />}
       {plans && plans.length === 0 && (

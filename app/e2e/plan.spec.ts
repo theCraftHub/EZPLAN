@@ -91,7 +91,7 @@ test("offline: changes wait, then sync when the connection is back", async ({ pa
   await context.setOffline(true);
   await page.evaluate(() => dispatchEvent(new Event("offline")));
   // The browser may keep the old socket briefly; closing it is what a real network drop does.
-  await expect(page.getByRole("status").filter({ hasText: /Offline/ })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("status").filter({ hasText: /^Offline ·/ })).toBeVisible({ timeout: 15_000 });
   await page.getByRole("region", { name: "Phase: Build" }).getByLabel("Add a task to this phase").fill("Order handles 1d");
   await page.getByRole("region", { name: "Phase: Build" }).getByLabel("Add a task to this phase").press("Enter");
   await expect(page.getByRole("status").filter({ hasText: "1 change will sync" })).toBeVisible();

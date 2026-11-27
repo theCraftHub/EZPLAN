@@ -247,9 +247,19 @@ export class ClientReplica {
   private lastSeq = 0;
   private n = 0;
 
-  constructor(readonly clientId: string, private readonly actor: Actor, plan: Plan, seq = 0) {
+  /** `restore`: edits made earlier on this device that the server hasn't confirmed (offline copy). */
+  constructor(readonly clientId: string, private readonly actor: Actor, plan: Plan, seq = 0, restore?: { pending: OpEnvelope[]; sent: number }) {
     this.confirmed = { plan: structuredClone(plan), trash: {}, restoredForReview: [] };
     this.lastSeq = seq;
+    if (restore) {
+      this.pending = restore.pending.map((p) => structuredClone(p));
+      this.n = restore.sent;
+    }
+  }
+
+  /** What to keep on the device: the confirmed plan and version, and unsent edits (with the edit counter, so IDs never repeat). */
+  snapshot(): { confirmed: Plan; version: number; sent: number; pending: OpEnvelope[] } {
+    return { confirmed: structuredClone(this.confirmed.plan), version: this.lastSeq, sent: this.n, pending: this.pending.map((p) => structuredClone(p)) };
   }
 
   /** Make a local edit: shown immediately, queued for the server. */

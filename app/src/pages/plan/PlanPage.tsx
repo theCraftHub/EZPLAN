@@ -92,6 +92,9 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
           })}
         </nav>
       </header>
+      {room.status !== "live" && (room.fromCopy || room.status === "offline") && (
+        <Notice tone="warn"><span className="flex items-start gap-2"><WifiOff aria-hidden size={18} className="mt-0.5 shrink-0" /><span>Offline: changes are saved on this device and sent when you're back{room.pending ? ` (${room.pending} waiting)` : ""}.{room.fromCopy ? ` This is the copy from ${new Date(room.fromCopy).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}.` : ""} Comments, sharing and AI need a connection.</span></span></Notice>
+      )}
       {room.detail.state === "archived" && (
         <Notice tone="info"><span className="flex flex-wrap items-center justify-between gap-3"><span className="flex items-start gap-2"><Archive aria-hidden size={18} className="mt-0.5 shrink-0" />This plan is archived. It's read-only for everyone until it's restored.</span>
           {room.detail.canArchive && <button onClick={() => void api.setPlanState(id, "active").then(() => location.reload())} className="min-h-11 rounded-xl bg-surface px-4 font-semibold text-ink ring-1 ring-line">Restore</button>}</span></Notice>

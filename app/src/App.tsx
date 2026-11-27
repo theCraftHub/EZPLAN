@@ -5,6 +5,7 @@ import { MasterPage } from "./pages/MasterPage";
 import { SafetyCasePage } from "./pages/SafetyCases";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, type Me } from "./lib/api";
+import { isNetworkError, offline } from "./lib/offline";
 import { match, RouterProvider, useRouter } from "./lib/router";
 import { Home } from "./pages/Home";
 import { NewPlan } from "./pages/NewPlan";
@@ -60,13 +61,22 @@ function Root() {
   const [me, setMe] = useState<Me | null | "signed-out">(null);
   const [error, setError] = useState("");
   const load = useCallback(() => {
-    api.me().then(setMe).catch((e) => (e instanceof ApiError && e.status === 401 ? setMe("signed-out") : setError("Can't reach the server right now. Check your connection, then reload.")));
+    api.me()
+      .then((m) => { setMe(m); void offline.me(m); })
+      .catch(async (e) => {
+        if (e instanceof ApiError && e.status === 401) return setMe("signed-out");
+        // Offline: carry on as the person last signed in on this device (their plans are kept here).
+        const last = isNetworkError(e) ? await offline.lastMe() : undefined;
+        if (last) setMe(last);
+        else setError("Can't reach the server right now. Check your connection, then reload.");
+      });
   }, []);
   useEffect(load, [load]);
   if (error) return <main className="p-6"><Notice tone="bad">{error}</Notice></main>;
   if (me === null) return <Spinner />;
   if (me === "signed-out") return <SignIn />;
-  const signOut = () => void api.logout().finally(() => location.assign("/"));
+  // Signing out also removes this device's offline copies (a shared computer shouldn't keep them).
+  const signOut = () => void offline.clear().then(() => api.logout()).finally(() => location.assign("/"));
   return (
     <Shell me={me} onSignOut={signOut} onUnread={(n) => setMe((m) => (m && m !== "signed-out" ? { ...m, unread: n } : m))}>
       <Routes me={me} onSignOut={signOut} onMe={setMe} />

@@ -1,8 +1,18 @@
 // Offline shell: pages and built files are cached so the app opens without a connection.
-// The API is never cached (plans always come fresh from the server or the live connection).
-const CACHE = "shell-v1";
+// The API is never cached here; the app keeps its own offline copies of plans (lib/offline.ts).
+const CACHE = "shell-v2";
+// The page and every built file it references are cached at install, so the app opens offline
+// even if the first visit ended before those files passed through this worker.
+async function cacheShell() {
+  const c = await caches.open(CACHE);
+  const page = await fetch("/", { cache: "no-store" });
+  const html = await page.clone().text();
+  const built = [...new Set([...html.matchAll(/\/assets\/[^"'\s>]+/g)].map((m) => m[0]))];
+  await c.put("/", page);
+  await c.addAll(["/icon.svg", "/manifest.webmanifest", ...built]);
+}
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(["/", "/icon.svg", "/manifest.webmanifest"])).then(() => self.skipWaiting()));
+  e.waitUntil(cacheShell().then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
