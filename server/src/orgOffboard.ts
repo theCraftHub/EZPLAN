@@ -143,6 +143,7 @@ export function registerOffboardRoutes(app: Hono<{ Variables: { user: User } }>,
     // 4. Invites they sent stop working.
     if (planIds.length) await db.run(`UPDATE invites SET revoked_at = ? WHERE created_by = ? AND accepted_by IS NULL AND revoked_at IS NULL AND plan_id IN (${planIds.map(() => "?").join(",")})`, [now, targetId, ...planIds]);
     await db.run(`UPDATE org_invites SET revoked_at = ? WHERE org_id = ? AND created_by = ? AND accepted_by IS NULL AND revoked_at IS NULL`, [now, x.org.id, targetId]);
+    if (planIds.length) await db.run(`UPDATE share_links SET revoked_at = ? WHERE created_by = ? AND revoked_at IS NULL AND plan_id IN (${planIds.map(() => "?").join(",")})`, [now, targetId, ...planIds]);
     for (const [id, n] of Object.entries(handed)) {
       const parts = [n.plans ? `${n.plans} ${n.plans === 1 ? "plan" : "plans"}` : "", n.tasks ? `${n.tasks} open ${n.tasks === 1 ? "task" : "tasks"}` : ""].filter(Boolean).join(" and ");
       await notify(db, now, { userId: id, kind: "assigned", text: `You now have ${parts} from ${target.name}`, link: "/" }, user.id);

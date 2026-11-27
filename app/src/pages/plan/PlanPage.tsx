@@ -3,8 +3,10 @@ import { Risks } from "./Risks";
 import { planPeople } from "@rakuplan/shared";
 import { api } from "../../lib/api";
 import { UpdateOverdue } from "../../ui/StatusUpdate";
-import { useDeferredValue, useMemo } from "react";
-import { Archive, ArrowLeft, Download, FileText, History as HistoryIcon, Printer, ShieldAlert, Sparkles, Users, Wifi, WifiOff } from "lucide-react";
+import { useDeferredValue, useMemo, useState } from "react";
+import { Present } from "../../ui/Present";
+import { ShareLinks } from "./ShareLinks";
+import { Archive, ArrowLeft, Download, MonitorPlay, FileText, History as HistoryIcon, Printer, ShieldAlert, Sparkles, Users, Wifi, WifiOff } from "lucide-react";
 import { canCommentRole, canEditRole, type Me } from "../../lib/api";
 import { PlanContext, type PlanCtx } from "./PlanContext";
 import { Activity } from "./Activity";
@@ -38,6 +40,7 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
   // Taps show at once; dates, progress and Plan Check catch up a moment later on big plans.
   const settled = useDeferredValue(room.plan);
   const math = usePlanMath(settled, ctx);
+  const [presenting, setPresenting] = useState(false);
   const role = room.detail?.role;
   const planCtx = useMemo<PlanCtx>(() => ({ planId: id, canComment: canCommentRole(role), counts: room.comments.counts, tick: room.comments.tick, me: me.user.name, manager: role === "manager" }), [id, role, room.comments, me.user.name]);
   if (room.error) return <Notice tone="bad">{room.error}</Notice>;
@@ -80,6 +83,7 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
           {canEdit && <Link to={`/p/${id}/update`} className={`${action} border-primary/40 text-primary-ink`}><Sparkles aria-hidden size={16} /> Update with my AI</Link>}
           <a href={`/api/plans/${id}/export`} download className={action}><Download aria-hidden size={16} /> Download plan file</a>
           <Link to={`/p/${id}/print`} className={action}><Printer aria-hidden size={16} /> Print summary</Link>
+          <button onClick={() => setPresenting(true)} disabled={!math} className={action}><MonitorPlay aria-hidden size={16} /> Present</button>
           <Link to={`/p/${id}/report`} className={action}><FileText aria-hidden size={16} /> Status report</Link>
           <Link to={`/p/${id}/history`} className={action}><HistoryIcon aria-hidden size={16} /> History and Trash</Link>
           <Link to={`/p/${id}/share`} className={action}><Users aria-hidden size={16} /> Share</Link>
@@ -104,7 +108,8 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
       {updated > 0 && view === "" && <Notice tone="good">{updated} change{updated === 1 ? "" : "s"} from your AI assistant applied. The earlier plan is in History.</Notice>}
       {view === "update" && canEdit && <UpdateWithAI planId={id} plan={room.plan} version={room.detail.version} />}
       {view === "report" && <Report planId={id} today={room.detail.today} canEdit={canEdit} onPosted={() => void api.statusUpdates(id).then((u) => room.setDetail({ ...room.detail!, statusUpdate: { last: u.items[0] ? { rag: u.items[0].rag, headline: u.items[0].headline, at: u.items[0].createdAt } : null, overdue: u.overdue } })).catch(() => {})} />}
-      {view === "share" && <Share planId={id} plan={room.plan} me={me} />}
+      {view === "share" && <><Share planId={id} plan={room.plan} me={me} /><ShareLinks planId={id} /></>}
+      {presenting && math && room.plan && <Present plan={room.plan} math={math} today={room.detail.today} onClose={() => setPresenting(false)} extra={{ risks: room.detail.raidOpen.risks }} />}
       {view === "history" && <History planId={id} plan={room.plan} version={room.detail.version} canEdit={canEdit} edit={room.edit} />}
       {view === "" && <Overview plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} planId={id} version={room.version} statusUpdate={room.detail.statusUpdate} people={room.detail.people} workWeek={room.detail.workWeek} raidOpen={room.detail.raidOpen} />}
       {view === "checklist" && <Checklist plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} />}

@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ClientReplica, type Op, type PresencePerson, type ServerMessage } from "@rakuplan/shared";
 import { api, type Me, type PlanDetail } from "./api";
-import { isNetworkError, offline } from "./offline";
+import { isNetworkError, offline, pendingBackup } from "./offline";
 
 export type LiveStatus = "connecting" | "live" | "offline";
 
@@ -31,7 +31,10 @@ export function usePlanRoom(planId: string, me: Me) {
     clearTimeout(saveTimer.current);
     const r = replica.current;
     const d = detailRef.current;
-    if (r && d) void offline.savePlan(me.user.id, planId, { detail: d, ...r.snapshot(), clientId: r.clientId, savedAt: Date.now() });
+    if (!r || !d) return;
+    const snap = r.snapshot();
+    pendingBackup.save(me.user.id, planId, { clientId: r.clientId, sent: snap.sent, pending: snap.pending });
+    void offline.savePlan(me.user.id, planId, { detail: d, ...snap, clientId: r.clientId, savedAt: Date.now() });
   }, [me.user.id, planId]);
   /** Other changes (everyone else's edits arriving) are saved shortly after, so a burst is one write. */
   const persist = useCallback(() => {
@@ -110,13 +113,17 @@ export function usePlanRoom(planId: string, me: Me) {
       connect();
     };
     void (async () => {
-      const copy = await offline.plan(me.user.id, planId);
+      const stored = await offline.plan(me.user.id, planId);
+      // The quick backup of unsent edits may be newer than the database copy (a tab closed mid-write).
+      const backup = pendingBackup.read(me.user.id, planId);
+      const copy = stored && backup && backup.clientId === stored.clientId && backup.sent > stored.sent ? { ...stored, pending: backup.pending, sent: backup.sent } : stored;
       // Edits made on this device earlier and never confirmed go out with the same IDs (the server ignores repeats).
-      const restore = copy?.pending.length ? { pending: copy.pending, sent: copy.sent } : undefined;
+      const unsent = copy?.pending.length ? { clientId: copy.clientId, pending: copy.pending, sent: copy.sent } : backup?.pending.length ? backup : null;
+      const restore = unsent ? { pending: unsent.pending, sent: unsent.sent } : undefined;
       try {
         const d = await api.plan(planId);
         if (stopped) return;
-        replica.current = new ClientReplica(restore ? copy!.clientId : crypto.randomUUID().slice(0, 12), actor, d.plan, d.version, restore);
+        replica.current = new ClientReplica(unsent ? unsent.clientId : crypto.randomUUID().slice(0, 12), actor, d.plan, d.version, restore);
         start(d);
         persist();
         api.commentCounts(planId).then((r) => !stopped && setComments((c) => ({ counts: r.counts, tick: c.tick + 1 }))).catch(() => {});

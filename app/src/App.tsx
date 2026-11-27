@@ -2,6 +2,7 @@ import { Join } from "./pages/Join";
 import { BusinessStart } from "./pages/BusinessStart";
 import { OrgConsole } from "./pages/admin/OrgConsole";
 import { OpsPage } from "./pages/OpsPage";
+import { SharedPlan } from "./pages/SharedPlan";
 import { MasterPage } from "./pages/MasterPage";
 import { SafetyCasePage } from "./pages/SafetyCases";
 import { useCallback, useEffect, useState } from "react";
@@ -87,6 +88,9 @@ function Root() {
 }
 
 export function App() {
+  // A share link opens without signing in.
+  const shared = /^\/s\/([^/?#]+)$/.exec(location.pathname);
+  if (shared) return <SharedPlan token={decodeURIComponent(shared[1]!)} />;
   return (
     <RouterProvider>
       <Root />

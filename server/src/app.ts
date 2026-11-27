@@ -49,6 +49,7 @@ import { audit, can, companyOf, isInsider, orgRole, registerOrgRoutes, type OrgR
 import { registerOrgPeopleRoutes } from "./orgPeople";
 import { registerOffboardRoutes } from "./orgOffboard";
 import { countEvent, recordError, registerOpsRoutes } from "./opsPage";
+import { registerPublicShareRoute, registerShareRoutes } from "./shares";
 import { mailSettings, sendEmail } from "./mail";
 import { registerCollabRoutes } from "./comments";
 import { notify, registerNotificationRoutes, unreadCount, userForName } from "./notify";
@@ -160,6 +161,16 @@ export function createApp(ports: Ports) {
   // Replies by email come from the email provider, not a signed-in person.
   registerInboundEmail(app as unknown as Hono, { db, clock, config, ...(ports.mail ? { mail: ports.mail } : {}) }, ensureReady);
 
+  // Share links are read without signing in (registered before the sign-in check below).
+  const shareDeps = {
+    db, clock, siteOrigin, access,
+    notFound: { error: "This plan doesn't exist or you don't have access to it." },
+    people: (planId: string) => loadPeople(planId),
+    workWeek: async (planId: string) => parseWorkWeek((await db.first<{ work_week: string }>(`SELECT w.work_week FROM plans p JOIN workspaces w ON w.id = p.workspace_id WHERE p.id = ?`, [planId]))?.work_week ?? "{}"),
+    limited: async (c: Context, _subject: string) => { await ensureReady(); return limited(c, "shareView", clientIp(c.req.raw)); },
+  };
+  registerPublicShareRoute(app as unknown as Hono, shareDeps);
+
   app.use("/api/*", async (c, next) => {
     await ensureReady();
     if (!sameSite(c)) return c.json({ error: "This request didn't come from this site." }, 403);
@@ -257,6 +268,7 @@ export function createApp(ports: Ports) {
   registerOrgPeopleRoutes(app, { db, clock, siteOrigin, notFound, email: orgEmail });
   registerOffboardRoutes(app, { db, clock, rooms, notFound });
   registerOpsRoutes(app, { db, clock, config, mailOn: !!ports.mail });
+  registerShareRoutes(app, shareDeps);
   // Tests only: a route that fails, so error logging can be tested end to end.
   if (ports.testAuth) app.get("/api/test/fail", () => { throw new Error("Test failure for ana@example.com with token abcdefghijklmnopqrstuvwxyz123456"); });
   registerSafetyCaseRoutes(app, { db, clock, config, ...(ports.mail ? { mail: ports.mail } : {}) });

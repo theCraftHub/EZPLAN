@@ -11,6 +11,8 @@ export interface RateRule { max: number; windowMs: number }
 export const RATE_RULES = {
   /** Starting or finishing a sign-in, per network address. */
   signIn: { max: 60, windowMs: 10 * 60_000 },
+  /** Opening share links (no sign-in), per network address. */
+  shareView: { max: 300, windowMs: 10 * 60_000 },
   /** Any change through the API, per person. */
   write: { max: 600, windowMs: 60_000 },
   /** Making a company, per person. */

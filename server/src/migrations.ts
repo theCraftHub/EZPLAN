@@ -224,6 +224,14 @@ export const MIGRATIONS: Migration[] = [
       `CREATE TABLE ops_events (day TEXT NOT NULL, kind TEXT NOT NULL, count INTEGER NOT NULL, PRIMARY KEY (day, kind))`,
     ],
   },
+  {
+    id: 21,
+    name: "share links: read-only views of a plan without signing in",
+    statements: [
+      `CREATE TABLE share_links (id TEXT PRIMARY KEY, plan_id TEXT NOT NULL REFERENCES plans(id), token_hash TEXT NOT NULL UNIQUE, created_by TEXT NOT NULL REFERENCES users(id), created_at INTEGER NOT NULL, expires_at INTEGER, revoked_at INTEGER, last_opened_at INTEGER, opens INTEGER NOT NULL)`,
+      `CREATE INDEX share_links_plan ON share_links(plan_id)`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

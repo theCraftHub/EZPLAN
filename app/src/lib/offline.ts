@@ -68,7 +68,32 @@ export const offline = {
   savePlan: (userId: string, planId: string, copy: PlanCopy) => put(`${userId}:plan:${planId}`, copy),
   plan: (userId: string, planId: string) => get<PlanCopy>(`${userId}:plan:${planId}`),
   /** Everything, for sign-out (a shared computer shouldn't keep someone's plans). */
-  clear: () => run("readwrite", (s) => void s.clear()),
+  clear: () => { pendingBackup.clearAll(); return run("readwrite", (s) => void s.clear()); },
+};
+
+/**
+ * Unsent edits also go to localStorage, which writes at once: an IndexedDB write still in progress
+ * when a tab closes can be lost, a localStorage write can't. Whichever copy has made more edits wins.
+ */
+export const pendingBackup = {
+  key: (userId: string, planId: string) => `pending:${userId}:${planId}`,
+  save(userId: string, planId: string, v: { clientId: string; sent: number; pending: OpEnvelope[] }) {
+    try {
+      if (v.pending.length) localStorage.setItem(this.key(userId, planId), JSON.stringify(v));
+      else localStorage.removeItem(this.key(userId, planId));
+    } catch { /* storage full or blocked: IndexedDB still has it */ }
+  },
+  read(userId: string, planId: string): { clientId: string; sent: number; pending: OpEnvelope[] } | null {
+    try {
+      const raw = localStorage.getItem(this.key(userId, planId));
+      return raw ? (JSON.parse(raw) as { clientId: string; sent: number; pending: OpEnvelope[] }) : null;
+    } catch {
+      return null;
+    }
+  },
+  clearAll() {
+    try { for (const k of Object.keys(localStorage)) if (k.startsWith("pending:")) localStorage.removeItem(k); } catch { /* nothing to clear */ }
+  },
 };
 
 /** True when a request failed because there's no connection (not because the server said no). */
