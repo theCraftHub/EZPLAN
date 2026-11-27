@@ -92,6 +92,8 @@ export interface ServerConfig {
   platformAdmins?: string[];
   /** Monthly AI allowances (per person) and pool (per workspace). */
   aiLimits?: AiLimits;
+  /** Tests only: looser rate limits (browser tests sign in hundreds of times from one address). */
+  rateLimits?: import("./security").RateOverrides;
   /** Email: the sender, the domain replies come back to, and the inbound webhook's secret. Defaults from publicUrl. */
   email?: { from?: string; replyDomain?: string; inboundSecret?: string };
 }

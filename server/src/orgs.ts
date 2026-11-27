@@ -10,6 +10,7 @@ import type { Clock, Db, HttpFetch, User } from "./ports";
 import { EMAIL_RE, INVITE_DAYS, maskEmail } from "./invites";
 import { randomToken, sha256 } from "./sessions";
 import { notify } from "./notify";
+import { hmacHex, serverKey } from "./security";
 import { peopleOf, reclaimable } from "./orgPeople";
 
 export const ORG_ROLES = ["owner", "admin", "dept_admin", "helpdesk", "auditor", "member", "guest"] as const;
@@ -90,13 +91,14 @@ export async function seatsTaken(db: Db, orgId: string, now: number): Promise<nu
 
 const ZERO = "0".repeat(64);
 type AuditRow = { org_id: string; seq: number; at: number; actor_id: string | null; actor_name: string; action: string; target: string; detail: string; prev_hash: string; hash: string };
-const auditHash = (r: Omit<AuditRow, "hash">) => sha256(JSON.stringify([r.org_id, Number(r.seq), Number(r.at), r.actor_id, r.actor_name, r.action, r.target, r.detail, r.prev_hash]));
+// Keyed with a per-install secret, so someone who can edit the database can't quietly rebuild the chain.
+const auditHash = async (db: Db, r: Omit<AuditRow, "hash">) => hmacHex(await serverKey(db, "audit"), JSON.stringify([r.org_id, Number(r.seq), Number(r.at), r.actor_id, r.actor_name, r.action, r.target, r.detail, r.prev_hash]));
 
 /** Appends one event; each row's hash covers the previous row's, so an edited or removed row shows. */
 export async function audit(db: Db, now: number, orgId: string, actor: { id: string | null; name: string }, action: string, target: string, detail: Record<string, unknown> = {}): Promise<void> {
   const last = await db.first<{ seq: number; hash: string }>(`SELECT seq, hash FROM audit_log WHERE org_id = ? ORDER BY seq DESC LIMIT 1`, [orgId]);
   const row = { org_id: orgId, seq: Number(last?.seq ?? 0) + 1, at: now, actor_id: actor.id, actor_name: actor.name, action, target, detail: JSON.stringify(detail), prev_hash: last?.hash ?? ZERO };
-  await db.run(`INSERT INTO audit_log (org_id, seq, at, actor_id, actor_name, action, target, detail, prev_hash, hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [row.org_id, row.seq, row.at, row.actor_id, row.actor_name, row.action, row.target, row.detail, row.prev_hash, await auditHash(row)]);
+  await db.run(`INSERT INTO audit_log (org_id, seq, at, actor_id, actor_name, action, target, detail, prev_hash, hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [row.org_id, row.seq, row.at, row.actor_id, row.actor_name, row.action, row.target, row.detail, row.prev_hash, await auditHash(db, row)]);
 }
 
 /** Checks the whole chain: null when intact, else the first sequence number that doesn't match. */
@@ -104,7 +106,7 @@ export async function auditBreak(db: Db, orgId: string): Promise<number | null> 
   const rows = await db.all<AuditRow>(`SELECT * FROM audit_log WHERE org_id = ? ORDER BY seq`, [orgId]);
   let prev = ZERO;
   for (const [i, r] of rows.entries()) {
-    if (Number(r.seq) !== i + 1 || r.prev_hash !== prev || (await auditHash(r)) !== r.hash) return Number(r.seq);
+    if (Number(r.seq) !== i + 1 || r.prev_hash !== prev || (await auditHash(db, r)) !== r.hash) return Number(r.seq);
     prev = r.hash;
   }
   return null;

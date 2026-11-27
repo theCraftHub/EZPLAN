@@ -21,7 +21,7 @@ const { app, rooms, close } = createSelfHost({
   ...(process.env.ANTHROPIC_API_KEY ? { ai: new AnthropicEngine({ apiKey: process.env.ANTHROPIC_API_KEY, ...(process.env.AI_MODEL ? { model: process.env.AI_MODEL } : {}), ...(process.env.AI_REPORT_MODEL ? { reportModel: process.env.AI_REPORT_MODEL } : {}) }) } : {}),
   staticDir: process.env.STATIC_DIR ?? join(dirname(fileURLToPath(import.meta.url)), "..", "..", "app", "dist"),
 });
-const server = startServer({ app, rooms, port, onListen: (p) => console.log(`Listening on port ${p}`) });
+const server = startServer({ app, rooms, port, trustProxy: process.env.TRUST_PROXY === "1", onListen: (p) => console.log(`Listening on port ${p}`) });
 
 const stop = () => {
   void server.close().then(() => {

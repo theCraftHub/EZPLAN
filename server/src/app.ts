@@ -2,6 +2,8 @@
  * The HTTP API, written once against the ports. Hono runs unchanged on Cloudflare Workers and Node.
  */
 import { Hono, type Context } from "hono";
+import { bodyLimit } from "hono/body-limit";
+import { clientIp, hit, isTestAddress, ruleFor, TOO_MANY, type RateName } from "./security";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import {
   BRAND,
@@ -64,6 +66,33 @@ export function createApp(ports: Ports) {
 
   const { config } = ports;
   const siteOrigin = new URL(config.publicUrl).origin;
+  // Test sign-in lets anyone be anyone: refuse to start with it on a real address.
+  if (ports.testAuth && !isTestAddress(config.publicUrl)) throw new Error(`TEST_AUTH is on, but ${siteOrigin} isn't a local or test address. Turn TEST_AUTH off.`);
+  const limited = async (c: Context, name: RateName, subject: string) => {
+    const wait = await hit(db, clock.now(), name, subject, config.rateLimits);
+    if (wait === null) return null;
+    return c.json({ error: TOO_MANY }, 429, { "retry-after": String(wait) });
+  };
+
+  // Every API answer: never cached (it's private), never sniffed as another type. Requests over
+  // 5 MB are refused before they're read (plan text has its own 1,000,000-character limit).
+  app.use("/api/*", async (c, next) => {
+    await next();
+    if (c.res.status === 101) return;
+    try {
+      if (!c.res.headers.has("cache-control")) c.res.headers.set("cache-control", "no-store");
+      c.res.headers.set("x-content-type-options", "nosniff");
+    } catch { /* some responses (WebSocket upgrades) can't be changed */ }
+  });
+  app.use("/api/*", bodyLimit({ maxSize: 5 * 1024 * 1024, onError: (c) => c.json({ error: "This request is too large." }, 413) }));
+  app.use("/auth/*", async (c, next) => {
+    if (c.req.path === "/auth/login" || c.req.path === "/auth/callback") {
+      await ensureReady();
+      const r = await limited(c, "signIn", clientIp(c.req.raw));
+      if (r) return r;
+    }
+    await next();
+  });
 
   app.get("/api/health", async (c) => {
     await ensureReady();
@@ -136,6 +165,10 @@ export function createApp(ports: Ports) {
     }
     if (!user) return c.json({ error: "Sign in to continue." }, 401);
     c.set("user", user);
+    if (c.req.method !== "GET" && c.req.method !== "HEAD") {
+      const r = (await limited(c, "write", user.id)) ?? (ruleFor(c.req.method, c.req.path) ? await limited(c, ruleFor(c.req.method, c.req.path)!, user.id) : null);
+      if (r) return r;
+    }
     await next();
   });
 

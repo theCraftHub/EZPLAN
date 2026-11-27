@@ -205,6 +205,11 @@ export const MIGRATIONS: Migration[] = [
     name: "plan access that ends: company rules give outside guests a set number of days",
     statements: [`ALTER TABLE plan_members ADD COLUMN expires_at INTEGER`],
   },
+  {
+    id: 18,
+    name: "rate limits: hits per person or network address in the current window",
+    statements: [`CREATE TABLE rate_limits (key TEXT PRIMARY KEY, window_start INTEGER NOT NULL, count INTEGER NOT NULL)`],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

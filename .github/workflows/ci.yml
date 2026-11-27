@@ -12,6 +12,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Fails the build on known high or critical vulnerabilities in dependencies.
+      - run: npm audit --audit-level=high
       - run: npm run typecheck
       - run: npm test
       - run: npx playwright install --with-deps chromium

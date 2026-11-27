@@ -7,6 +7,7 @@
  * so a reply is accepted only from the address it was sent to, and only into that case.
  */
 import type { Clock, Db, ServerConfig } from "./ports";
+import { headerSafe } from "./security";
 
 export interface OutgoingEmail {
   to: string;
@@ -96,7 +97,9 @@ export function replyText(text: string): string {
 }
 
 /** Records an email in the outbox and sends it when a mailer is set up. Returns its status. */
-export async function sendEmail(db: Db, clock: Clock, settings: MailSettings, mailer: Mailer | undefined, email: OutgoingEmail, caseId: string | null, messageId: string | null): Promise<"off" | "sent" | "failed"> {
+export async function sendEmail(db: Db, clock: Clock, settings: MailSettings, mailer: Mailer | undefined, raw: OutgoingEmail, caseId: string | null, messageId: string | null): Promise<"off" | "sent" | "failed"> {
+  // Names and titles end up in headers: line breaks there could add headers of their own.
+  const email: OutgoingEmail = { ...raw, to: headerSafe(raw.to), subject: headerSafe(raw.subject).slice(0, 200), replyTo: headerSafe(raw.replyTo), headers: Object.fromEntries(Object.entries(raw.headers).map(([k, v]) => [headerSafe(k), headerSafe(v)])) };
   let status: "off" | "sent" | "failed" = "off";
   if (mailer) {
     try {

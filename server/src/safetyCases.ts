@@ -5,6 +5,7 @@
  * Owner decisions, Nov 24: notice wording, email thread from day one, replies by email.
  */
 import type { Hono } from "hono";
+import { constantTimeEqual } from "./security";
 import { BRAND } from "@rakuplan/shared";
 import type { Clock, Db, ServerConfig, User } from "./ports";
 import { notify } from "./notify";
@@ -162,7 +163,7 @@ export function registerInboundEmail(app: Hono, d: CaseDeps, ready: () => Promis
     await ready();
     const settings = mailSettings(config, BRAND.name);
     if (!settings.inboundSecret) return c.json({ error: "Not found." }, 404);
-    if (c.req.header("authorization") !== `Bearer ${settings.inboundSecret}`) return c.json({ error: "Not allowed." }, 401);
+    if (!constantTimeEqual(c.req.header("authorization") ?? "", `Bearer ${settings.inboundSecret}`)) return c.json({ error: "Not allowed." }, 401);
     const b = await c.req.json<{ from?: unknown; to?: unknown; text?: unknown }>().catch(() => null);
     const from = typeof b?.from === "string" ? bareAddress(b.from) : "";
     const to = (Array.isArray(b?.to) ? b!.to : [b?.to]).filter((x): x is string => typeof x === "string");

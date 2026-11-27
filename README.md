@@ -40,6 +40,8 @@ npm start -w selfhost
 
 Sharing a plan: open the plan, choose **Share**, and make an invite link for someone's email (Editor or Viewer). Send the link yourself; it works once, for that address, for 7 days. If the server has `ALLOWED_EMAILS` set (the private build), add the person's address there too, or they can't sign in.
 
+Behind a reverse proxy (nginx, Caddy), set `TRUST_PROXY=1` so rate limits see each visitor's address instead of the proxy's. Leave it off when the server faces the internet directly, or visitors could fake their address.
+
 Email (optional, off by default): every email the app writes (safety follow-ups for now) is kept in the database outbox until sending is set up. `MAIL_FROM` and `MAIL_REPLY_DOMAIN` set the sender and the domain replies come back to (defaults come from `PUBLIC_URL`); `INBOUND_EMAIL_SECRET` turns on replies by email: your email provider posts received mail as JSON (`{ "from", "to", "text" }`) to `/inbound/email` with the header `Authorization: Bearer <secret>`.
 
 Checks:

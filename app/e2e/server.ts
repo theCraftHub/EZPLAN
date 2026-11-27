@@ -32,7 +32,9 @@ export const PEOPLE: Record<string, { sub: string; name: string; email: string }
 const fake = await FakeOidc.create(() => Date.now(), `http://127.0.0.1:${idPort}`);
 const { app: site, rooms, db } = createSelfHost({
   dataDir: mkdtempSync(join(tmpdir(), "e2e-")),
-  config: { defaultWorkWeek: DEFAULT_WORK_WEEK, publicUrl, providers: [fake.provider({ label: "Test ID" })], secureCookies: false, platformAdmins: ["pat@example.com"] },
+  config: { defaultWorkWeek: DEFAULT_WORK_WEEK, publicUrl, providers: [fake.provider({ label: "Test ID" })], secureCookies: false, platformAdmins: ["pat@example.com"],
+    // Browser tests sign in hundreds of times from one address and make many companies.
+    rateLimits: { signIn: { max: 100_000, windowMs: 60_000 }, orgCreate: { max: 100_000, windowMs: 60_000 }, invites: { max: 100_000, windowMs: 60_000 }, write: { max: 100_000, windowMs: 60_000 } } },
   // A fixed "today" keeps dates in screenshots and assertions stable; real time for sign-in tokens.
   clock: { today: () => today, now: () => Date.now() },
   http: async (req) => {
