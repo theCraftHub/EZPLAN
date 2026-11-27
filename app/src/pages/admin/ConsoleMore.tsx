@@ -299,9 +299,9 @@ export function CommandBar({ org, people, sections, onClose }: { org: OrgDetail;
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 px-4 pt-[10vh]" onClick={onClose}>
       <div role="dialog" aria-label="Command bar" className="flex w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-surface shadow-xl ring-1 ring-line" onClick={(e) => e.stopPropagation()}>
-        <label className="flex items-center gap-2 border-b border-line px-4">
+        <label className="flex items-center gap-2 rounded-t-2xl border-b border-line px-4 focus-within:ring-2 focus-within:ring-primary focus-within:ring-inset">
           <Search aria-hidden size={18} className="text-muted" />
-          <input ref={box} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search people, plans, workspaces and settings" placeholder="Search people, plans, workspaces, settings…" className="min-h-14 flex-1 bg-transparent text-base outline-none"
+          <input ref={box} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search people, plans, workspaces and settings" placeholder="Search people, plans, workspaces, settings…" data-focus-on-parent className="min-h-14 flex-1 bg-transparent text-base outline-none"
             onKeyDown={(e) => {
               if (e.key === "Escape") onClose();
               else if (e.key === "ArrowDown") { e.preventDefault(); setAt(Math.min(hits.length - 1, at + 1)); }
