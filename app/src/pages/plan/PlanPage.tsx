@@ -13,6 +13,7 @@ import { Activity } from "./Activity";
 import { usePlanRoom } from "../../lib/live";
 import { Link } from "../../lib/router";
 import { HealthChip, Notice, Spinner } from "../../ui/kit";
+import { Board } from "./Board";
 import { Checklist } from "./Checklist";
 import { usePlanMath } from "./math";
 import { Overview } from "./Overview";
@@ -27,6 +28,7 @@ import { Report } from "./Report";
 const TABS = [
   { view: "", label: "Overview" },
   { view: "checklist", label: "Checklist" },
+  { view: "board", label: "Board" },
   { view: "timeline", label: "Timeline" },
   { view: "grid", label: "Grid" },
   { view: "team", label: "Team" },
@@ -114,6 +116,7 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
       {view === "history" && <History planId={id} plan={room.plan} version={room.detail.version} canEdit={canEdit} edit={room.edit} />}
       {view === "" && <Overview plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} planId={id} version={room.version} statusUpdate={room.detail.statusUpdate} people={room.detail.people} workWeek={room.detail.workWeek} raidOpen={room.detail.raidOpen} />}
       {view === "checklist" && <Checklist plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} />}
+      {view === "board" && <Board plan={room.plan} math={math} canEdit={canEdit} edit={room.edit} />}
       {view === "timeline" && <Timeline plan={room.plan} math={math} today={room.detail.today} />}
       {view === "team" && <Team me={me} planId={id} plan={room.plan} math={math} people={room.detail.people} workWeek={room.detail.workWeek} today={room.detail.today} canEdit={canEdit} edit={room.edit} onPeople={(people) => room.setDetail({ ...room.detail!, people })} />}
       {view === "activity" && <Activity version={room.version} />}
