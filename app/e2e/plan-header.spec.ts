@@ -114,7 +114,7 @@ test("a plan inside a master links back to the master", async ({ page }, info) =
   await expect(page.getByText(`Part of the master plan Campus ${tag}`)).toBeVisible();
 });
 
-for (const width of [360, 501]) test(`at ${width}px the picker shows the whole name of every page, with no sideways scroll`, async ({ page }) => {
+for (const width of [360, 421, 501]) test(`at ${width}px the picker shows the whole name of every page, with no sideways scroll`, async ({ page }) => {
   await page.setViewportSize({ width, height: 740 });
   await signIn(page);
   const id = await addPlan(page, KITCHEN.replace("Kitchen Remodel", "Narrow Kitchen"));
@@ -161,7 +161,7 @@ test("slim bar appears on scroll", async ({ page }, info) => {
   expect(await page.locator("section[aria-label='Plan bar'] [role=status]").count()).toBe(0);
 
   // Row 2 half visible below the top bar: still hidden. Fully scrolled past: visible.
-  const topBar = phone ? 68 : 0;
+  const topBar = await page.evaluate(() => Math.round(document.querySelector("header.sticky")!.getBoundingClientRect().height));
   const rowBottom = await page.evaluate(() => document.querySelector("[data-plan-row2]")!.getBoundingClientRect().bottom + scrollY);
   await page.evaluate((y) => window.scrollTo(0, y), rowBottom - topBar - 20);
   await page.waitForTimeout(300);
@@ -190,8 +190,11 @@ test("slim bar appears on scroll", async ({ page }, info) => {
   await expect(page).toHaveURL(new RegExp(`/p/${id}/board$`));
   await page.goto(`/p/${id}/checklist`);
   await live(page);
-  await page.evaluate(() => window.scrollTo(0, 1200));
-  await expect(bar).toBeVisible();
+  // The list may still be filling in after a reload, so scroll again until the page is tall enough.
+  await expect(async () => {
+    await page.evaluate(() => window.scrollTo(0, 1200));
+    await expect(bar).toBeVisible({ timeout: 1000 });
+  }).toPass();
 
   await page.emulateMedia({ media: "print" });
   await expect(bar).toBeHidden();
@@ -200,6 +203,70 @@ test("slim bar appears on scroll", async ({ page }, info) => {
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect(bar).toBeHidden();
   await expect(page.locator("section[aria-label='Plan bar']")).toHaveAttribute("aria-hidden", "true");
+});
+
+const BIG = (name: string) => `---\nrakuplan: 1\ntitle: ${name}\nstart: 2027-01-04\nteam: ${Array.from({ length: 20 }, (_, i) => `Pat${i}`).join(", ")}\n---\n## P1: Work\n${Array.from({ length: 40 }, (_, i) => `- [ ] T${i + 1}: Task number ${i + 1} (1d) @Pat${i % 20}`).join("\n")}\n`;
+
+test("sticky table cells never paint over the slim bar (desktop)", async ({ page }, info) => {
+  test.skip(info.project.name === "phone", "desktop layout");
+  await signIn(page);
+  const id = await addPlan(page, BIG("Stack Kitchen"));
+  for (const view of ["grid", "team"]) {
+    await page.goto(`/p/${id}/${view}`);
+    await live(page);
+    await page.evaluate(() => window.scrollTo(0, 700));
+    const bar = page.getByRole("region", { name: "Plan bar" });
+    await expect(bar).toBeVisible();
+    await page.waitForTimeout(300);
+    const ok = await page.evaluate(() => {
+      const b = document.querySelector("section[aria-label='Plan bar']")!;
+      const t = b.querySelector("[data-testid=bar-title]")!.getBoundingClientRect();
+      const hit = document.elementFromPoint(t.left + 20, t.top + t.height / 2);
+      return !!hit && b.contains(hit);
+    });
+    expect(ok, `${view}: something paints over the bar`).toBe(true);
+    if (process.env.SHOTS) await page.screenshot({ path: `e2e/.results/shots/${info.project.name}-bar-${view}.png` });
+  }
+});
+
+test("scroll padding clears the bar while a plan page is open", async ({ page }) => {
+  await signIn(page);
+  const id = await addPlan(page, KITCHEN.replace("Kitchen Remodel", "Pad Kitchen"));
+  await page.goto(`/p/${id}`);
+  await live(page);
+  const pad = () => page.evaluate(() => document.documentElement.style.scrollPaddingTop);
+  await expect.poll(async () => parseInt(await pad())).toBeGreaterThan(30);
+  await page.getByRole("link", { name: "All plans" }).first().click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect.poll(pad).toBe("");
+});
+
+test("focus inside the bar moves to row 2 when the bar hides (desktop)", async ({ page }, info) => {
+  test.skip(info.project.name === "phone", "desktop layout");
+  await signIn(page);
+  const id = await addPlan(page, BIG("Focus Kitchen"));
+  await page.goto(`/p/${id}/checklist`);
+  await live(page);
+  await page.evaluate(() => window.scrollTo(0, 1200));
+  const bar = page.getByRole("region", { name: "Plan bar" });
+  await expect(bar).toBeVisible();
+  await bar.getByRole("link", { name: "Share" }).focus();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(bar).toBeHidden();
+  expect(await page.evaluate(() => {
+    const a = document.activeElement as HTMLElement;
+    return { name: a.getAttribute("aria-label"), inRow2: !!a.closest("[data-plan-row2]") };
+  })).toEqual({ name: "Share", inRow2: true });
+});
+
+test("the print summary keeps the header, hidden when printing", async ({ page }) => {
+  await signIn(page);
+  const id = await addPlan(page, KITCHEN.replace("Kitchen Remodel", "Print Kitchen"));
+  await page.goto(`/p/${id}/print`);
+  const picker = page.getByRole("button", { name: "Plan view: Print summary" }).first();
+  await expect(picker).toBeVisible();
+  await page.emulateMedia({ media: "print" });
+  await expect(picker).toBeHidden();
 });
 
 test("screenshots of the header and slim bar", async ({ page }, info) => {

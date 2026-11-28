@@ -47,7 +47,9 @@ same weight, so nothing reads as "do this next".
   small connection indicator ("Live", "Offline", "Reconnecting") on the same line. The offline and
   archived notices stay as they are below.
 - Row 2: the view picker on the left, actions on the right.
-  - Phone: `[▦ Checklist ▾]  [✨ Update] [👥 Share] [⋯]` (shorter labels; Report goes into More).
+  - Phone: `[▦ Checklist ▾]  [✨] [👥] [⋯]` (Update and Share are icon-only up to 500px wide, with
+    accessible names and tooltips kept; Report goes into More). Below 421px the picker shows
+    "History" and "Update" for those two pages, so the whole name fits.
   - Desktop: full labels and Report visible, as sketched above.
 - **View picker:** a button showing the current view's icon and name. It opens a menu listing all 8
   views (Overview, Checklist, Board, Timeline, Grid, Team, Risks, Activity), each with an icon and a

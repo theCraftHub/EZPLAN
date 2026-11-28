@@ -167,11 +167,32 @@ export function PlanHeader(p: { id: string; view: string; title: string; health:
     const el = row2.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
     // Not intersecting and at or above the line under the top bar (1px of slack) = scrolled past, not still below.
-    const io = new IntersectionObserver(([e]) => setStuck(!!e && !e.isIntersecting && e.boundingClientRect.bottom <= topOffset + 1), { rootMargin: `-${topOffset}px 0px 0px 0px` });
+    const io = new IntersectionObserver(([e]) => {
+      const on = !!e && !e.isIntersecting && e.boundingClientRect.bottom <= topOffset + 1;
+      // The bar is about to go inert and remount its controls: hand focus inside it to row 2's twin.
+      const a = document.activeElement as HTMLElement | null;
+      if (!on && a && bar.current?.contains(a)) {
+        const name = a.getAttribute("aria-label");
+        const twin = name ? [...(el.querySelectorAll<HTMLElement>("[aria-label]"))].find((n) => n.getAttribute("aria-label") === name) : null;
+        twin?.focus({ preventScroll: true });
+      }
+      setStuck(on);
+    }, { rootMargin: `-${topOffset}px 0px 0px 0px` });
     io.observe(el);
     return () => io.disconnect();
   }, [topOffset]);
   const barOn = stuck && !p.presenting;
+  const bar = useRef<HTMLElement>(null);
+  // Keep keyboard focus out from under the fixed bar: scroll padding = top offset + bar height.
+  useEffect(() => {
+    const root = document.documentElement;
+    const prev = root.style.scrollPaddingTop;
+    const apply = () => { root.style.scrollPaddingTop = `${Math.round(topOffset + (bar.current?.getBoundingClientRect().height ?? 0))}px`; };
+    apply();
+    const ro = typeof ResizeObserver === "undefined" || !bar.current ? null : new ResizeObserver(apply);
+    if (ro && bar.current) ro.observe(bar.current);
+    return () => { ro?.disconnect(); root.style.scrollPaddingTop = prev; };
+  }, [topOffset, p.presenting]);
   const back = m?.canOpenMaster ? { to: `/m/${m.id}`, name: `${m.title}${m.isMaster ? "" : ` › ${p.title}`}` } : { to: "/", name: "All plans" };
   return (
     <>
@@ -194,8 +215,8 @@ export function PlanHeader(p: { id: string; view: string; title: string; health:
       </div>
     </header>
     {!p.presenting && (
-      <section aria-label="Plan bar" aria-hidden={barOn ? undefined : true} inert={!barOn} style={{ top: topOffset }}
-        className={`fixed inset-x-0 z-[9] border-b border-line bg-surface/95 backdrop-blur transition-[opacity,visibility] motion-reduce:transition-none lg:left-60 print:hidden ${barOn ? "opacity-100" : "invisible opacity-0"}`}>
+      <section ref={bar} aria-label="Plan bar" aria-hidden={barOn ? undefined : true} inert={!barOn} style={{ top: topOffset }}
+        className={`fixed inset-x-0 z-[25] border-b border-line bg-surface/95 backdrop-blur transition-[opacity,visibility] motion-reduce:transition-none lg:left-60 print:hidden ${barOn ? "opacity-100" : "invisible opacity-0"}`}>
         <div className="mx-auto flex max-w-6xl items-center gap-1.5 px-4 py-1 lg:gap-2 lg:px-8">
           <Link to={back.to} aria-label={back.name} title={back.name} className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-muted hover:bg-surface-2 hover:text-ink"><ArrowLeft aria-hidden size={20} /></Link>
           <span data-testid="bar-title" className="min-w-0 flex-1 truncate text-[15px] font-bold" title={p.title}>{p.title}</span>

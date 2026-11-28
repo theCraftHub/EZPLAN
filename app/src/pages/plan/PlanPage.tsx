@@ -38,7 +38,15 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
   const canEdit = canEditRole(room.detail.role);
   const others = room.presence.filter((p) => p.userId !== me.user.id);
   const updated = Number(new URLSearchParams(location.search).get("updated") ?? 0);
-  if (view === "print") return <PrintSummary plan={room.plan} math={math} today={room.detail.today} />;
+  if (view === "print") {
+    return (
+      <>
+        <PlanHeader id={id} view={view} title={room.plan.title} health={math.progress.suggestedHealth} statusUpdate={room.detail.statusUpdate} master={room.detail.master} status={room.status} pending={room.pending} others={others} canEdit={canEdit} role={room.detail.role} onPresent={() => setPresenting(true)} presentDisabled={!math} presenting={presenting} />
+        <PrintSummary plan={room.plan} math={math} today={room.detail.today} />
+        {presenting && <Present plan={room.plan} math={math} today={room.detail.today} onClose={() => setPresenting(false)} extra={{ risks: room.detail.raidOpen.risks }} />}
+      </>
+    );
+  }
   return (
     <PlanContext.Provider value={planCtx}>
       <PlanHeader id={id} view={view} title={room.plan.title} health={math.progress.suggestedHealth} statusUpdate={room.detail.statusUpdate} master={room.detail.master} status={room.status} pending={room.pending} others={others} canEdit={canEdit} role={room.detail.role} onPresent={() => setPresenting(true)} presentDisabled={!math} presenting={presenting} />
