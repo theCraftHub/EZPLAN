@@ -16,6 +16,7 @@ const Availability = z
       .array(z.object({ start: IsoDate, end: IsoDate, label: z.string().max(60).optional() }).refine((r) => r.start <= r.end, "A time off range must end on or after its start."))
       .max(50)
       .optional(),
+    rate: z.number().min(0).max(100000).optional(),
   })
   .strict();
 
@@ -30,6 +31,7 @@ export function parseAvailability(input: unknown): PersonAvailability | null {
     ...(a.hoursPerWeek !== undefined ? { hoursPerWeek: Math.round(a.hoursPerWeek * 2) / 2 } : {}),
     ...(a.workdays ? { workdays: [...new Set(a.workdays)].sort() } : {}),
     ...(a.timeOff ? { timeOff: a.timeOff.map((t) => ({ start: t.start, end: t.end, ...(t.label ? { label: t.label } : {}) })) } : {}),
+    ...(a.rate !== undefined ? { rate: Math.round(a.rate * 100) / 100 } : {}),
   };
 }
 

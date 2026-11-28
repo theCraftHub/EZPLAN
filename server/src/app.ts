@@ -54,6 +54,7 @@ import { countEvent, recordError, registerOpsRoutes } from "./opsPage";
 import { registerPublicShareRoute, registerShareRoutes } from "./shares";
 import { runJobs, type JobDeps, type JobFilter } from "./jobs";
 import { busyByName, registerCalendarRoutes, registerPublicCalendarRoute } from "./calendars";
+import { registerTimeRoutes } from "./timeLogs";
 import { mailSettings, sendEmail } from "./mail";
 import { registerCollabRoutes } from "./comments";
 import { notify, registerNotificationRoutes, unreadCount, userForName } from "./notify";
@@ -284,6 +285,7 @@ export function createApp(ports: Ports) {
   // Scheduled jobs (digests, reminders, weekly summaries): run by each host every 15 minutes.
   const jobDeps: JobDeps = { db, clock, http: ports.http, email: orgEmail, plan: (planId, today) => planWithSchedule(planId, today) };
   registerCalendarRoutes(app, calendarDeps);
+  registerTimeRoutes(app, { db, clock, notFound, access });
   const runScheduled = async (at?: number, only?: JobFilter) => { await ensureReady(); return runJobs(jobDeps, at ?? clock.now(), only); };
   // Tests only: run the jobs now, as if at a given time.
   if (ports.testAuth) app.post("/api/test/run-jobs", async (c) => { const b = await c.req.json<{ at?: number }>().catch(() => ({}) as { at?: number }); return c.json(await runScheduled(typeof b.at === "number" ? b.at : undefined)); });

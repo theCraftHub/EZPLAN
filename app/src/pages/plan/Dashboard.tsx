@@ -3,7 +3,7 @@
  * Every number comes from the same engine as the rest of the plan page. Phones keep the compact Overview.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react";
-import { ArrowDown, ArrowUp, CalendarClock, Eye, EyeOff, GripVertical, LayoutGrid, Route, TriangleAlert, Users } from "lucide-react";
+import { ArrowDown, ArrowUp, CalendarClock, Eye, EyeOff, GripVertical, LayoutGrid, Route, TriangleAlert, Users, Wallet } from "lucide-react";
 import { fromDay, toDay, type Op, type PersonAvailability, type Plan, type WorkWeek } from "@rakuplan/shared";
 import { api, type UpdateState } from "../../lib/api";
 import { plural, shortDate } from "../../lib/format";
@@ -13,6 +13,7 @@ import { RecentActivity } from "./Activity";
 import type { usePlanMath } from "./math";
 import { Baseline, LatestUpdate, UpNext } from "./OverviewCards";
 import { PlanCheck } from "./PlanCheck";
+import { BudgetCard } from "./Budget";
 import { useTeamData } from "./teamData";
 import { pack } from "./pack";
 
@@ -30,6 +31,7 @@ export const WIDGETS = [
   { id: "workload", title: "Workload", w: 6, sizes: [4, 6, 8, 12] },
   { id: "upnext", title: "Up next", w: 6, sizes: [4, 6, 8, 12] },
   { id: "check", title: "Plan Check", w: 6, sizes: [4, 6, 8, 12] },
+  { id: "budget", title: "Budget", w: 6, sizes: [4, 6, 8, 12] },
   { id: "activity", title: "Recent activity", w: 6, sizes: [4, 6, 8, 12] },
 ] as const;
 type WidgetId = (typeof WIDGETS)[number]["id"];
@@ -197,6 +199,7 @@ function Widget({ id, ...p }: Props & { id: WidgetId }): ReactNode {
     case "upnext": return <UpNext math={p.math} planId={p.planId} canEdit={p.canEdit} edit={p.edit} />;
     case "check": return <PlanCheck planId={p.planId} plan={p.plan} math={p.math} canEdit={p.canEdit} edit={p.edit} />;
     case "activity": return <RecentActivity version={p.version} />;
+    case "budget": return <Card aria-label="Budget" className="flex flex-col gap-2"><h2 className="m-0 flex items-center gap-2 text-lg font-bold"><Wallet aria-hidden size={18} /> Budget</h2><BudgetCard plan={p.plan} planId={p.planId} people={p.people} workWeek={p.workWeek} /></Card>;
   }
 }
 

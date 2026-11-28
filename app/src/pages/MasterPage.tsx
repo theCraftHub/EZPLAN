@@ -5,7 +5,7 @@
  * phone and desktop: it reflows.
  */
 import { useEffect, useMemo, useState, type ReactElement } from "react";
-import { allTasks, crossRef, localSchedule, masterSchedule, MASTER_KEY, progressOf, type MasterPart, type PersonAvailability, type Task } from "@rakuplan/shared";
+import { allTasks, budgetOf, crossRef, localSchedule, masterSchedule, MASTER_KEY, money, progressOf, type MasterPart, type PersonAvailability, type Task } from "@rakuplan/shared";
 import { api, ApiError, type MasterData, type MasterMessage, type MasterThread } from "../lib/api";
 import { plural, shortDate } from "../lib/format";
 import { Link } from "../lib/router";
@@ -398,6 +398,13 @@ function RollUp({ data, calc }: Shared) {
   const masterPart = data.parts.find((p) => p.key === MASTER_KEY)!;
   const milestones = allTasks(masterPart.plan).filter((t) => t.milestone).map((t) => ({ t, s: calc.base.task(MASTER_KEY, t.id) }));
   const overdue = calc.parts.flatMap((p) => allTasks(p.plan).filter((t) => calc.base.task(p.key, t.id)?.overdue && t.status !== "done" && t.status !== "skipped").map((t) => `${p.title === masterPart.title ? "Whole building" : p.title}: ${t.title}`));
+  // Money (step N4): costs set on tasks, and rates times estimates. Totals only when every plan uses one currency.
+  const rates = Object.fromEntries(Object.entries(data.people).filter(([, a]) => a.rate !== undefined).map(([n, a]) => [n, a.rate!]));
+  const money_ = calc.parts.map((p) => ({ title: p.title === masterPart.title ? "Whole building" : p.title, b: budgetOf(p.plan, { rates, workWeek: data.workWeek }) })).filter((x) => x.b.hasMoney);
+  const currencies = [...new Set(money_.map((x) => x.b.currency))];
+  const budgetLines = !money_.length ? [] : currencies.length === 1
+    ? ["", "Budget:", `- Total: ${money(money_.reduce((n, x) => n + x.b.planned, 0), currencies[0])} planned, ${money(money_.reduce((n, x) => n + x.b.actual, 0), currencies[0])} spent, forecast ${money(money_.reduce((n, x) => n + x.b.forecast, 0), currencies[0])}`, ...money_.map((x) => `- ${x.title}: ${money(x.b.actual, x.b.currency)} of ${money(x.b.planned, x.b.currency)}${x.b.overBy > 0 ? `, heading ${money(x.b.overBy, x.b.currency)} over` : ""}`)]
+    : ["", "Budget (plans use different currencies):", ...money_.map((x) => `- ${x.title}: ${money(x.b.actual, x.b.currency)} of ${money(x.b.planned, x.b.currency)}${x.b.overBy > 0 ? `, heading ${money(x.b.overBy, x.b.currency)} over` : ""}`)];
   const health = late.some((s) => s.progress.suggestedHealth === "Off track") ? "Off track" : late.length ? "At risk" : percent === 100 ? "Complete" : "On track";
   const lines = [
     `${data.title}: status ${shortDate(data.today)}`,
@@ -407,6 +414,7 @@ function RollUp({ data, calc }: Shared) {
     ...subs.map((s) => `- ${s.title}: ${s.progress.suggestedHealth}, ${s.progress.percent}% done, ${shortDate(s.start)} to ${shortDate(s.finish)}${s.critical ? ", decides the finish" : ""}${s.waits.length ? `; waits on ${s.waits.map((w) => w.title).join(", ")}` : ""}`),
     ...(milestones.length ? ["", "Milestones:", ...milestones.map(({ t, s }) => `- ${t.title}: ${t.status === "done" ? "done" : s ? shortDate(s.end) : "not scheduled"}`)] : []),
     ...(overdue.length ? ["", "Overdue:", ...overdue.map((o) => `- ${o}`)] : []),
+    ...budgetLines,
     ...(late.length ? ["", `Needs attention: ${late.map((s) => s.title).join(", ")}.`] : []),
   ];
   const text = lines.join("\n");

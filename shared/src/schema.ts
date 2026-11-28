@@ -73,6 +73,8 @@ export const Task = z.object({
   approved: Attribution.optional(),
   /** Repeats when done ("weekly", "every 2 weeks", "monthly", "weekdays"…). */
   repeat: z.string().optional(),
+  /** Money, in the plan's currency ("cost: 1200/950" = planned 1,200, actual 950). */
+  cost: z.object({ planned: z.number().nonnegative().optional(), actual: z.number().nonnegative().optional() }).optional(),
   priority: Priority.optional(),
   tags: z.array(z.string()),
   subtasks: z.array(Subtask),

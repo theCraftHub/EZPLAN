@@ -46,7 +46,7 @@ const show = (v: unknown): string => {
   }
   return String(v);
 };
-const FIELD_NAME: Record<EditableField, string> = { title: "name", owner: "owner", dept: "department", due: "due date", estimate: "time needed", depends: "waits on", notes: "notes", tags: "tags", priority: "priority", approver: "approver", repeat: "repeats" };
+const FIELD_NAME: Record<EditableField, string> = { title: "name", owner: "owner", dept: "department", due: "due date", estimate: "time needed", depends: "waits on", notes: "notes", tags: "tags", priority: "priority", approver: "approver", repeat: "repeats", cost: "cost" };
 const PLAN_NAME: Record<PlanField, string> = { title: "Plan name", goal: "Goal", doneWhen: "Done when" };
 
 /** A new task from a reply starts fresh: not started, nobody credited. */
@@ -56,6 +56,8 @@ function freshTask(t: Task): Task {
   delete copy.done;
   delete copy.skipped;
   delete copy.approved;
+  // Money actually spent is recorded in the app, never taken from a reply.
+  if (copy.cost) { delete copy.cost.actual; if (copy.cost.planned === undefined) delete copy.cost; }
   delete copy.extra.remove;
   return copy;
 }

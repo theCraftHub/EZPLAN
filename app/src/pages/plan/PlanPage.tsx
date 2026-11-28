@@ -42,7 +42,7 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
   const math = usePlanMath(settled, ctx);
   const [presenting, setPresenting] = useState(false);
   const role = room.detail?.role;
-  const planCtx = useMemo<PlanCtx>(() => ({ planId: id, canComment: canCommentRole(role), counts: room.comments.counts, tick: room.comments.tick, me: me.user.name, manager: role === "manager" }), [id, role, room.comments, me.user.name]);
+  const planCtx = useMemo<PlanCtx>(() => ({ planId: id, canComment: canCommentRole(role), counts: room.comments.counts, tick: room.comments.tick, me: me.user.name, manager: role === "manager", people: room.detail?.people, workWeek: room.detail?.workWeek }), [id, role, room.comments, me.user.name, room.detail?.people, room.detail?.workWeek]);
   if (room.error) return <Notice tone="bad">{room.error}</Notice>;
   if (!room.plan || !room.detail || !math) return <Spinner label="Opening the plan" />;
   const canEdit = canEditRole(room.detail.role);

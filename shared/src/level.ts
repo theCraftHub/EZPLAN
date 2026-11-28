@@ -26,6 +26,8 @@ export interface PersonAvailability {
   timeOff?: TimeOff[];
   /** Hours already busy per date (from a connected calendar). Only hours are kept, never event details. */
   busy?: Record<string, number>;
+  /** Cost per hour in the plan's currency (budgets; optional). */
+  rate?: number;
 }
 
 export interface LevelOptions extends ScheduleOptions {

@@ -17,6 +17,7 @@ export function PersonSheet({ planId, name, initial, workWeek, isNew, title, onS
   const [off, setOff] = useState(initial?.timeOff ?? []);
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
+  const [rate, setRate] = useState(initial?.rate?.toString() ?? "");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const toggle = (d: number) => setDays(days.includes(d) ? days.filter((x) => x !== d) : [...days, d].sort());
@@ -24,7 +25,9 @@ export function PersonSheet({ planId, name, initial, workWeek, isNew, title, onS
     const n = who.trim();
     if (!n) return setError("Enter a name.");
     if (!days.length) return setError("Pick at least one working day.");
-    const a: PersonAvailability = { hoursPerWeek: hours, ...(JSON.stringify(days) !== JSON.stringify(workWeek.workdays) ? { workdays: days } : {}), ...(off.length ? { timeOff: off } : {}) };
+    const r = rate.trim() === "" ? undefined : Number(rate.replace(/,/g, ""));
+    if (r !== undefined && !(r >= 0 && r <= 100000)) return setError("Enter an hourly rate from 0 to 100,000, or leave it empty.");
+    const a: PersonAvailability = { hoursPerWeek: hours, ...(r !== undefined ? { rate: Math.round(r * 100) / 100 } : {}), ...(JSON.stringify(days) !== JSON.stringify(workWeek.workdays) ? { workdays: days } : {}), ...(off.length ? { timeOff: off } : {}) };
     setBusy(true);
     try {
       await api.setPerson(planId, n, a);
@@ -47,6 +50,7 @@ export function PersonSheet({ planId, name, initial, workWeek, isNew, title, onS
           {error && <Notice tone="bad">{error}</Notice>}
           {isNew && <label className="flex flex-col gap-1.5 text-sm font-semibold">Name<input autoFocus value={who} onChange={(e) => setWho(e.target.value)} placeholder="e.g. Sam" className="min-h-11 rounded-xl border border-line bg-surface px-3 text-base font-normal" /></label>}
           <HoursPicker label="Hours a week for this project" value={hours} fullTime={workWeek.hoursPerWeek} workdays={days.length || 5} onChange={setHours} />
+          <label className="flex flex-col gap-1.5 text-sm font-semibold">Hourly rate (optional)<input inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="e.g. 85" className="min-h-11 rounded-xl border border-line bg-surface px-3 text-base font-normal" /><span className="font-normal text-muted">Used to work out costs from estimates and logged time. Everyone on this plan can see those costs, so the rate can be worked out from them.</span></label>
           <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
             <legend className="mb-2 p-0 text-sm font-semibold">Working days</legend>
             <div className="flex flex-wrap gap-1.5">

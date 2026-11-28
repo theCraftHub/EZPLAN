@@ -4,6 +4,7 @@
  */
 import { BRAND } from "./brand";
 import { FORMAT_VERSION, type Dependency, type Estimate, type Plan, type Subtask, type Task, type TaskStatus } from "./schema";
+import { formatCost } from "./budget";
 
 const BOX: Record<TaskStatus, string> = { todo: "[ ]", progress: "[/]", done: "[x]", skipped: "[-]" };
 
@@ -88,6 +89,7 @@ function taskLines(t: Task): string[] {
   if (t.done) line += ` done: ${t.done.date}${t.done.by ? ` by ${t.done.by}` : ""}`;
   if (t.skipped) line += ` skipped: ${t.skipped.date}${t.skipped.by ? ` by ${t.skipped.by}` : ""}`;
   if (t.repeat) line += ` repeat: ${t.repeat}`;
+  if (formatCost(t.cost)) line += ` cost: ${formatCost(t.cost)}`;
   if (t.approver) line += ` approver: ${/\s/.test(t.approver) ? `"${t.approver}"` : t.approver}`;
   if (t.approved) line += ` approved: ${t.approved.date}${t.approved.by ? ` by ${t.approved.by}` : ""}`;
   const lines = [line];

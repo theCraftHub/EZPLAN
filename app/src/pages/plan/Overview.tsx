@@ -7,6 +7,7 @@ import { RecentActivity } from "./Activity";
 import type { Op, PersonAvailability, Plan, WorkWeek } from "@rakuplan/shared";
 import { plural, shortDate } from "../../lib/format";
 import { Card, ProgressRing } from "../../ui/kit";
+import { BudgetCard } from "./Budget";
 import type { usePlanMath } from "./math";
 import { PlanCheck } from "./PlanCheck";
 
@@ -56,6 +57,7 @@ export function Overview({ plan, math, today, canEdit, edit, planId, version, st
       <UpNext math={math} planId={planId} canEdit={canEdit} edit={edit} className="lg:col-span-2" />
 
       <PlanCheck planId={planId} plan={plan} math={math} canEdit={canEdit} edit={edit} />
+      <Card aria-label="Budget" className="flex flex-col gap-2"><h2 className="m-0 text-lg font-bold">Budget</h2><BudgetCard plan={plan} planId={planId} people={people} workWeek={workWeek} /></Card>
       <RecentActivity version={version} />
     </div>
   );

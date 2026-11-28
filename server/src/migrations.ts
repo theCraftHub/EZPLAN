@@ -249,6 +249,14 @@ export const MIGRATIONS: Migration[] = [
       `CREATE TABLE calendar_feeds (user_id TEXT PRIMARY KEY REFERENCES users(id), token_hash TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL)`,
     ],
   },
+  {
+    id: 24,
+    name: "time logging: hours worked on tasks, by person and day",
+    statements: [
+      `CREATE TABLE time_logs (id TEXT PRIMARY KEY, plan_id TEXT NOT NULL REFERENCES plans(id), task_id TEXT NOT NULL, user_id TEXT NOT NULL REFERENCES users(id), person TEXT NOT NULL, date TEXT NOT NULL, minutes INTEGER NOT NULL, note TEXT, created_at INTEGER NOT NULL)`,
+      `CREATE INDEX time_logs_plan ON time_logs(plan_id, task_id)`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

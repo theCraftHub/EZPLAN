@@ -238,6 +238,9 @@ export const api = {
   calendarBusy: () => call<{ connected: boolean; host?: string; syncedAt?: number | null; error?: string | null; next?: { date: string; hours: number }[] }>("/api/me/calendar-busy"),
   connectCalendar: (url: string) => call<{ connected: true; host: string; days: number }>("/api/me/calendar-busy", { method: "PUT", body: JSON.stringify({ url }) }),
   disconnectCalendar: () => call<{ ok: true }>("/api/me/calendar-busy", { method: "DELETE" }),
+  timeLogs: (planId: string) => call<{ canLog: boolean; manager: boolean; entries: TimeLog[] }>(`/api/plans/${encodeURIComponent(planId)}/time`),
+  logTime: (planId: string, v: { taskId: string; date: string; hours: number; note?: string; person?: string }) => call<{ id: string }>(`/api/plans/${encodeURIComponent(planId)}/time`, { method: "POST", body: JSON.stringify(v) }),
+  deleteTime: (planId: string, entryId: string) => call<{ ok: true }>(`/api/plans/${encodeURIComponent(planId)}/time/${encodeURIComponent(entryId)}`, { method: "DELETE" }),
   setPlanState: (id: string, state: "archived" | "active") => call<{ state: string }>(`/api/plans/${encodeURIComponent(id)}/state`, { method: "PUT", body: JSON.stringify({ state }) }),
   createPlan: (text: string, people: People = {}, fileName?: string, workspaceId?: string) => call<{ id: string; notices: string[] }>("/api/plans", { method: "POST", body: JSON.stringify({ text, people, ...(fileName ? { fileName } : {}), ...(workspaceId ? { workspaceId } : {}) }) }),
   setPerson: (planId: string, name: string, a: PersonAvailability) => call<{ name: string }>(`/api/plans/${encodeURIComponent(planId)}/people/${encodeURIComponent(name)}`, { method: "PUT", body: JSON.stringify(a) }),
@@ -379,3 +382,4 @@ export interface OffboardSummary {
   tasks: { planId: string; title: string; count: number }[];
   recipients: { id: string; name: string }[];
 }
+export interface TimeLog { id: string; taskId: string; person: string; date: string; minutes: number; note: string | null; mine: boolean }

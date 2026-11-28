@@ -23,6 +23,7 @@ const FIELD_VALUES = {
   tags: z.array(Text(60)).max(50),
   approver: Text(120).nullable(),
   repeat: Text(40).refine((v) => !!parseRepeat(v), "Not a repeat rule").nullable(),
+  cost: z.object({ planned: z.number().nonnegative().max(1e12).optional(), actual: z.number().nonnegative().max(1e12).optional() }).strict().nullable(),
 } as const;
 
 const setField = <F extends keyof typeof FIELD_VALUES>(field: F) =>
@@ -39,6 +40,7 @@ const SetField = z.union([
   setField("tags"),
   setField("approver"),
   setField("repeat"),
+  setField("cost"),
 ]);
 
 const NewTask = Task.extend({ id: Id, title: Text(500).min(1), done: z.undefined().optional(), skipped: z.undefined().optional(), approved: z.undefined().optional() });

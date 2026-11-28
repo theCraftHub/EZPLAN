@@ -17,7 +17,7 @@
 import type { Phase, Plan, Task, TaskStatus } from "./schema";
 import { nextOccurrence } from "./repeat";
 
-export type EditableField = "title" | "owner" | "dept" | "due" | "notes" | "priority" | "estimate" | "depends" | "tags" | "approver" | "repeat";
+export type EditableField = "title" | "owner" | "dept" | "due" | "notes" | "priority" | "estimate" | "depends" | "tags" | "approver" | "repeat" | "cost";
 
 export type Op =
   | { kind: "setStatus"; taskId: string; status: TaskStatus }

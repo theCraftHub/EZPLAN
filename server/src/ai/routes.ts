@@ -239,7 +239,9 @@ export function registerAiRoutes(app: Hono<{ Variables: { user: User } }>, d: Ai
     const workWeek = await d.workWeekOf(a.workspace_id);
     const schedule = await scheduleOf(d.db, id, room.plan as Plan, { workWeek, today, people }, levelPlan);
     const since = typeof b?.since === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.since) ? b.since : undefined;
-    const facts = statusFacts(room.plan, schedule, progressOf(room.plan, schedule, { workWeek, today }), { today, ...(since ? { since } : {}) });
+    const rates = Object.fromEntries(Object.entries(people).filter(([, p]) => p.rate !== undefined).map(([n, p]) => [n, p.rate!]));
+    const time = (await d.db.all<{ task_id: string; minutes: number }>(`SELECT task_id, minutes FROM time_logs WHERE plan_id = ?`, [id])).map((r) => ({ taskId: r.task_id, minutes: Number(r.minutes) }));
+    const facts = statusFacts(room.plan, schedule, progressOf(room.plan, schedule, { workWeek, today }), { today, rates, time, ...(since ? { since } : {}) });
     const template = templateReport(facts);
     if (b?.ai !== true) return c.json({ facts, text: template, source: "template" });
     if (!canEdit(a.role)) return c.json({ error: "Only people who can edit this plan can run AI reports." }, 403);

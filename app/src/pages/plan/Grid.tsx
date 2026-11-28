@@ -5,7 +5,7 @@
  */
 import { memo, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { ArrowDownUp, ArrowDown, ArrowUp } from "lucide-react";
-import { allTasks, formatDepends, formatEstimate, fromDay, parseDepends, parseEstimate, toDay, type Op, type Plan, type ScheduledTask, type Task, type TaskStatus } from "@rakuplan/shared";
+import { allTasks, formatCost, formatDepends, formatEstimate, fromDay, parseCost, parseDepends, parseEstimate, toDay, type Op, type Plan, type ScheduledTask, type Task, type TaskStatus } from "@rakuplan/shared";
 import { shortDate } from "../../lib/format";
 import { Link } from "../../lib/router";
 import { useIsDesktop, useVisibleRows } from "../../lib/view";
@@ -17,7 +17,7 @@ const ROW = 40;
 const PHASE_ROW = 36;
 const ZOOM = { Day: 30, Week: 12 } as const;
 const STATUS: Record<TaskStatus, string> = { todo: "To do", progress: "Doing", done: "Done", skipped: "Skipped" };
-type Col = "id" | "title" | "owner" | "status" | "start" | "end" | "takes" | "waits" | "slip";
+type Col = "id" | "title" | "owner" | "status" | "start" | "end" | "takes" | "waits" | "slip" | "cost";
 const COLS: { id: Col; label: string; w: number; sort: boolean }[] = [
   { id: "id", label: "ID", w: 52, sort: true },
   { id: "title", label: "Task", w: 210, sort: true },
@@ -28,6 +28,7 @@ const COLS: { id: Col; label: string; w: number; sort: boolean }[] = [
   { id: "takes", label: "Takes", w: 60, sort: false },
   { id: "waits", label: "Waits on", w: 92, sort: false },
   { id: "slip", label: "Vs baseline", w: 84, sort: true },
+  { id: "cost", label: "Cost (planned/spent)", w: 120, sort: true },
 ];
 const GRID_W = COLS.reduce((s, c) => s + c.w, 0);
 /** ID and Task stay pinned at the left while the other columns scroll, so you always see which row you're on. */
@@ -41,7 +42,7 @@ export function Grid({ plan, math, today, canEdit, edit, planId }: { plan: Plan;
   const [sort, setSort] = useState<{ col: Col; down: boolean } | null>(null);
   const [zoom, setZoom] = useState<keyof typeof ZOOM>("Day");
   const { schedule } = math;
-  const value = (t: Task, s: ScheduledTask, c: Col): string | number => ({ id: Number(t.id.slice(1)) * (t.id[0] === "M" ? 1e6 : 1), title: t.title.toLowerCase(), owner: (t.owner ?? "~").toLowerCase(), status: ["progress", "todo", "done", "skipped"].indexOf(t.status), start: s.start, end: s.end, slip: math.variance.get(t.id) ?? 0, takes: 0, waits: 0 })[c];
+  const value = (t: Task, s: ScheduledTask, c: Col): string | number => ({ id: Number(t.id.slice(1)) * (t.id[0] === "M" ? 1e6 : 1), title: t.title.toLowerCase(), owner: (t.owner ?? "~").toLowerCase(), status: ["progress", "todo", "done", "skipped"].indexOf(t.status), start: s.start, end: s.end, slip: math.variance.get(t.id) ?? 0, takes: 0, waits: 0, cost: t.cost?.planned ?? -1 })[c];
   const { rows, total, tops } = useMemo(() => {
     const out: Row[] = [];
     let y = 0;
@@ -143,7 +144,7 @@ export function Grid({ plan, math, today, canEdit, edit, planId }: { plan: Plan;
 /** One task's row of cells. Text cells become inputs when clicked; Enter saves, Escape cancels. */
 const TaskRow = memo(function TaskRow({ r, index, ids, slip, canEdit, edit }: { r: Extract<Row, { kind: "task" }>; index: number; ids: Set<string>; slip: number | undefined; canEdit: boolean; edit: (op: Op) => void }) {
   const { t, s } = r;
-  const set = (field: "title" | "owner" | "estimate" | "depends", value: unknown) => edit({ kind: "setField", taskId: t.id, field, value });
+  const set = (field: "title" | "owner" | "estimate" | "depends" | "cost", value: unknown) => edit({ kind: "setField", taskId: t.id, field, value });
   const cell = (c: Col, children: ReactNode) => <div key={c} role="cell" className={`flex h-full shrink-0 items-center overflow-hidden px-2 text-[13px] ${pinned(c)}`} style={{ width: COLS.find((x) => x.id === c)!.w, left: PIN[c] }}>{children}</div>;
   return (
     <div role="row" aria-rowindex={index} aria-label={t.title} className="absolute inset-x-0 flex border-t border-line" style={{ top: r.top, height: ROW }}>
@@ -160,6 +161,7 @@ const TaskRow = memo(function TaskRow({ r, index, ids, slip, canEdit, edit }: { 
       {cell("takes", t.milestone ? "" : <Editable label={`How long ${t.title} takes`} value={t.estimate ? formatEstimate(t.estimate) : ""} canEdit={canEdit} check={(v) => !v.trim() || !!parseEstimate(v)} onSave={(v) => { const e = v.trim() ? parseEstimate(v) : null; if (JSON.stringify(e ?? null) !== JSON.stringify(t.estimate ?? null)) set("estimate", e ?? null); }} />)}
       {cell("waits", <Editable label={`What ${t.title} waits on`} value={formatDepends(t.depends)} canEdit={canEdit} check={(v) => parseDepends(v).every((d) => ids.has(d.id) && d.id !== t.id)} onSave={(v) => { const d = parseDepends(v); if (formatDepends(d) !== formatDepends(t.depends)) set("depends", d); }} />)}
       {cell("slip", slip ? <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${slip > 0 ? "bg-warn-soft text-warn" : "bg-good-soft text-good"}`}>{slip > 0 ? `+${slip}d` : `${slip}d`}</span> : t.planned ? <span className="text-xs text-muted">On time</span> : <span className="text-xs text-muted">–</span>)}
+      {cell("cost", t.milestone ? "" : <Editable label={`Cost of ${t.title}, planned/spent`} value={formatCost(t.cost)} canEdit={canEdit} check={(v) => !v.trim() || !!parseCost(v)} onSave={(v) => { const c = v.trim() ? parseCost(v) : null; if (JSON.stringify(c ?? null) !== JSON.stringify(t.cost ?? null)) set("cost", c ?? null); }} />)}
     </div>
   );
 }, (a, b) => a.r.t === b.r.t && a.r.s.start === b.r.s.start && a.r.s.end === b.r.s.end && a.r.s.overdue === b.r.s.overdue && a.r.top === b.r.top && a.index === b.index && a.slip === b.slip && a.canEdit === b.canEdit && a.edit === b.edit && a.ids === b.ids);

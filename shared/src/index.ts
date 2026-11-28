@@ -24,3 +24,4 @@ export * from "./people";
 export * from "./repeat";
 export * from "./holidays";
 export * from "./ics";
+export * from "./budget";

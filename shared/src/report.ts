@@ -5,6 +5,7 @@
 import { Calendar, toDay } from "./calendar";
 import type { Progress, Schedule } from "./schedule";
 import { allTasks, type Plan } from "./schema";
+import { budgetOf, money, type TimeEntry } from "./budget";
 
 export type Rag = "green" | "amber" | "red";
 
@@ -25,16 +26,19 @@ export interface StatusFacts {
   comingUp: { title: string; owner: string | null; start: string }[];
   overdue: { title: string; owner: string | null }[];
   milestones: { title: string; date: string; done: boolean }[];
+  /** Money (step N4), when the plan has any costs or rates. */
+  budget?: { currency: string | null; planned: number; actual: number; forecast: number; overBy: number };
 }
 
 const short = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
-export function statusFacts(plan: Plan, schedule: Schedule, progress: Progress, opts: { today: string; since?: string }): StatusFacts {
+export function statusFacts(plan: Plan, schedule: Schedule, progress: Progress, opts: { today: string; since?: string; rates?: Record<string, number>; time?: TimeEntry[] }): StatusFacts {
   const today = opts.today;
   const since = opts.since ?? new Date(Date.parse(`${today}T00:00:00Z`) - 7 * 86_400_000).toISOString().slice(0, 10);
   const cal = new Calendar();
   const tasks = allTasks(plan);
   const open = tasks.filter((t) => t.status !== "done" && t.status !== "skipped");
+  const b = budgetOf(plan, { rates: opts.rates, time: opts.time });
   const rag: Rag = progress.suggestedHealth === "Off track" ? "red" : progress.suggestedHealth === "At risk" ? "amber" : "green";
   return {
     planTitle: plan.title,
@@ -60,6 +64,7 @@ export function statusFacts(plan: Plan, schedule: Schedule, progress: Progress, 
       .map((t) => ({ title: t.title, owner: t.owner ?? null, start: schedule.tasks.get(t.id)!.start })),
     overdue: open.filter((t) => schedule.tasks.get(t.id)?.overdue).map((t) => ({ title: t.title, owner: t.owner ?? null })),
     milestones: tasks.filter((t) => t.milestone).map((t) => ({ title: t.title, date: schedule.tasks.get(t.id)?.end ?? schedule.finish, done: t.status === "done" })),
+    ...(b.hasMoney ? { budget: { currency: b.currency, planned: b.planned, actual: b.actual, forecast: b.forecast, overBy: b.overBy } } : {}),
   };
 }
 
@@ -79,6 +84,7 @@ export function templateReport(f: StatusFacts): ReportText {
       { title: "Behind schedule", text: list([...f.slipped.map((s) => `${s.title} (${s.days} day${s.days === 1 ? "" : "s"} late)`), ...f.overdue.map((o) => `${o.title} is overdue${o.owner ? ` (${o.owner})` : ""}`)]) },
       { title: "Coming up", text: list(f.comingUp.map((c) => `${c.title} starts ${short(c.start)}${c.owner ? ` (${c.owner})` : ""}`)) },
       { title: "Milestones", text: list(f.milestones.filter((m) => !m.done).map((m) => `${m.title} on ${short(m.date)}`)) },
+      ...(f.budget ? [{ title: "Budget", text: `${money(f.budget.actual, f.budget.currency, "en-US")} spent of ${money(f.budget.planned, f.budget.currency, "en-US")} planned; forecast ${money(f.budget.forecast, f.budget.currency, "en-US")}.${f.budget.overBy > 0 ? ` Heading ${money(f.budget.overBy, f.budget.currency, "en-US")} over budget.` : ""}` }] : []),
       { title: "Forecast", text: `${f.doneCount} of ${f.countedTasks} tasks done. Planned finish ${short(f.finish)}.${late}${f.baselineVarianceDays ? ` ${Math.abs(f.baselineVarianceDays)} working days ${f.baselineVarianceDays > 0 ? "behind" : "ahead of"} the baseline.` : ""}` },
     ],
   };
