@@ -160,6 +160,14 @@ test("slim bar appears on scroll", async ({ page }, info) => {
   await expect(page.locator("section[aria-label='Plan bar']")).toHaveAttribute("inert", "");
   expect(await page.locator("section[aria-label='Plan bar'] [role=status]").count()).toBe(0);
 
+  // Row 2 half visible below the top bar: still hidden. Fully scrolled past: visible.
+  const topBar = phone ? 68 : 0;
+  const rowBottom = await page.evaluate(() => document.querySelector("[data-plan-row2]")!.getBoundingClientRect().bottom + scrollY);
+  await page.evaluate((y) => window.scrollTo(0, y), rowBottom - topBar - 20);
+  await page.waitForTimeout(300);
+  await expect(bar).toBeHidden();
+  await page.evaluate((y) => window.scrollTo(0, y), rowBottom - topBar + 4);
+  await expect(bar).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 1200));
   await expect(bar).toBeVisible();
   await expect(bar.getByRole("button", { name: "Plan view: Checklist" })).toBeVisible();

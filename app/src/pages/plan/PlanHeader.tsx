@@ -151,13 +151,26 @@ export function PlanHeader(p: { id: string; view: string; title: string; health:
   const row2 = useRef<HTMLDivElement>(null);
   const [stuck, setStuck] = useState(false);
   // The slim bar shows once the picker row has scrolled up out of view (under the phone top bar).
+  // Height of the app's visible top bar (the Shell's sticky header; display:none on lg+, so 0 there).
+  // The slim bar sits right under it, and "row 2 has scrolled away" means it is above that line.
+  const [topOffset, setTopOffset] = useState(0);
+  useEffect(() => {
+    const top = document.querySelector("header.sticky");
+    const measure = () => setTopOffset(Math.round(top?.getBoundingClientRect().height ?? 0));
+    measure();
+    if (!top || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(top);
+    return () => ro.disconnect();
+  }, []);
   useEffect(() => {
     const el = row2.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(([e]) => setStuck(!!e && !e.isIntersecting && e.boundingClientRect.bottom < 80), { rootMargin: "-68px 0px 0px 0px" });
+    // Not intersecting and at or above the line under the top bar (1px of slack) = scrolled past, not still below.
+    const io = new IntersectionObserver(([e]) => setStuck(!!e && !e.isIntersecting && e.boundingClientRect.bottom <= topOffset + 1), { rootMargin: `-${topOffset}px 0px 0px 0px` });
     io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [topOffset]);
   const barOn = stuck && !p.presenting;
   const back = m?.canOpenMaster ? { to: `/m/${m.id}`, name: `${m.title}${m.isMaster ? "" : ` › ${p.title}`}` } : { to: "/", name: "All plans" };
   return (
@@ -175,20 +188,20 @@ export function PlanHeader(p: { id: string; view: string; title: string; health:
         </div>
       </div>
       {m && <span className="self-start rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary-ink">{m.isMaster ? `Whole-building tasks of the master plan ${m.title}` : `Part of the master plan ${m.title}`}</span>}
-      <div ref={row2} className="flex items-center gap-2 border-b border-line pb-3">
+      <div ref={row2} data-plan-row2 className="flex items-center gap-2 border-b border-line pb-3">
         <ViewPicker id={p.id} view={p.view} />
         <ActionsRow id={p.id} canEdit={p.canEdit} compact={false} onPresent={p.onPresent} presentDisabled={p.presentDisabled} />
       </div>
     </header>
     {!p.presenting && (
-      <section aria-label="Plan bar" aria-hidden={barOn ? undefined : true} inert={!barOn}
-        className={`fixed inset-x-0 top-[68px] z-[9] border-b border-line bg-surface/95 backdrop-blur transition-opacity motion-reduce:transition-none lg:left-60 lg:top-0 print:hidden ${barOn ? "opacity-100" : "invisible opacity-0"}`}>
+      <section aria-label="Plan bar" aria-hidden={barOn ? undefined : true} inert={!barOn} style={{ top: topOffset }}
+        className={`fixed inset-x-0 z-[9] border-b border-line bg-surface/95 backdrop-blur transition-[opacity,visibility] motion-reduce:transition-none lg:left-60 print:hidden ${barOn ? "opacity-100" : "invisible opacity-0"}`}>
         <div className="mx-auto flex max-w-6xl items-center gap-1.5 px-4 py-1 lg:gap-2 lg:px-8">
           <Link to={back.to} aria-label={back.name} title={back.name} className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-muted hover:bg-surface-2 hover:text-ink"><ArrowLeft aria-hidden size={20} /></Link>
           <span data-testid="bar-title" className="min-w-0 flex-1 truncate text-[15px] font-bold" title={p.title}>{p.title}</span>
           <span role="img" aria-label={`Health: ${p.health}`} title={p.health} className={`h-3 w-3 shrink-0 rounded-full ${DOT[p.health] ?? "bg-muted"}`} />
-          <ViewPicker id={p.id} view={p.view} compact />
-          <ActionsRow id={p.id} canEdit={p.canEdit} compact onPresent={p.onPresent} presentDisabled={p.presentDisabled} />
+          <ViewPicker key={`v${barOn}`} id={p.id} view={p.view} compact />
+          <ActionsRow key={`a${barOn}`} id={p.id} canEdit={p.canEdit} compact onPresent={p.onPresent} presentDisabled={p.presentDisabled} />
         </div>
       </section>
     )}
