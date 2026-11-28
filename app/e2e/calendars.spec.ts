@@ -1,6 +1,6 @@
 /** Step N3: calendars. A private feed of my tasks, busy times from my calendar, public holidays, and a plan's .ics. */
 import { expect, test } from "@playwright/test";
-import { addPlan, signIn } from "./helpers";
+import { addPlan, planAction, signIn } from "./helpers";
 
 test("calendars: my feed, my calendar's busy times, public holidays, a plan's calendar file", async ({ page, browser }, info) => {
   const tag = `${info.project.name}${Date.now() % 100000}`;
@@ -35,7 +35,7 @@ test("calendars: my feed, my calendar's busy times, public holidays, a plan's ca
 
     await page.goto(`/p/${id}`);
     const download = page.waitForEvent("download");
-    await page.getByRole("link", { name: "Add to calendar" }).click();
+    await planAction(page, "Add to calendar");
     expect((await download).suggestedFilename()).toBe(`Shelves ${tag}.ics`);
   } finally {
     // Leave Kim as other tests expect: no calendar, no holidays.

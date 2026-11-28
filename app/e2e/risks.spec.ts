@@ -1,6 +1,6 @@
 /** Step J3: the risk log with its heat map, adding a risk from the AI check, and the dashboard count. */
 import { expect, test } from "@playwright/test";
-import { addPlan, KITCHEN, signIn } from "./helpers";
+import { addPlan, KITCHEN, openView, signIn } from "./helpers";
 
 test("risk log: add a high risk, see it on the heat map, close it; add one from the AI check", async ({ page }, info) => {
   const shot = (name: string) => `e2e/.results/shots/${info.project.name}-j3-${name}.png`;
@@ -41,7 +41,7 @@ test("risk log: add a high risk, see it on the heat map, close it; add one from 
 
   // The dashboard counts open risks and issues (desktop); closing one updates it.
   if (info.project.name === "desktop") {
-    await page.getByRole("link", { name: "Overview", exact: true }).click();
+    await openView(page, "Overview");
     await expect(page.getByRole("region", { name: "Key numbers" }).getByRole("link", { name: "1 risk, 1 issue" })).toBeVisible();
     await page.getByRole("region", { name: "Key numbers" }).getByRole("link", { name: "1 risk, 1 issue" }).click();
   }
@@ -52,10 +52,10 @@ test("risk log: add a high risk, see it on the heat map, close it; add one from 
   await expect(log.getByRole("listitem", { name: "Risk: Cabinets arrive damaged" }).getByText("Closed", { exact: true })).toBeVisible();
 
   // A risk the AI check found goes into the log in one click.
-  await page.getByRole("link", { name: "Overview", exact: true }).click();
+  await openView(page, "Overview");
   const check = page.getByRole("region", { name: "Plan Check" });
   await check.getByRole("button", { name: "Run AI check" }).click();
   await check.getByRole("button", { name: "Add to risk log" }).first().click();
-  await page.getByRole("link", { name: "Risks", exact: true }).click();
+  await openView(page, "Risks");
   await expect(log.getByRole("listitem", { name: /^Risk: / }).filter({ hasText: "From the AI check" })).toBeVisible();
 });

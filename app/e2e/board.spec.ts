@@ -13,7 +13,7 @@ test("board: move cards between columns, approval waits, filters", async ({ page
   const id = await addPlan(page, `---\nrakuplan: 1\ntitle: Board ${tag}\nstart: 2027-01-04\n---\n## P1: Design\n- [ ] T1: Sketch the logo (1d) @Kim\n- [ ] T2: Pick colors (1d) @Ana approver: Kim\n## P2: Build\n- [ ] T3: Build the site (2d) @Ana dept: IT\n- [ ] M1: Launch (milestone) depends: T3`);
   await page.goto(`/p/${id}/board`);
   await live(page);
-  await expect(page.getByRole("navigation", { name: "Plan views" }).getByRole("link", { name: "Board" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("button", { name: "Plan view: Board" })).toBeVisible();
 
   if (isPhone(page)) {
     // One column at a time, with counts; milestones aren't cards.

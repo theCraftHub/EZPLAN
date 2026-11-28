@@ -1,7 +1,7 @@
 /** Speed on a big plan (2,000 tasks, 50 people). Run alone: npx playwright test e2e/speed.spec.ts */
 import { expect, test } from "@playwright/test";
 import { bigPlan } from "./bigplan";
-import { signIn } from "./helpers";
+import { openView, signIn } from "./helpers";
 
 test.skip(!process.env.SPEED, "speed checks only when SPEED=1");
 
@@ -21,7 +21,7 @@ test("big plan: open, switch views, edit", async ({ page }) => {
     return ms;
   };
   await time("open overview", async () => { await page.goto(`/p/${id}`); await page.getByRole("status").filter({ hasText: "Live" }).waitFor(); });
-  await time("checklist", async () => { await page.getByRole("navigation", { name: "Plan views" }).getByRole("link", { name: "Checklist" }).click(); await page.getByRole("region", { name: "Phase: Workstream 20" }).waitFor(); });
+  await time("checklist", async () => { await openView(page, "Checklist"); await page.getByRole("region", { name: "Phase: Workstream 20" }).waitFor(); });
   // Measured inside the page: from the tap to the changed button being on screen.
   const editMs = await page.evaluate(() => new Promise<number>((done) => {
     const find = (s: string) => [...document.querySelectorAll("button[aria-label]")].find((b) => b.getAttribute("aria-label")!.startsWith(s)) as HTMLButtonElement | undefined;
@@ -32,8 +32,8 @@ test("big plan: open, switch views, edit", async ({ page }) => {
   }));
   console.log(`${test.info().project.name} edit to paint (in page): ${editMs} ms`);
   expect(editMs, "a tap shows within 100 ms").toBeLessThan(100);
-  await time("timeline", async () => { await page.getByRole("navigation", { name: "Plan views" }).getByRole("link", { name: "Timeline" }).click(); await page.getByRole("region", { name: "Timeline" }).waitFor(); });
-  await time("grid", async () => { await page.getByRole("navigation", { name: "Plan views" }).getByRole("link", { name: "Grid" }).click(); await page.getByRole("table", { name: "Tasks" }).waitFor(); });
+  await time("timeline", async () => { await openView(page, "Timeline"); await page.getByRole("region", { name: "Timeline" }).waitFor(); });
+  await time("grid", async () => { await openView(page, "Grid"); await page.getByRole("table", { name: "Tasks" }).waitFor(); });
   const gridScroll = await page.evaluate(async () => {
     let worst = 0; let last = performance.now();
     const stop = performance.now() + 2000;
@@ -43,7 +43,7 @@ test("big plan: open, switch views, edit", async ({ page }) => {
   console.log(`${test.info().project.name} grid scroll: ${JSON.stringify(gridScroll)}`);
   expect(gridScroll.worstFrameMs, "no frame slower than 50 ms while scrolling the grid").toBeLessThan(50);
   expect(gridScroll.rows, "only rows near the screen are drawn").toBeLessThan(200);
-  await time("team", async () => { await page.getByRole("navigation", { name: "Plan views" }).getByRole("link", { name: "Team" }).click(); await page.getByRole("button", { name: "Add person" }).waitFor(); });
+  await time("team", async () => { await openView(page, "Team"); await page.getByRole("button", { name: "Add person" }).waitFor(); });
   const frames = await page.evaluate(async () => {
     const el = document.querySelector('[aria-label="Team schedule grid"]') ?? document.scrollingElement!;
     const box = (el as HTMLElement).closest(".overflow-x-auto") ?? el;

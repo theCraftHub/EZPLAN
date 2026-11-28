@@ -1,6 +1,6 @@
 /** Comments, the Commenter role and the Activity view, with two people signed in. */
 import { expect, test, type Page } from "@playwright/test";
-import { addPlan, KITCHEN, signIn } from "./helpers";
+import { addPlan, KITCHEN, openView, signIn } from "./helpers";
 
 const live = (page: Page) => expect(page.getByRole("status").filter({ hasText: /^Live/ })).toBeVisible();
 const row = (page: Page, title: string) => page.getByRole("listitem").filter({ has: page.getByRole("button", { name: new RegExp(`^${title}`) }) });
@@ -72,7 +72,7 @@ test("Sam (commenter) comments and mentions Alex; Alex sees it live; Sam can't c
 
   // Alex changes the task; Activity lists it, Sam's comment and Sam joining.
   await row(alex, "Order cabinets").getByRole("button", { name: /Mark as Doing/ }).click();
-  await alex.getByRole("link", { name: "Activity" }).click();
+  await openView(alex, "Activity");
   const activity = alex.getByRole("region", { name: "Activity" });
   await expect(activity.getByText("Alex Rivera set Order cabinets to in progress")).toBeVisible();
   await expect(activity.getByText("Sam Okoye commented on Order cabinets")).toBeVisible();

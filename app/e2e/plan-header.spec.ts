@@ -1,0 +1,114 @@
+/** The plan header: view picker, top actions and More, on phone and desktop. */
+import { expect, test, type Page } from "@playwright/test";
+import { addPlan, KITCHEN, signIn } from "./helpers";
+
+const live = (page: Page) => expect(page.getByRole("status").filter({ hasText: /^Live/ })).toBeVisible();
+const VIEWS = ["Overview", "Checklist", "Board", "Timeline", "Grid", "Team", "Risks", "Activity"];
+const MORE = ["Present", "Print summary", "Download plan file", "Add to calendar", "History and Trash"];
+
+test("view picker: mouse and keyboard; More menu; status", async ({ page }, info) => {
+  const phone = info.project.name === "phone";
+  await signIn(page);
+  const id = await addPlan(page, KITCHEN.replace("Kitchen Remodel", "Header Kitchen"));
+  await page.goto(`/p/${id}`);
+  await live(page);
+  await expect(page.getByRole("status").filter({ hasText: /^Live/ })).toHaveText(/^Live/);
+
+  // No strip of 8 tabs; one picker that lists all 8 views.
+  await expect(page.getByRole("navigation", { name: "Plan views" }).getByRole("link")).toHaveCount(0);
+  const picker = page.getByRole("button", { name: "Plan view: Overview" });
+  await picker.click();
+  const menu = page.getByRole("menu");
+  await expect(menu.getByRole("menuitem")).toHaveText(VIEWS.map((v) => new RegExp(`^${v}`)));
+  for (const v of VIEWS) await expect(menu.getByRole("menuitem", { name: v, exact: true })).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "Overview", exact: true })).toHaveAttribute("aria-current", "page");
+  await menu.getByRole("menuitem", { name: "Board", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/p/${id}/board$`));
+  await expect(page.getByRole("button", { name: "Plan view: Board" })).toBeVisible();
+
+  // Keyboard: Enter opens, arrows move, Enter chooses; Escape closes without moving.
+  await page.goto(`/p/${id}`);
+  await live(page);
+  await page.getByRole("button", { name: "Plan view: Overview" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("menuitem", { name: "Overview", exact: true })).toBeFocused();
+  // Radix moves focus a moment after each key, as a person would see it.
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("menuitem", { name: "Checklist", exact: true })).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("menuitem", { name: "Board", exact: true })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(new RegExp(`/p/${id}/board$`));
+  await page.getByRole("button", { name: "Plan view: Board" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("menu")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toHaveCount(0);
+  await expect(page).toHaveURL(new RegExp(`/p/${id}/board$`));
+
+  // Top actions and More.
+  const actions = page.getByRole("group", { name: "Plan actions" });
+  await expect(actions.getByRole("link", { name: "Update with my AI" })).toBeVisible();
+  await expect(actions.getByRole("link", { name: "Share" })).toBeVisible();
+  if (phone) await expect(actions.getByRole("link", { name: "Status report" })).toBeHidden();
+  else await expect(actions.getByRole("link", { name: "Status report" })).toBeVisible();
+  await actions.getByRole("button", { name: "More plan actions" }).click();
+  const more = page.getByRole("menu");
+  for (const name of MORE) await expect(more.getByRole("menuitem", { name, exact: true })).toBeVisible();
+  await expect(more.getByRole("menuitem", { name: "Status report", exact: true })).toHaveCount(phone ? 1 : 0);
+  await expect(more.getByRole("menuitem", { name: "Download plan file" })).toHaveAttribute("href", `/api/plans/${id}/export`);
+  await expect(more.getByRole("menuitem", { name: "Add to calendar" })).toHaveAttribute("href", `/api/plans/${id}/calendar.ics`);
+  await more.getByRole("menuitem", { name: "History and Trash" }).click();
+  await expect(page).toHaveURL(new RegExp(`/p/${id}/history$`));
+  await expect(page.getByRole("button", { name: "Plan view: History and Trash" })).toBeVisible();
+
+  // Present opens from More.
+  await actions.getByRole("button", { name: "More plan actions" }).click();
+  await page.getByRole("menu").getByRole("menuitem", { name: "Present" }).click();
+  await expect(page.getByRole("dialog", { name: "Presentation" })).toBeVisible();
+});
+
+test("a viewer: no Update, More still has the file, View only", async ({ page: alex, browser }) => {
+  await signIn(alex);
+  const id = await addPlan(alex, KITCHEN.replace("Kitchen Remodel", "Viewer Kitchen"));
+  const link = ((await (await alex.request.post(`/api/plans/${id}/invites`, { data: { email: "sam@example.com", role: "viewer" } })).json()) as { link: string }).link;
+  const ctx = await browser.newContext({ viewport: alex.viewportSize()!, isMobile: alex.viewportSize()!.width < 600, hasTouch: alex.viewportSize()!.width < 600 });
+  const sam = await ctx.newPage();
+  await signIn(sam, "Sam Okoye");
+  expect((await sam.request.post(`/api/invites/${link.split("/invite/")[1]}/accept`, { data: {} })).status()).toBe(200);
+  await sam.goto(`/p/${id}`);
+  await live(sam);
+  await expect(sam.getByText("View only")).toBeVisible();
+  await expect(sam.getByRole("link", { name: "Update with my AI" })).toHaveCount(0);
+  await sam.getByRole("button", { name: "More plan actions" }).click();
+  await expect(sam.getByRole("menu").getByRole("menuitem", { name: "Download plan file" })).toBeVisible();
+  await ctx.close();
+});
+
+test("a long title never makes the page scroll sideways", async ({ page }) => {
+  await signIn(page);
+  const title = "Long " + "very long plan title words ".repeat(5).slice(0, 115);
+  expect(title.length).toBe(120);
+  const id = await addPlan(page, KITCHEN.replace("Kitchen Remodel", title));
+  await page.goto(`/p/${id}`);
+  await live(page);
+  await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test("a plan inside a master links back to the master", async ({ page }, info) => {
+  const tag = `${info.project.name}${Date.now() % 100000}`;
+  const plan = (title: string) => `---\nrakuplan: 1\ntitle: ${title}\nstart: 2027-01-04\n---\n## P1: Work\n- [ ] T1: Walls (2d) @Kai\n`;
+  await signIn(page);
+  const a = await addPlan(page, plan(`Lobby ${tag}`));
+  const b = await addPlan(page, plan(`Atrium ${tag}`));
+  const res = await page.request.post("/api/masters", { data: { title: `Campus ${tag}`, planIds: [a, b] } });
+  expect(res.status(), await res.text()).toBeLessThan(300);
+  const masterId = ((await res.json()) as { id: string }).id;
+  await page.goto(`/p/${a}`);
+  await live(page);
+  const back = page.getByRole("link", { name: new RegExp(`^Campus ${tag}`) });
+  await expect(back).toBeVisible();
+  await expect(back).toHaveAttribute("href", `/m/${masterId}`);
+  await expect(page.getByText(`Part of the master plan Campus ${tag}`)).toBeVisible();
+});

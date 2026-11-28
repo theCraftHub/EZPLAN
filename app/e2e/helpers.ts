@@ -32,3 +32,20 @@ team: Jordan, Priya
 - [ ] T5: Install new cabinets (4d) @Jordan depends: T4
 - [ ] M2: Kitchen ready (milestone) depends: T5
 `;
+
+/** Opens a plan view from the header's view picker ("Plan view: …" button, then the menu item). */
+export async function openView(page: Page, label: string) {
+  await page.getByRole("button", { name: /^Plan view: / }).filter({ visible: true }).first().click();
+  await page.getByRole("menu").getByRole("menuitem", { name: label, exact: true }).click();
+}
+
+/** Uses a plan action: the visible link or button with that name if there is one, otherwise the item in "More plan actions". */
+export async function planAction(page: Page, name: string) {
+  const actions = page.getByRole("group", { name: "Plan actions" });
+  const more = actions.getByRole("button", { name: "More plan actions" }).filter({ visible: true }).first();
+  await more.waitFor();
+  const direct = actions.getByRole("link", { name, exact: true }).or(actions.getByRole("button", { name, exact: true })).filter({ visible: true });
+  if (await direct.count()) return direct.first().click();
+  await more.click();
+  await page.getByRole("menu").getByRole("menuitem", { name, exact: true }).click();
+}

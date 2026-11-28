@@ -35,7 +35,7 @@ export function match(pattern: string, path: string): Record<string, string> | n
   return out;
 }
 
-export function Link({ to, className, children, ...rest }: { to: string; className?: string; children: ReactNode; "aria-current"?: "page" | undefined }) {
+export function Link({ to, className, children, ...rest }: { to: string; className?: string; children: ReactNode; "aria-current"?: "page" | undefined; "aria-label"?: string; title?: string }) {
   const { go } = useRouter();
   const onClick = (e: MouseEvent<HTMLAnchorElement>) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;

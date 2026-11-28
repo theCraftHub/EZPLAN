@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { addPlan, KITCHEN, signIn } from "./helpers";
+import { addPlan, KITCHEN, openView, planAction, signIn } from "./helpers";
 
 /** The checklist row of one task (other rows can mention it in "waits on"). */
 const row = (page: Page, title: string) => page.getByRole("listitem").filter({ has: page.getByRole("button", { name: new RegExp(`^${title}`) }) });
@@ -10,7 +10,7 @@ test("Update with my AI: copy the plan, paste the reply, accept some changes; pr
   const id = await addPlan(page, KITCHEN);
   await page.goto(`/p/${id}`);
   await live(page);
-  await page.getByRole("link", { name: "Update with my AI" }).click();
+  await planAction(page, "Update with my AI");
   const prompt = await page.getByLabel("The prompt").inputValue();
   expect(prompt).toContain("Keep every existing ID");
   const block = /CURRENT PLAN\n```\n([\s\S]*?)\n```/.exec(prompt)![1]!;
@@ -39,7 +39,7 @@ test("Update with my AI: copy the plan, paste the reply, accept some changes; pr
   expect(tasks.find((t) => t.id === "T3")!.estimate!.amount).toBe(2); // unticked: not applied
 
   // Version history has the plan from before the update, and restoring it brings it back exactly.
-  await page.getByRole("link", { name: "History and Trash" }).click();
+  await planAction(page, "History and Trash");
   const history = page.getByRole("region", { name: "Version history" });
   await expect(history.getByText("Before an update from an AI assistant")).toBeVisible();
   await history.getByRole("listitem").filter({ hasText: "Before an update from an AI assistant" }).getByRole("button", { name: "Restore this version" }).click();
@@ -56,13 +56,13 @@ test("Trash: a deleted task can be brought back", async ({ page }) => {
   await row(page, "Remove old cabinets").getByRole("button").nth(1).click();
   await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Move to Trash" }).click();
-  await page.getByRole("link", { name: "History and Trash" }).click();
+  await planAction(page, "History and Trash");
   const trash = page.getByRole("region", { name: "Trash" });
   await expect(trash.getByText("Remove old cabinets")).toBeVisible();
   await expect(trash.getByText(/Deleted .* by Alex Rivera/)).toBeVisible();
   await trash.getByRole("button", { name: "Restore" }).click();
   await expect(page.getByText('"Remove old cabinets" is back in the plan.')).toBeVisible();
-  await page.getByRole("link", { name: "Checklist" }).click();
+  await openView(page, "Checklist");
   await expect(row(page, "Remove old cabinets")).toBeVisible();
 });
 
@@ -72,10 +72,10 @@ test("download the plan file and open the printable summary", async ({ page }) =
   await page.goto(`/p/${id}`);
   await live(page);
   const download = page.waitForEvent("download");
-  await page.getByRole("link", { name: "Download plan file" }).click();
+  await planAction(page, "Download plan file");
   const file = await download;
   expect(file.suggestedFilename()).toMatch(/^Kitchen Remodel\./);
-  await page.getByRole("link", { name: "Print summary" }).click();
+  await planAction(page, "Print summary");
   const sheet = page.getByRole("article", { name: "Printable summary" });
   await expect(sheet.getByRole("heading", { name: "Kitchen Remodel" })).toBeVisible();
   await expect(sheet.getByText("Order placed")).toBeVisible();

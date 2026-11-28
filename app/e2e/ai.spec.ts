@@ -1,6 +1,6 @@
 /** AI features against the scripted engine in the test server (no network). */
 import { expect, test, type Page } from "@playwright/test";
-import { addPlan, KITCHEN, signIn } from "./helpers";
+import { addPlan, KITCHEN, openView, signIn } from "./helpers";
 
 const live = (page: Page) => expect(page.getByRole("status").filter({ hasText: /^Live/ })).toBeVisible();
 
@@ -87,7 +87,7 @@ test("a plan the AI declines twice is held for review: the banner shows and AI s
   await expect(page.getByText(/This plan is waiting for a safety review/).first()).toBeVisible();
   await expect(page.getByRole("region", { name: "Plan Check" }).getByRole("button", { name: /Run AI check|Run again/ })).toHaveCount(0);
   // The plan itself keeps working.
-  await page.getByRole("navigation", { name: "Plan views" }).getByRole("link", { name: "Checklist" }).click();
+  await openView(page, "Checklist");
   await expect(page.getByRole("button", { name: /Mark as Doing/ }).first()).toBeEnabled();
 });
 

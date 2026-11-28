@@ -1,6 +1,6 @@
 /** Step J3: Grid + Gantt on desktop; edits in cells are ordinary live edits; phones get a pointer to the Checklist. */
 import { expect, test } from "@playwright/test";
-import { addPlan, KITCHEN, signIn } from "./helpers";
+import { addPlan, KITCHEN, openView, signIn } from "./helpers";
 
 test("grid: edit cells in place, dates follow, bad input refused, sort; phones are pointed to the Checklist", async ({ page }, info) => {
   await signIn(page);
@@ -48,7 +48,7 @@ test("grid: edit cells in place, dates follow, bad input refused, sort; phones a
   await expect(grid.getByRole("row").last().getByRole("cell").nth(5)).toHaveText("Jan 4");
   await page.getByRole("button", { name: "Group by phase again" }).click();
 
-  await page.getByRole("link", { name: "Checklist", exact: true }).click();
+  await openView(page, "Checklist");
   const cab = page.getByRole("listitem").filter({ has: page.getByRole("button", { name: /^Order cabinets(?!:)/ }) });
   await expect(cab.getByText("Priya")).toBeVisible();
   await expect(cab.getByText("5d")).toBeVisible();

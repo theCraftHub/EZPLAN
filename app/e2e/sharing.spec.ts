@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { addPlan, KITCHEN, signIn } from "./helpers";
+import { addPlan, KITCHEN, openView, signIn } from "./helpers";
 
 const live = (page: Page) => expect(page.getByRole("status").filter({ hasText: /^Live/ })).toBeVisible();
 const row = (page: Page, title: string) => page.getByRole("listitem").filter({ has: page.getByRole("button", { name: new RegExp(`^${title}`) }) });
@@ -47,7 +47,7 @@ test("Alex invites Sam; Sam joins, edits live, becomes view-only, then loses acc
   await expect(sam.getByRole("link", { name: "Update with my AI" })).toHaveCount(0);
 
   // Availability changes reach Sam's open page without reloading.
-  await sam.getByRole("navigation", { name: "Plan views" }).getByRole("link", { name: "Team" }).click();
+  await openView(sam, "Team");
   await live(sam);
   const finish = sam.getByText(/^(Mon|Tue|Wed|Thu|Fri), /).first();
   const before = await finish.textContent();

@@ -1,6 +1,6 @@
 /** Step M1: Home as a portfolio (Active / Completed / Archived, search), archive and restore, reuse as template. */
 import { expect, test } from "@playwright/test";
-import { addPlan, signIn } from "./helpers";
+import { addPlan, openView, signIn } from "./helpers";
 
 test("portfolio: tabs, search, archive and restore, archived plans are read-only, reuse a finished plan", async ({ page }, info) => {
   const shot = async (name: string) => { if (process.env.SHOTS) await page.screenshot({ path: `e2e/.results/shots/${info.project.name}-m1-${name}.png`, fullPage: true }); };
@@ -31,7 +31,7 @@ test("portfolio: tabs, search, archive and restore, archived plans are read-only
   await shot("3-archived");
   await plans.getByRole("link", { name: new RegExp(`Porch ${tag}`) }).click();
   await expect(page.getByText("This plan is archived. It's read-only for everyone until it's restored.")).toBeVisible();
-  await page.getByRole("navigation", { name: "Plan views" }).getByRole("link", { name: "Checklist" }).click();
+  await openView(page, "Checklist");
   await expect(page.getByRole("button", { name: /Frame: To do/ })).toBeDisabled();
   await shot("4-read-only");
   await page.getByRole("button", { name: "Restore" }).click();

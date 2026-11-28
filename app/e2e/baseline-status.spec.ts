@@ -1,6 +1,6 @@
 /** Step J1: set a baseline, see slips against it, post a status update and see it in the history. */
 import { expect, test } from "@playwright/test";
-import { addPlan, KITCHEN, signIn } from "./helpers";
+import { addPlan, KITCHEN, openView, signIn } from "./helpers";
 
 test("set baseline, slip a task and see it; post an amber status update and see it on the plan", async ({ page }, info) => {
   const shot = (name: string) => `e2e/.results/shots/${info.project.name}-j1-${name}.png`;
@@ -17,7 +17,7 @@ test("set baseline, slip a task and see it; post an amber status update and see 
   await expect(baseline.getByText("On the baseline")).toBeVisible();
 
   // Ordering cabinets takes 3 more days: the checklist shows the slip, and so does the Overview.
-  await page.getByRole("link", { name: "Checklist", exact: true }).click();
+  await openView(page, "Checklist");
   const row = (title: string) => page.getByRole("listitem").filter({ has: page.getByRole("button", { name: new RegExp(`^${title}(?!:)`) }) });
   await row("Order cabinets").getByRole("button", { name: /^Order cabinets(?!:)/ }).click();
   await page.getByRole("dialog").getByLabel("Takes").fill("5d");
@@ -26,7 +26,7 @@ test("set baseline, slip a task and see it; post an amber status update and see 
   await expect(row("Remove old cabinets").getByText("+3d vs baseline")).toBeVisible(); // what waits on it slips too
   await expect(row("Get three contractor quotes").getByText(/vs baseline/)).toHaveCount(0); // earlier work is unchanged
   if (process.env.SHOTS) await page.screenshot({ path: shot("checklist"), fullPage: true });
-  await page.getByRole("link", { name: "Overview", exact: true }).click();
+  await openView(page, "Overview");
   await expect(baseline.getByText("3 working days late")).toBeVisible();
   await expect(baseline.getByText(/· 3 tasks slipped/)).toBeVisible(); // milestones and finished work aren't counted
 
@@ -49,7 +49,7 @@ test("set baseline, slip a task and see it; post an amber status update and see 
   await expect(history.getByText("Amber", { exact: true })).toBeVisible();
   if (process.env.SHOTS) await page.screenshot({ path: shot("report"), fullPage: true });
 
-  await page.getByRole("link", { name: "Overview", exact: true }).click();
+  await openView(page, "Overview");
   await expect(latest.getByText("Quotes slipped 3 days")).toBeVisible();
   if (process.env.SHOTS) await page.screenshot({ path: shot("overview"), fullPage: true });
 });
