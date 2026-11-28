@@ -41,7 +41,7 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
   if (view === "print") return <PrintSummary plan={room.plan} math={math} today={room.detail.today} />;
   return (
     <PlanContext.Provider value={planCtx}>
-      <PlanHeader id={id} view={view} title={room.plan.title} health={math.progress.suggestedHealth} statusUpdate={room.detail.statusUpdate} master={room.detail.master} status={room.status} pending={room.pending} others={others} canEdit={canEdit} role={room.detail.role} onPresent={() => setPresenting(true)} presentDisabled={!math} />
+      <PlanHeader id={id} view={view} title={room.plan.title} health={math.progress.suggestedHealth} statusUpdate={room.detail.statusUpdate} master={room.detail.master} status={room.status} pending={room.pending} others={others} canEdit={canEdit} role={room.detail.role} onPresent={() => setPresenting(true)} presentDisabled={!math} presenting={presenting} />
       {room.status !== "live" && (room.fromCopy || room.status === "offline") && (
         <Notice tone="warn"><span className="flex items-start gap-2"><WifiOff aria-hidden size={18} className="mt-0.5 shrink-0" /><span>Offline: changes are saved on this device and sent when you're back{room.pending ? ` (${room.pending} waiting)` : ""}.{room.fromCopy ? ` This is the copy from ${new Date(room.fromCopy).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}.` : ""} Comments, sharing and AI need a connection.</span></span></Notice>
       )}

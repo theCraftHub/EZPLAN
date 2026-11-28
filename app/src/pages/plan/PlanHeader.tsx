@@ -1,6 +1,6 @@
 /** The plan page header: title row, view picker, the top actions and "More". */
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { useId, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { ArrowLeft, CalendarPlus, Check, ChevronDown, Download, FileText, History as HistoryIcon, MonitorPlay, MoreHorizontal, Printer, Sparkles, Users, Wifi, WifiOff, type LucideIcon } from "lucide-react";
 import type { PlanDetail, UpdateState } from "../../lib/api";
 import { Link, useRouter } from "../../lib/router";
@@ -12,6 +12,7 @@ const OTHER_ICONS: Record<string, LucideIcon> = { update: Sparkles, report: File
 const viewIcon = (view: string): LucideIcon => PLAN_VIEWS.find((v) => v.view === view)?.Icon ?? OTHER_ICONS[view] ?? PLAN_VIEWS[0]!.Icon;
 /** Shorter visible names for the picker on narrow phones (the accessible name keeps the full one). */
 const NARROW_NAMES: Record<string, string> = { history: "History", update: "Update" };
+const DOT: Record<string, string> = { "On track": "bg-good", "At risk": "bg-warn", "Off track": "bg-bad", "On hold": "bg-muted", Complete: "bg-primary" };
 const planPath = (id: string, view: string) => `/p/${id}${view ? `/${view}` : ""}`;
 
 const base = "inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-surface text-sm font-semibold text-ink hover:bg-surface-2";
@@ -52,7 +53,7 @@ export function ViewPicker({ id, view, compact = false }: { id: string; view: st
     <Menu.Root modal={false} open={open} onOpenChange={setOpen}>
       <Menu.Trigger aria-label={`Plan view: ${name}`} title={`Plan view: ${name}`} className={`${base} min-w-0 px-3 text-[15px] data-[state=open]:bg-surface-2`}>
         <Icon aria-hidden size={16} className="shrink-0 text-primary-ink" />
-        <span data-picker-label className="min-w-0 truncate">
+        <span data-picker-label className={`min-w-0 truncate ${compact ? "max-sm:hidden" : ""}`}>
           {narrow ? <><span className="max-[420px]:hidden">{name}</span><span className="min-[421px]:hidden">{narrow}</span></> : name}
         </span>
         <ChevronDown aria-hidden size={16} className="shrink-0 text-muted" />
@@ -145,10 +146,22 @@ function Presence({ others }: { others: { userId: string; name: string }[] }) {
   );
 }
 
-export function PlanHeader(p: { id: string; view: string; title: string; health: string; statusUpdate: UpdateState; master: PlanDetail["master"]; status: "live" | "offline" | "connecting"; pending: number; others: { userId: string; name: string }[]; canEdit: boolean; role: string; onPresent: () => void; presentDisabled: boolean }) {
+export function PlanHeader(p: { id: string; view: string; title: string; health: string; statusUpdate: UpdateState; master: PlanDetail["master"]; status: "live" | "offline" | "connecting"; pending: number; others: { userId: string; name: string }[]; canEdit: boolean; role: string; onPresent: () => void; presentDisabled: boolean; presenting?: boolean }) {
   const m = p.master;
+  const row2 = useRef<HTMLDivElement>(null);
+  const [stuck, setStuck] = useState(false);
+  // The slim bar shows once the picker row has scrolled up out of view (under the phone top bar).
+  useEffect(() => {
+    const el = row2.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => setStuck(!!e && !e.isIntersecting && e.boundingClientRect.bottom < 80), { rootMargin: "-68px 0px 0px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  const barOn = stuck && !p.presenting;
   const back = m?.canOpenMaster ? { to: `/m/${m.id}`, name: `${m.title}${m.isMaster ? "" : ` › ${p.title}`}` } : { to: "/", name: "All plans" };
   return (
+    <>
     <header className="flex flex-col gap-3 print:hidden">
       <div className="flex items-start gap-1.5">
         <Link to={back.to} aria-label={back.name} title={back.name} className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-muted hover:bg-surface-2 hover:text-ink"><ArrowLeft aria-hidden size={20} /></Link>
@@ -162,10 +175,23 @@ export function PlanHeader(p: { id: string; view: string; title: string; health:
         </div>
       </div>
       {m && <span className="self-start rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary-ink">{m.isMaster ? `Whole-building tasks of the master plan ${m.title}` : `Part of the master plan ${m.title}`}</span>}
-      <div className="flex items-center gap-2 border-b border-line pb-3">
+      <div ref={row2} className="flex items-center gap-2 border-b border-line pb-3">
         <ViewPicker id={p.id} view={p.view} />
         <ActionsRow id={p.id} canEdit={p.canEdit} compact={false} onPresent={p.onPresent} presentDisabled={p.presentDisabled} />
       </div>
     </header>
+    {!p.presenting && (
+      <section aria-label="Plan bar" aria-hidden={barOn ? undefined : true} inert={!barOn}
+        className={`fixed inset-x-0 top-[68px] z-[9] border-b border-line bg-surface/95 backdrop-blur transition-opacity motion-reduce:transition-none lg:left-60 lg:top-0 print:hidden ${barOn ? "opacity-100" : "invisible opacity-0"}`}>
+        <div className="mx-auto flex max-w-6xl items-center gap-1.5 px-4 py-1 lg:gap-2 lg:px-8">
+          <Link to={back.to} aria-label={back.name} title={back.name} className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-muted hover:bg-surface-2 hover:text-ink"><ArrowLeft aria-hidden size={20} /></Link>
+          <span data-testid="bar-title" className="min-w-0 flex-1 truncate text-[15px] font-bold" title={p.title}>{p.title}</span>
+          <span role="img" aria-label={`Health: ${p.health}`} title={p.health} className={`h-3 w-3 shrink-0 rounded-full ${DOT[p.health] ?? "bg-muted"}`} />
+          <ViewPicker id={p.id} view={p.view} compact />
+          <ActionsRow id={p.id} canEdit={p.canEdit} compact onPresent={p.onPresent} presentDisabled={p.presentDisabled} />
+        </div>
+      </section>
+    )}
+    </>
   );
 }

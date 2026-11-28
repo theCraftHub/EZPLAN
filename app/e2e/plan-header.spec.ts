@@ -145,3 +145,68 @@ test("More menu groups are named", async ({ page }) => {
   await expect(menu.getByRole("group", { name: "Share and report" }).getByRole("menuitem", { name: "Present" })).toBeVisible();
   await expect(menu.getByRole("group", { name: "File" }).getByRole("menuitem", { name: "Download plan file" })).toBeVisible();
 });
+
+test("slim bar appears on scroll", async ({ page }, info) => {
+  const phone = info.project.name === "phone";
+  const title = "Long " + "very long plan title words ".repeat(5).slice(0, 115);
+  const tasks = Array.from({ length: 40 }, (_, i) => `- [ ] T${i + 1}: Task number ${i + 1} (1d) @Jordan${i ? ` depends: T${i}` : ""}`).join("\n");
+  const text = `---\nrakuplan: 1\ntitle: ${title}\nstart: 2027-01-04\nteam: Jordan\n---\n## P1: Work\n${tasks}\n`;
+  await signIn(page);
+  const id = await addPlan(page, text);
+  await page.goto(`/p/${id}/checklist`);
+  await live(page);
+  const bar = page.getByRole("region", { name: "Plan bar" });
+  await expect(bar).toBeHidden();
+  await expect(page.locator("section[aria-label='Plan bar']")).toHaveAttribute("inert", "");
+  expect(await page.locator("section[aria-label='Plan bar'] [role=status]").count()).toBe(0);
+
+  await page.evaluate(() => window.scrollTo(0, 1200));
+  await expect(bar).toBeVisible();
+  await expect(bar.getByRole("button", { name: "Plan view: Checklist" })).toBeVisible();
+  await expect(bar.getByRole("link", { name: "Share" })).toBeVisible();
+  await expect(bar.getByRole("button", { name: "More plan actions" })).toBeVisible();
+  await expect(bar.getByRole("link", { name: "Update with my AI" })).toBeVisible();
+  const box = (await bar.boundingBox())!;
+  if (phone) {
+    const top = await page.evaluate(() => document.querySelector("header.sticky")!.getBoundingClientRect().bottom);
+    expect(Math.abs(box.y - top)).toBeLessThanOrEqual(1);
+  } else expect(box.y).toBeLessThanOrEqual(1);
+  const t = bar.getByTestId("bar-title");
+  await expect(t).toHaveText(title);
+  expect(await t.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+
+  // The bar's picker works.
+  await bar.getByRole("button", { name: "Plan view: Checklist" }).click();
+  await page.getByRole("menu").getByRole("menuitem", { name: "Board", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/p/${id}/board$`));
+  await page.goto(`/p/${id}/checklist`);
+  await live(page);
+  await page.evaluate(() => window.scrollTo(0, 1200));
+  await expect(bar).toBeVisible();
+
+  await page.emulateMedia({ media: "print" });
+  await expect(bar).toBeHidden();
+  await page.emulateMedia({ media: "screen" });
+  await expect(bar).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(bar).toBeHidden();
+  await expect(page.locator("section[aria-label='Plan bar']")).toHaveAttribute("aria-hidden", "true");
+});
+
+test("screenshots of the header and slim bar", async ({ page }, info) => {
+  test.skip(!process.env.SHOTS, "screenshots only when SHOTS=1");
+  const tasks = Array.from({ length: 40 }, (_, i) => `- [ ] T${i + 1}: Task number ${i + 1} (1d) @Jordan`).join("\n");
+  await signIn(page);
+  const id = await addPlan(page, `---\nrakuplan: 1\ntitle: Shots Kitchen Remodel\nstart: 2027-01-04\nteam: Jordan\n---\n## P1: Work\n${tasks}\n`);
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    for (const v of PLAN_VIEWS) {
+      await page.goto(`/p/${id}${v.view ? `/${v.view}` : ""}`);
+      await live(page);
+      await page.evaluate(() => window.scrollTo(0, 1200));
+      await page.waitForTimeout(400);
+      await page.screenshot({ path: `e2e/.results/shots/${info.project.name}-h3-${scheme}-${v.view || "overview"}.png` });
+    }
+  }
+});
