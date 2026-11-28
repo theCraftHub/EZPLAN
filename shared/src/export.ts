@@ -57,6 +57,7 @@ export function exportPlan(plan: Plan, opts: ExportOptions = {}): string {
   if (plan.currency) out.push(`currency: ${plan.currency}`);
   if (plan.team.length) out.push(`team: ${plan.team.map((m) => (m.email ? `${m.name} <${m.email}>` : m.name)).join(", ")}`);
   if (plan.baselineSet) out.push(`baseline_set: ${plan.baselineSet}`);
+  if (plan.baselineSet && plan.baselineName) out.push(`baseline_name: ${fmValue(plan.baselineName)}`);
   if (plan.basedOn) out.push(`based_on: ${fmValue(plan.basedOn)}`);
   const dayHours = plan.hoursPerDay ?? opts.hoursPerDay;
   if (dayHours !== undefined && dayHours !== 8) out.push(`hours_per_day: ${dayHours}`);

@@ -66,7 +66,8 @@ export function describeOp(op: Op, before: Task | undefined, after: Plan, who: s
     case "replacePlan":
       return { kind: "replace", summary: `${who} restored an earlier version of the plan` };
     case "setBaseline":
-      return { kind: "baseline", summary: `${who} set the baseline (planned dates as of ${op.on})` };
+      if (op.name && op.switched) return { kind: "baseline", summary: `${who} compared the plan to the baseline "${op.name}" (planned dates as of ${op.on})` };
+      return { kind: "baseline", summary: `${who} set the baseline${op.name ? ` "${op.name}"` : ""} (planned dates as of ${op.on})` };
     default:
       return null;
   }

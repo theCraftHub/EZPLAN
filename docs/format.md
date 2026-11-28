@@ -96,7 +96,7 @@ Indented lines under a task:
 - Nothing in a file can grant access, invite people, or claim someone else's work: team emails and `by` names are suggestions or labeled "from file" (see plan section 4c).
 
 ## 6. Not in the file (app only)
-Comments, time logs and activity history. Reserved for later versions: multiple named baselines and a `## RAID` section.
+Comments, time logs and activity history. Reserved for later versions: a `## RAID` section. `baseline_name:` in the header names the baseline the planned dates come from (the app keeps up to 5).
 
 ## 7. Approvals, repeats and master plans (Nov 27)
 

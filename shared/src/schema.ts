@@ -108,6 +108,8 @@ export const Plan = z.object({
   start: IsoDate.optional(),
   currency: z.string().optional(),
   baselineSet: IsoDate.optional(),
+  /** Which named baseline the planned dates come from (step N5c), e.g. "Signed contract". */
+  baselineName: z.string().optional(),
   basedOn: z.string().optional(),
   /** Length of a working day in hours for this plan's estimates ("hours_per_day:" header). Unset = the workspace's. */
   hoursPerDay: z.number().positive().max(24).optional(),

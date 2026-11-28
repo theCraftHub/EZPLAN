@@ -13,6 +13,7 @@ test("set baseline, slip a task and see it; post an amber status update and see 
   const baseline = page.getByRole("region", { name: "Baseline" });
   await expect(baseline.getByText(/No baseline yet/)).toBeVisible();
   await baseline.getByRole("button", { name: "Set baseline" }).click();
+  await baseline.getByRole("button", { name: "Save baseline" }).click();
   await expect(baseline.getByText("On the baseline")).toBeVisible();
 
   // Ordering cabinets takes 3 more days: the checklist shows the slip, and so does the Overview.
@@ -29,10 +30,10 @@ test("set baseline, slip a task and see it; post an amber status update and see 
   await expect(baseline.getByText("3 working days late")).toBeVisible();
   await expect(baseline.getByText(/· 3 tasks slipped/)).toBeVisible(); // milestones and finished work aren't counted
 
-  // Replacing the baseline asks first.
-  await baseline.getByRole("button", { name: "Set a new baseline" }).click();
+  // Saving another baseline asks for a name first.
+  await baseline.getByRole("button", { name: "Save a new baseline" }).click();
   await expect(baseline.getByText(/The current plan is saved in History first/)).toBeVisible();
-  await baseline.getByRole("button", { name: "Keep it" }).click();
+  await baseline.getByRole("button", { name: "Cancel" }).click();
 
   // Post a status update from the report, choosing amber.
   const latest = page.getByRole("region", { name: "Latest status update" });

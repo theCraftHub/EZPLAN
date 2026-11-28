@@ -34,7 +34,7 @@ export type Op =
   /** Server only (Version history restore): never accepted from a client (see opSchema.ts). */
   | { kind: "replacePlan"; plan: Plan }
   /** Server only: saves each task's scheduled dates as its baseline. The server works the dates out itself. */
-  | { kind: "setBaseline"; on: string; dates: Record<string, { start: string; end: string }> };
+  | { kind: "setBaseline"; on: string; dates: Record<string, { start: string; end: string }>; name?: string; switched?: boolean };
 
 export type PlanField = "title" | "goal" | "doneWhen";
 
@@ -98,6 +98,8 @@ export function applyOp(state: Pick<RoomState, "plan" | "trash" | "restoredForRe
       else delete task.planned;
     }
     state.plan.baselineSet = op.on;
+    if (op.name) state.plan.baselineName = op.name;
+    else delete state.plan.baselineName;
     return op;
   }
   if (op.kind === "setPlanField") {

@@ -257,6 +257,14 @@ export const MIGRATIONS: Migration[] = [
       `CREATE INDEX time_logs_plan ON time_logs(plan_id, task_id)`,
     ],
   },
+  {
+    id: 25,
+    name: "named baselines: up to five saved sets of planned dates per plan",
+    statements: [
+      `CREATE TABLE baselines (id TEXT PRIMARY KEY, plan_id TEXT NOT NULL REFERENCES plans(id), name TEXT NOT NULL, set_on TEXT NOT NULL, dates TEXT NOT NULL, created_by TEXT, created_at INTEGER NOT NULL)`,
+      `CREATE INDEX baselines_plan ON baselines(plan_id, created_at)`,
+    ],
+  },
 ];
 
 /** Applies any migrations not yet applied. Safe to call on every start-up. */

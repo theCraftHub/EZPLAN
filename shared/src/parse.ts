@@ -58,6 +58,7 @@ const KNOWN_FRONT_MATTER = new Set([
   "start",
   "team",
   "baseline_set",
+  "baseline_name",
   "currency",
   "based_on",
   "hours_per_day",
@@ -211,6 +212,7 @@ function readFrontMatter(lines: Line[], plan: Plan, issues: ParseIssue[], format
       case "done_when": plan.doneWhen = value; break;
       case "currency": plan.currency = value.toUpperCase(); break;
       case "based_on": plan.basedOn = value; break;
+      case "baseline_name": plan.baselineName = value.slice(0, 80); break;
       case "start":
       case "baseline_set": {
         const d = normalizeDate(value);

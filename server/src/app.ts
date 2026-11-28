@@ -746,9 +746,43 @@ export function createApp(ports: Ports) {
     return c.json({ version: r.version, savedVersion: saved });
   });
 
-  // Set baseline: today's scheduled dates become every task's planned dates. The server works the
-  // dates out with the same engine (never trusting the browser), saves a version first so it can be
-  // undone from Version history, and every open device gets the change live.
+  // Baselines (step N5c): up to five named sets of planned dates per plan, kept here; the one the
+  // plan compares to is copied into every task's planned dates (and the file's baseline_set/name).
+  // "Save" works the dates out with the same engine (never trusting the browser) and saves a version
+  // first; every open device gets the change live.
+  const BASELINE_LIMIT = 5;
+  type BaselineRow = { id: string; name: string; set_on: string; dates: string; created_at: number };
+  const baselineRows = async (planId: string, plan: Plan) => {
+    let rows = await db.all<BaselineRow>(`SELECT id, name, set_on, dates, created_at FROM baselines WHERE plan_id = ? ORDER BY created_at, rowid`, [planId]);
+    // Plans with a baseline from before names existed: keep it as the first named one.
+    if (!rows.length && plan.baselineSet) {
+      const dates = Object.fromEntries(allTasksOf(plan).filter((t) => t.planned).map((t) => [t.id, t.planned!]));
+      await db.run(`INSERT INTO baselines (id, plan_id, name, set_on, dates, created_by, created_at) VALUES (?, ?, ?, ?, ?, NULL, ?)`, [crypto.randomUUID(), planId, plan.baselineName ?? "Baseline", plan.baselineSet, JSON.stringify(dates), clock.now()]);
+      rows = await db.all<BaselineRow>(`SELECT id, name, set_on, dates, created_at FROM baselines WHERE plan_id = ? ORDER BY created_at, rowid`, [planId]);
+    }
+    return rows;
+  };
+  const isActive = (r: BaselineRow, plan: Plan) => !!plan.baselineSet && r.set_on === plan.baselineSet && r.name === (plan.baselineName ?? "Baseline");
+  const cleanName = (v: unknown) => (typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f\u2028\u2029]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) : "");
+
+  app.get("/api/plans/:id/baselines", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    const room = await loadRoom(db, id);
+    if (!room) return c.json(notFound, 404);
+    const rows = await baselineRows(id, room.plan);
+    return c.json({
+      limit: BASELINE_LIMIT,
+      canEdit: canEdit(a.role),
+      baselines: rows.map((r) => {
+        const dates = Object.values(JSON.parse(r.dates) as Record<string, { end: string }>).map((d) => d.end);
+        return { id: r.id, name: r.name, setOn: r.set_on, finish: dates.length ? dates.reduce((x, y) => (x > y ? x : y)) : null, active: isActive(r, room.plan) };
+      }),
+    });
+  });
+
   app.post("/api/plans/:id/baseline", async (c) => {
     const user = c.get("user");
     const id = c.req.param("id");
@@ -757,14 +791,54 @@ export function createApp(ports: Ports) {
     if (!canEdit(a.role)) return c.json({ error: "You can view this plan but not change it." }, 403);
     const room = await loadRoom(db, id);
     if (!room) return c.json(notFound, 404);
+    const b = await c.req.json<{ name?: unknown }>().catch(() => ({}) as { name?: unknown });
+    const rows = await baselineRows(id, room.plan);
+    if (rows.length >= BASELINE_LIMIT) return c.json({ error: `A plan keeps up to ${BASELINE_LIMIT} baselines. Remove one you no longer need first.` }, 400);
+    let name = cleanName(b?.name) || `Baseline ${rows.length + 1}`;
+    for (let n = 2; rows.some((r) => r.name.toLowerCase() === name.toLowerCase()); n++) name = `${cleanName(b?.name) || "Baseline"} (${n})`;
     const today = clock.today();
     const schedule = await scheduleOf(db, id, room.plan, { workWeek: parseWorkWeek(a.work_week), today, people: await loadPeople(id) }, levelPlan);
     const dates = Object.fromEntries([...schedule.tasks].map(([tid, t]) => [tid, { start: t.start, end: t.end }]));
-    const saved = await saveVersion(id, room.plan.baselineSet ? `Before replacing the baseline from ${room.plan.baselineSet}` : "Before setting the baseline", user.id);
-    const r = await rooms.apply(id, { opId: `baseline-${crypto.randomUUID().slice(0, 8)}`, clientId: "baseline", op: { kind: "setBaseline", on: today, dates } }, { userId: user.id, name: user.name });
+    const saved = await saveVersion(id, room.plan.baselineSet ? `Before the new baseline "${name}" (was "${room.plan.baselineName ?? "Baseline"}" from ${room.plan.baselineSet})` : "Before setting the baseline", user.id);
+    const baselineId = crypto.randomUUID();
+    await db.run(`INSERT INTO baselines (id, plan_id, name, set_on, dates, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, [baselineId, id, name, today, JSON.stringify(dates), user.id, clock.now()]);
+    const r = await rooms.apply(id, { opId: `baseline-${crypto.randomUUID().slice(0, 8)}`, clientId: "baseline", op: { kind: "setBaseline", on: today, dates, name } }, { userId: user.id, name: user.name });
+    if (r.status === "missing") return c.json(notFound, 404);
+    if (r.status === "denied") { await db.run(`DELETE FROM baselines WHERE id = ?`, [baselineId]); return c.json({ error: r.error }, 403); }
+    return c.json({ id: baselineId, name, version: r.version, baselineSet: today, finish: schedule.finish, savedVersion: saved });
+  });
+
+  app.post("/api/plans/:id/baselines/:bid/use", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    if (!canEdit(a.role)) return c.json({ error: "You can view this plan but not change it." }, 403);
+    const room = await loadRoom(db, id);
+    if (!room) return c.json(notFound, 404);
+    const row = (await baselineRows(id, room.plan)).find((r) => r.id === c.req.param("bid"));
+    if (!row) return c.json({ error: "That baseline isn't on this plan any more." }, 404);
+    if (isActive(row, room.plan)) return c.json({ ok: true });
+    const r = await rooms.apply(id, { opId: `baseline-${crypto.randomUUID().slice(0, 8)}`, clientId: "baseline", op: { kind: "setBaseline", on: row.set_on, dates: JSON.parse(row.dates) as Record<string, { start: string; end: string }>, name: row.name, switched: true } }, { userId: user.id, name: user.name });
     if (r.status === "missing") return c.json(notFound, 404);
     if (r.status === "denied") return c.json({ error: r.error }, 403);
-    return c.json({ version: r.version, baselineSet: today, finish: schedule.finish, savedVersion: saved });
+    return c.json({ ok: true, version: r.version });
+  });
+
+  app.delete("/api/plans/:id/baselines/:bid", async (c) => {
+    const user = c.get("user");
+    const id = c.req.param("id");
+    const a = await access(id, user.id);
+    if (!a) return c.json(notFound, 404);
+    if (!canEdit(a.role) || a.archived) return c.json({ error: "You can view this plan but not change it." }, 403);
+    const room = await loadRoom(db, id);
+    if (!room) return c.json(notFound, 404);
+    const row = (await baselineRows(id, room.plan)).find((r) => r.id === c.req.param("bid"));
+    if (!row) return c.json({ error: "That baseline is already gone." }, 404);
+    if (isActive(row, room.plan)) return c.json({ error: "The plan compares to this one. Compare to another baseline first." }, 400);
+    await db.run(`DELETE FROM baselines WHERE id = ? AND plan_id = ?`, [row.id, id]);
+    await recordActivity(db, id, user, { kind: "baseline", summary: `${user.name} removed the baseline "${row.name}"` }, clock.now());
+    return c.json({ ok: true });
   });
 
   // ---------------------------------------------------------------- sharing a plan

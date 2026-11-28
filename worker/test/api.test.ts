@@ -33,6 +33,7 @@ import { sharesContract } from "../../server/test/shares.contract";
 import { jobsContract } from "../../server/test/jobs.contract";
 import { calendarsContract } from "../../server/test/calendars.contract";
 import { timeContract } from "../../server/test/time.contract";
+import { baselinesContract } from "../../server/test/baselines.contract";
 import { signInContract } from "../../server/test/signin.contract";
 
 let bundled: Promise<string> | null = null;
@@ -133,3 +134,4 @@ sharesContract("cloud (Workers + D1 + Durable Objects)", factory);
 jobsContract("cloud (Workers + D1 + Durable Objects)", factory);
 calendarsContract("cloud (Workers + D1 + Durable Objects)", factory);
 timeContract("cloud (Workers + D1 + Durable Objects)", factory);
+baselinesContract("cloud (Workers + D1 + Durable Objects)", factory);

@@ -42,16 +42,16 @@ export function statusContract(hostName: string, factory: HostFactory) {
       for (const t of allTasks(got.plan)) expect(t.planned).toEqual({ start: got.schedule.tasks[t.id]!.start, end: got.schedule.tasks[t.id]!.end });
       const versions = (await req("GET", `/api/plans/${id}/versions`, undefined, ALEX)).body.versions as { reason: string }[];
       expect(versions.some((v) => v.reason === "Before setting the baseline")).toBe(true);
-      expect(((await req("GET", `/api/plans/${id}/activity`, undefined, ALEX)).body.items as { summary: string }[]).some((a) => a.summary === `Alex set the baseline (planned dates as of ${TODAY})`)).toBe(true);
+      expect(((await req("GET", `/api/plans/${id}/activity`, undefined, ALEX)).body.items as { summary: string }[]).some((a) => a.summary === `Alex set the baseline "Baseline 1" (planned dates as of ${TODAY})`)).toBe(true);
       expect((await req("GET", "/api/plans", undefined, ALEX)).body.plans.find((p: { id: string }) => p.id === id).summary.baselineVarianceDays).toBe(0);
 
       // Book venue takes 3 days longer: the finish slips 3 working days against the baseline.
       expect((await req("POST", `/api/plans/${id}/ops`, { opId: "slip", clientId: "c", op: { kind: "setField", taskId: "T1", field: "estimate", value: { amount: 5, unit: "d" } } }, ALEX)).status).toBe(200);
       expect((await req("GET", "/api/plans", undefined, ALEX)).body.plans.find((p: { id: string }) => p.id === id).summary.baselineVarianceDays).toBe(3);
 
-      // Setting it again replaces it, and says so in Version history.
+      // Saving another one makes the plan compare to it, and says so in Version history.
       await req("POST", `/api/plans/${id}/baseline`, {}, ALEX);
-      expect(((await req("GET", `/api/plans/${id}/versions`, undefined, ALEX)).body.versions as { reason: string }[]).some((v) => v.reason === `Before replacing the baseline from ${TODAY}`)).toBe(true);
+      expect(((await req("GET", `/api/plans/${id}/versions`, undefined, ALEX)).body.versions as { reason: string }[]).some((v) => v.reason === `Before the new baseline "Baseline 2" (was "Baseline 1" from ${TODAY})`)).toBe(true);
       expect((await req("GET", "/api/plans", undefined, ALEX)).body.plans.find((p: { id: string }) => p.id === id).summary.baselineVarianceDays).toBe(0);
     });
 
