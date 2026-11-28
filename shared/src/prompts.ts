@@ -22,6 +22,7 @@ const SPEC = (key: string) => `FORMAT RULES
    - Estimate in parentheses: (4h) hours, (2d) working days, (1w) working weeks. Be realistic.
    - @Owner is a person's first name; leave it out if unknown.
    - due: and depends: are optional. depends lists the IDs the task waits on, e.g. depends: T1, T3.
+   - Optional: start: no earlier than <YYYY-MM-DD> when a task truly can't begin before a date.
    - Optional: !high / !medium / !low priority, #tag.
 4. Under a task you may indent:  notes: <one line>   and subtasks as  - [ ] <subtask>.
 5. Output ONLY the plan inside one code block. No other text inside the code block.`;

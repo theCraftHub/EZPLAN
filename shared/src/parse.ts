@@ -258,7 +258,7 @@ const BULLET_RE = /^(\s*)(?:[-*+•]|\d+[.)])\s+(.*)$/;
 const CHECKBOX_RE = /^(?:\[( |x|X|\/|-|~|>)\]|(☐|⬜|□)|(☑|✅|✔️?|☒|✓))\s*/;
 const TASK_ID_RE = /^(?:\*\*|__)?\s*([TtMm])(\d+)\s*[:.)\-–]\s*/;
 const PHASE_ID_RE = /^(?:P(\d+)|Phase\s+(\d+))\s*[:.)\-–]\s*(.*)$/i;
-const ATTR_LINE_RE = /^(planned|notes?|due|depends|owner|dept|done|skipped|approver|approved|repeat|cost|priority|tags?)\s*:\s*(.*)$/i;
+const ATTR_LINE_RE = /^(planned|notes?|due|start|finish|depends|owner|dept|done|skipped|approver|approved|repeat|cost|priority|tags?)\s*:\s*(.*)$/i;
 /** Unknown attributes written by newer versions: lower_snake_case keys only, so ordinary notes aren't mistaken for them. */
 const EXTRA_ATTR_RE = /^([a-z][a-z0-9_]{1,29})\s*:\s+(.+)$/;
 const INLINE_KEYS = ["due", "depends", "done", "skipped", "after", "dept", "approver", "approved", "repeat", "cost"] as const;
@@ -455,22 +455,23 @@ function parseTaskLine(content: string, n: number, issues: ParseIssue[]): Task {
 }
 
 function splitInlineAttributes(text: string): { head: string; attrs: { key: string; value: string }[] } {
-  const re = new RegExp(`(^|\\s)(${INLINE_KEYS.join("|")})(?=\\s*:|\\s+[TtMm]\\d)`, "gi");
+  // "start:" and "finish:" only with a colon, so ordinary words in titles aren't read as dates.
+  const re = new RegExp(`(^|\\s)(?:(${INLINE_KEYS.join("|")})(?=\\s*:|\\s+[TtMm]\\d)|(start|finish)(?=\\s*:))`, "gi");
   const marks: { key: string; start: number; valueStart: number }[] = [];
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) {
     const keyStart = m.index + m[1]!.length;
-    let valueStart = keyStart + m[2]!.length;
+    let valueStart = keyStart + (m[2] ?? m[3])!.length;
     const colon = /^\s*:/.exec(text.slice(valueStart));
     if (colon) valueStart += colon[0].length;
-    marks.push({ key: m[2]!.toLowerCase(), start: keyStart, valueStart });
+    marks.push({ key: (m[2] ?? m[3])!.toLowerCase(), start: keyStart, valueStart });
   }
   if (marks.length === 0) return { head: text, attrs: [] };
   let head = text.slice(0, marks[0]!.start);
   const attrs = marks.map((mk, i) => {
     const key = mk.key === "after" ? "depends" : mk.key;
     let value = text.slice(mk.valueStart, i + 1 < marks.length ? marks[i + 1]!.start : undefined).trim();
-    if (key === "depends" || key === "due") {
+    if (key === "depends" || key === "due" || key === "start" || key === "finish") {
       // AI replies sometimes put !priority, #tags or @Owner after these ("depends: T9 !high").
       // Move them back to the task text so they aren't lost. (done:/skipped: keep "by @Name".)
       const moved: string[] = [];
@@ -497,6 +498,18 @@ function applyAttributeLine(t: Task, key: string, value: string, n: number, issu
     case "notes":
       if (v) t.notes.push(cleanText(v, n, issues));
       break;
+    case "start": {
+      const d = normalizeDate(v.replace(/^(?:no earlier than|not before|on or after|after)\s+/i, ""));
+      if (d) t.notBefore = d;
+      else issues.push({ line: n, severity: "warning", message: `"${clip(v)}" isn't a start date like "no earlier than 2027-03-01", so it was skipped.` });
+      break;
+    }
+    case "finish": {
+      const d = normalizeDate(v.replace(/^(?:by|no later than|before)\s+/i, ""));
+      if (d) t.due = d;
+      else issues.push({ line: n, severity: "warning", message: `"${clip(v)}" isn't a finish date like "by 2027-04-15", so it was skipped.` });
+      break;
+    }
     case "due": {
       const d = normalizeDate(v);
       if (d) t.due = d;

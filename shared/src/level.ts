@@ -42,7 +42,9 @@ export type StartReason =
   | { kind: "other-plan"; plan: string; title: string; person?: string }
   | { kind: "person"; person: string; after: string }
   | { kind: "time-off"; person: string; from: string; to: string; label?: string }
-  | { kind: "no-hours"; person: string };
+  | { kind: "no-hours"; person: string }
+  /** A start constraint on the task itself ("start: no earlier than"). */
+  | { kind: "constraint"; date: string };
 
 export interface Booking {
   taskId: string;
@@ -127,6 +129,11 @@ export function levelPlan(plan: Plan, opts: LevelOptions = {}): LeveledSchedule 
         at = t;
         reason = { kind: "depends", on: d.id };
       }
+    }
+    const nb = byId.get(id)!.notBefore;
+    if (nb) {
+      const c = cal.workdaysBetween(start, nb);
+      if (c > at + EPS) { at = c; reason = { kind: "constraint", date: nb }; }
     }
     return { at: Math.max(0, at), reason };
   };
@@ -322,6 +329,8 @@ export function explainStart(s: LeveledSchedule, id: string, plan: Plan): string
       return `Starts ${when} because ${r.person} is off ${fmt(r.from)} to ${fmt(r.to)}${r.label ? ` (${r.label})` : ""}.`;
     case "no-hours":
       return `Starts ${when} because ${r.person} has no free hours before then.`;
+    case "constraint":
+      return r.date === st.start ? `Starts ${when} because it can't start before then.` : `Starts ${when} because it can't start before ${fmt(r.date)}.`;
   }
 }
 

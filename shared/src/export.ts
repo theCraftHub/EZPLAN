@@ -85,6 +85,7 @@ function taskLines(t: Task): string[] {
   if (t.dept) line += ` dept: ${oneLine(t.dept)}`;
   for (const tag of t.tags) line += ` #${tag}`;
   if (t.due) line += ` due: ${t.due}`;
+  if (t.notBefore) line += ` start: no earlier than ${t.notBefore}`;
   if (t.depends.length) line += ` depends: ${formatDepends(t.depends)}`;
   if (t.done) line += ` done: ${t.done.date}${t.done.by ? ` by ${t.done.by}` : ""}`;
   if (t.skipped) line += ` skipped: ${t.skipped.date}${t.skipped.by ? ` by ${t.skipped.by}` : ""}`;

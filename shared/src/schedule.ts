@@ -97,6 +97,9 @@ export function schedulePlan(plan: Plan, opts: ScheduleOptions = {}): Schedule {
       else if (p.type === "FF") start = Math.max(start, pef + p.lag - d);
       else start = Math.max(start, pef + p.lag);
     }
+    // A start constraint ("no earlier than") holds the task back to that day.
+    const nb = byId.get(id)!.notBefore;
+    if (nb) start = Math.max(start, cal.workdaysBetween(projectStart, nb));
     es.set(id, Math.max(0, start));
     ef.set(id, Math.max(0, start) + d);
   }

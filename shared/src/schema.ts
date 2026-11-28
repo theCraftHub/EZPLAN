@@ -62,6 +62,8 @@ export const Task = z.object({
   /** The department doing it (master plans): Facilities, IT, HR… */
   dept: z.string().optional(),
   due: IsoDate.optional(),
+  /** A start constraint: the task can't start before this day ("start: no earlier than 2027-03-01"). */
+  notBefore: IsoDate.optional(),
   depends: z.array(Dependency),
   planned: DateRange.optional(),
   notes: z.array(z.string()),

@@ -25,6 +25,7 @@ export function TaskSheet({ task, plan, math, canEdit, edit, onClose, options, o
   const { me, manager, canComment } = ctx;
   const mayApprove = canComment && !!task.approver && (!!manager || sameName(task.approver, me ?? ""));
   const [due, setDue] = useState(task.due ?? "");
+  const [notBefore, setNotBefore] = useState(task.notBefore ?? "");
   const [estimate, setEstimate] = useState(task.estimate ? `${task.estimate.amount}${task.estimate.unit}` : "");
   const [notes, setNotes] = useState(task.notes.join("\n"));
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -40,6 +41,7 @@ export function TaskSheet({ task, plan, math, canEdit, edit, onClose, options, o
     if ((approver.trim() || null) !== (task.approver ?? null)) set("approver", approver.trim() || null);
     if ((repeat || null) !== (task.repeat ?? null)) set("repeat", repeat || null);
     if ((due || null) !== (task.due ?? null)) set("due", due || null);
+    if ((notBefore || null) !== (task.notBefore ?? null)) set("notBefore", notBefore || null);
     if (!estBad && JSON.stringify(est ?? null) !== JSON.stringify(task.estimate ?? null)) set("estimate", est ?? null);
     const n = notes.split("\n").map((l) => l.trim()).filter(Boolean);
     if (JSON.stringify(n) !== JSON.stringify(task.notes)) set("notes", n);
@@ -96,7 +98,9 @@ export function TaskSheet({ task, plan, math, canEdit, edit, onClose, options, o
                 {estBad && <span className="font-normal text-bad">Use hours, days or weeks, like 6h, 3d or 1w.</span>}
               </label>
             )}
-            <label className="flex flex-col gap-1.5 text-sm font-semibold">Due by<input type="date" value={due} onChange={(e) => setDue(e.target.value)} disabled={!canEdit} className={field} /></label>
+            <label className="flex flex-col gap-1.5 text-sm font-semibold">Due by<input type="date" value={due} onChange={(e) => setDue(e.target.value)} disabled={!canEdit} className={field} />
+              {s && task.due && s.end > task.due && task.status !== "done" && task.status !== "skipped" && <span className="font-normal text-warn">Scheduled to finish {longDate(s.end)}, after this.</span>}</label>
+            {!task.milestone && <label className="flex flex-col gap-1.5 text-sm font-semibold">Can't start before<input type="date" value={notBefore} onChange={(e) => setNotBefore(e.target.value)} disabled={!canEdit} className={field} /></label>}
             <label className="flex flex-col gap-1.5 text-sm font-semibold">Department<input value={dept} onChange={(e) => setDept(e.target.value)} placeholder="e.g. IT" maxLength={60} disabled={!canEdit} className={field} /></label>
             {!task.milestone && task.status !== "done" && task.status !== "skipped" && (
               <label className="col-span-2 flex flex-col gap-1.5 text-sm font-semibold">Repeats

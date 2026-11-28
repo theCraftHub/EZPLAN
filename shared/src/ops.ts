@@ -17,7 +17,7 @@
 import type { Phase, Plan, Task, TaskStatus } from "./schema";
 import { nextOccurrence } from "./repeat";
 
-export type EditableField = "title" | "owner" | "dept" | "due" | "notes" | "priority" | "estimate" | "depends" | "tags" | "approver" | "repeat" | "cost";
+export type EditableField = "title" | "owner" | "dept" | "due" | "notBefore" | "notes" | "priority" | "estimate" | "depends" | "tags" | "approver" | "repeat" | "cost";
 
 export type Op =
   | { kind: "setStatus"; taskId: string; status: TaskStatus }
@@ -182,7 +182,7 @@ export function applyOp(state: Pick<RoomState, "plan" | "trash" | "restoredForRe
     }
     case "setField": {
       // Approval is for the work as it was: changing what it is or when clears it.
-      if (["title", "estimate", "due", "approver"].includes(op.field) && JSON.stringify((task as Record<string, unknown>)[op.field]) !== JSON.stringify(op.value)) delete task.approved;
+      if (["title", "estimate", "due", "notBefore", "approver"].includes(op.field) && JSON.stringify((task as Record<string, unknown>)[op.field]) !== JSON.stringify(op.value)) delete task.approved;
       (task as Record<string, unknown>)[op.field] = structuredClone(op.value);
       if (op.value === undefined) delete (task as Record<string, unknown>)[op.field];
       return op;

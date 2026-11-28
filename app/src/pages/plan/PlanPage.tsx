@@ -117,7 +117,7 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
       {view === "" && <Overview plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} planId={id} version={room.version} statusUpdate={room.detail.statusUpdate} people={room.detail.people} workWeek={room.detail.workWeek} raidOpen={room.detail.raidOpen} />}
       {view === "checklist" && <Checklist plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} />}
       {view === "board" && <Board plan={room.plan} math={math} canEdit={canEdit} edit={room.edit} />}
-      {view === "timeline" && <Timeline plan={room.plan} math={math} today={room.detail.today} />}
+      {view === "timeline" && <Timeline plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} />}
       {view === "team" && <Team me={me} planId={id} plan={room.plan} math={math} people={room.detail.people} workWeek={room.detail.workWeek} today={room.detail.today} canEdit={canEdit} edit={room.edit} onPeople={(people) => room.setDetail({ ...room.detail!, people })} />}
       {view === "activity" && <Activity version={room.version} />}
       {view === "grid" && <Grid plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} planId={id} />}

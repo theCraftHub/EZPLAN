@@ -68,7 +68,9 @@ One list item per task:
 | Owner | `@Sam` or `@"Ana Lee"` | |
 | Priority | `!high` `!medium` `!low` | |
 | Tags | `#venue` | |
-| Due date | `due: 2026-12-10` | |
+| Due date | `due: 2026-12-10` or `finish: by 2026-12-10` | Plan Check warns when the schedule passes it |
+| Earliest start | `start: no earlier than 2027-03-01` | The task can't start before that day (also `start: 2027-03-01`) |
+| Cost | `cost: 1200/950` | Planned/actual, in the plan's `currency:` |
 | Waits on | `depends: T1, T2 SS+2d, M3 FF -1d` | Types: FS (default, finish-to-start), SS, FF; lag in working days. `after T1` also works |
 | Done | `done: 2026-12-02 by Ana` | Who marked it complete (may differ from the owner) |
 | Skipped | `skipped: 2026-12-05 by Sam` | |
@@ -94,7 +96,7 @@ Indented lines under a task:
 - Nothing in a file can grant access, invite people, or claim someone else's work: team emails and `by` names are suggestions or labeled "from file" (see plan section 4c).
 
 ## 6. Not in the file (app only)
-Comments, time logs and activity history. Reserved for later versions: costs (`cost:`), constraints (`start_after:`, `finish_by:`), `recurring:`, `approval:`, multiple named baselines and a `## RAID` section.
+Comments, time logs and activity history. Reserved for later versions: multiple named baselines and a `## RAID` section.
 
 ## 7. Approvals, repeats and master plans (Nov 27)
 

@@ -13,7 +13,7 @@ import type { EditableField, Op, PlanField } from "./ops";
 import { restoreNames } from "./prompts";
 import type { Plan, Task } from "./schema";
 
-const FIELDS: EditableField[] = ["title", "owner", "due", "estimate", "depends", "notes", "tags", "priority"];
+const FIELDS: EditableField[] = ["title", "owner", "due", "notBefore", "estimate", "depends", "notes", "tags", "priority"];
 const PLAN_FIELDS: PlanField[] = ["title", "goal", "doneWhen"];
 
 export type UpdateChange = {
@@ -46,7 +46,7 @@ const show = (v: unknown): string => {
   }
   return String(v);
 };
-const FIELD_NAME: Record<EditableField, string> = { title: "name", owner: "owner", dept: "department", due: "due date", estimate: "time needed", depends: "waits on", notes: "notes", tags: "tags", priority: "priority", approver: "approver", repeat: "repeats", cost: "cost" };
+const FIELD_NAME: Record<EditableField, string> = { title: "name", owner: "owner", dept: "department", due: "due date", notBefore: "earliest start", estimate: "time needed", depends: "waits on", notes: "notes", tags: "tags", priority: "priority", approver: "approver", repeat: "repeats", cost: "cost" };
 const PLAN_NAME: Record<PlanField, string> = { title: "Plan name", goal: "Goal", doneWhen: "Done when" };
 
 /** A new task from a reply starts fresh: not started, nobody credited. */
