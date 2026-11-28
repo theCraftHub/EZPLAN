@@ -8,15 +8,16 @@ import type { Op, PersonAvailability, Plan, WorkWeek } from "@rakuplan/shared";
 import { plural, shortDate } from "../../lib/format";
 import { Card, ProgressRing } from "../../ui/kit";
 import { BudgetCard } from "./Budget";
+import { TryChange } from "./TryChange";
 import type { usePlanMath } from "./math";
 import { PlanCheck } from "./PlanCheck";
 
 type Math = NonNullable<ReturnType<typeof usePlanMath>>;
 
 /** The plan's home: where are we, what's next, are we on track. Phones get this compact page; desktops the dashboard. */
-export function Overview({ plan, math, today, canEdit, edit, planId, version, statusUpdate, people, workWeek, raidOpen }: { plan: Plan; math: Math; today: string; canEdit: boolean; edit: (op: Op) => void; planId: string; version: number; statusUpdate: UpdateState; people: Record<string, PersonAvailability>; workWeek: WorkWeek; raidOpen: { risks: number; issues: number } }) {
+export function Overview({ plan, math, today, canEdit, edit, planId, version, statusUpdate, people, workWeek, raidOpen, inMaster }: { inMaster?: boolean; plan: Plan; math: Math; today: string; canEdit: boolean; edit: (op: Op) => void; planId: string; version: number; statusUpdate: UpdateState; people: Record<string, PersonAvailability>; workWeek: WorkWeek; raidOpen: { risks: number; issues: number } }) {
   const desktop = useIsDesktop();
-  if (desktop) return <Dashboard plan={plan} math={math} today={today} canEdit={canEdit} edit={edit} planId={planId} version={version} statusUpdate={statusUpdate} people={people} workWeek={workWeek} raidOpen={raidOpen} />;
+  if (desktop) return <Dashboard plan={plan} math={math} today={today} canEdit={canEdit} edit={edit} planId={planId} version={version} statusUpdate={statusUpdate} people={people} workWeek={workWeek} raidOpen={raidOpen} inMaster={inMaster} />;
   const { progress, schedule } = math;
   const late = progress.forecastFinish && progress.forecastFinish > schedule.finish;
   const kpi = "flex flex-col gap-1";
@@ -58,6 +59,7 @@ export function Overview({ plan, math, today, canEdit, edit, planId, version, st
 
       <PlanCheck planId={planId} plan={plan} math={math} canEdit={canEdit} edit={edit} />
       <Card aria-label="Budget" className="flex flex-col gap-2"><h2 className="m-0 text-lg font-bold">Budget</h2><BudgetCard plan={plan} planId={planId} people={people} workWeek={workWeek} /></Card>
+      {!inMaster && <TryChange plan={plan} planId={planId} people={people} workWeek={workWeek} today={today} canEdit={canEdit} edit={edit} />}
       <RecentActivity version={version} />
     </div>
   );

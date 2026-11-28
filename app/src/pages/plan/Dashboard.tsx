@@ -14,11 +14,12 @@ import type { usePlanMath } from "./math";
 import { Baseline, LatestUpdate, UpNext } from "./OverviewCards";
 import { PlanCheck } from "./PlanCheck";
 import { BudgetCard } from "./Budget";
+import { TryChange } from "./TryChange";
 import { useTeamData } from "./teamData";
 import { pack } from "./pack";
 
 type Math = NonNullable<ReturnType<typeof usePlanMath>>;
-type Props = { plan: Plan; math: Math; today: string; canEdit: boolean; edit: (op: Op) => void; planId: string; version: number; statusUpdate: UpdateState; people: Record<string, PersonAvailability>; workWeek: WorkWeek; raidOpen: { risks: number; issues: number } };
+type Props = { plan: Plan; math: Math; today: string; canEdit: boolean; edit: (op: Op) => void; planId: string; version: number; statusUpdate: UpdateState; people: Record<string, PersonAvailability>; workWeek: WorkWeek; raidOpen: { risks: number; issues: number }; inMaster?: boolean };
 
 /** Each widget's default width (of 12 columns) and the widths it can take. */
 export const WIDGETS = [
@@ -32,6 +33,7 @@ export const WIDGETS = [
   { id: "upnext", title: "Up next", w: 6, sizes: [4, 6, 8, 12] },
   { id: "check", title: "Plan Check", w: 6, sizes: [4, 6, 8, 12] },
   { id: "budget", title: "Budget", w: 6, sizes: [4, 6, 8, 12] },
+  { id: "whatif", title: "Try a change", w: 6, sizes: [4, 6, 8, 12] },
   { id: "activity", title: "Recent activity", w: 6, sizes: [4, 6, 8, 12] },
 ] as const;
 type WidgetId = (typeof WIDGETS)[number]["id"];
@@ -199,6 +201,7 @@ function Widget({ id, ...p }: Props & { id: WidgetId }): ReactNode {
     case "upnext": return <UpNext math={p.math} planId={p.planId} canEdit={p.canEdit} edit={p.edit} />;
     case "check": return <PlanCheck planId={p.planId} plan={p.plan} math={p.math} canEdit={p.canEdit} edit={p.edit} />;
     case "activity": return <RecentActivity version={p.version} />;
+    case "whatif": return p.inMaster ? <Card aria-label="Try a change" className="flex flex-col gap-2"><h2 className="m-0 text-lg font-bold">Try a change</h2><p className="m-0 text-sm text-ink-2">This plan is part of a master plan, so its dates depend on the others. Try changes from the master plan's Overview.</p></Card> : <TryChange plan={p.plan} planId={p.planId} people={p.people} workWeek={p.workWeek} today={p.today} canEdit={p.canEdit} edit={p.edit} />;
     case "budget": return <Card aria-label="Budget" className="flex flex-col gap-2"><h2 className="m-0 flex items-center gap-2 text-lg font-bold"><Wallet aria-hidden size={18} /> Budget</h2><BudgetCard plan={p.plan} planId={p.planId} people={p.people} workWeek={p.workWeek} /></Card>;
   }
 }

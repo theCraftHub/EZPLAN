@@ -114,7 +114,7 @@ export function PlanPage({ me, id, view }: { me: Me; id: string; view: string })
       {view === "share" && <><Share planId={id} plan={room.plan} me={me} /><ShareLinks planId={id} /></>}
       {presenting && math && room.plan && <Present plan={room.plan} math={math} today={room.detail.today} onClose={() => setPresenting(false)} extra={{ risks: room.detail.raidOpen.risks }} />}
       {view === "history" && <History planId={id} plan={room.plan} version={room.detail.version} canEdit={canEdit} edit={room.edit} />}
-      {view === "" && <Overview plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} planId={id} version={room.version} statusUpdate={room.detail.statusUpdate} people={room.detail.people} workWeek={room.detail.workWeek} raidOpen={room.detail.raidOpen} />}
+      {view === "" && <Overview plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} planId={id} version={room.version} statusUpdate={room.detail.statusUpdate} people={room.detail.people} workWeek={room.detail.workWeek} raidOpen={room.detail.raidOpen} inMaster={!!room.detail.master?.view} />}
       {view === "checklist" && <Checklist plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} />}
       {view === "board" && <Board plan={room.plan} math={math} canEdit={canEdit} edit={room.edit} />}
       {view === "timeline" && <Timeline plan={room.plan} math={math} today={room.detail.today} canEdit={canEdit} edit={room.edit} />}
