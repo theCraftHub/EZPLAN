@@ -1,6 +1,7 @@
 /** The plan header: view picker, top actions and More, on phone and desktop. */
 import { expect, test, type Page } from "@playwright/test";
 import { addPlan, KITCHEN, signIn } from "./helpers";
+import { OTHER_PAGES, PLAN_VIEWS } from "../src/pages/plan/planNav";
 
 const live = (page: Page) => expect(page.getByRole("status").filter({ hasText: /^Live/ })).toBeVisible();
 const VIEWS = ["Overview", "Checklist", "Board", "Timeline", "Grid", "Team", "Risks", "Activity"];
@@ -111,4 +112,36 @@ test("a plan inside a master links back to the master", async ({ page }, info) =
   await expect(back).toBeVisible();
   await expect(back).toHaveAttribute("href", `/m/${masterId}`);
   await expect(page.getByText(`Part of the master plan Campus ${tag}`)).toBeVisible();
+});
+
+for (const width of [360, 501]) test(`at ${width}px the picker shows the whole name of every page, with no sideways scroll`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 740 });
+  await signIn(page);
+  const id = await addPlan(page, KITCHEN.replace("Kitchen Remodel", "Narrow Kitchen"));
+  // Every view, and every page reached from the header that shows the picker (print has its own sheet).
+  const pages = [...PLAN_VIEWS.map((v) => ({ view: v.view, name: v.label })), ...["update", "report", "history", "share"].map((v) => ({ view: v, name: OTHER_PAGES[v]! }))];
+  for (const { view, name } of pages) {
+    await page.goto(`/p/${id}${view ? `/${view}` : ""}`);
+    await live(page);
+    const label = page.getByRole("button", { name: `Plan view: ${name}` }).locator("[data-picker-label]");
+    await expect(label).toBeVisible();
+    const fits = await label.evaluate((el) => el.scrollWidth <= el.clientWidth);
+    expect(fits, `${name}: label is cut off`).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${name}: page scrolls sideways`).toBe(true);
+  }
+  // Update and Share keep their names (icon-only up to 500px, with a tooltip).
+  if (width <= 500) expect((await page.getByRole("link", { name: "Update with my AI" }).innerText()).trim()).toBe("");
+  await expect(page.getByRole("link", { name: "Update with my AI" })).toHaveAttribute("title", "Update with my AI");
+  await expect(page.getByRole("group", { name: "Plan actions" }).getByRole("link", { name: "Share", exact: true })).toBeVisible();
+});
+
+test("More menu groups are named", async ({ page }) => {
+  await signIn(page);
+  const id = await addPlan(page, KITCHEN.replace("Kitchen Remodel", "Group Kitchen"));
+  await page.goto(`/p/${id}`);
+  await live(page);
+  await page.getByRole("button", { name: "More plan actions" }).click();
+  const menu = page.getByRole("menu");
+  await expect(menu.getByRole("group", { name: "Share and report" }).getByRole("menuitem", { name: "Present" })).toBeVisible();
+  await expect(menu.getByRole("group", { name: "File" }).getByRole("menuitem", { name: "Download plan file" })).toBeVisible();
 });

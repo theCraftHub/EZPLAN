@@ -34,7 +34,8 @@ test("portfolio: tabs, search, archive and restore, archived plans are read-only
   await openView(page, "Checklist");
   await expect(page.getByRole("button", { name: /Frame: To do/ })).toBeDisabled();
   await shot("4-read-only");
-  await page.getByRole("button", { name: "Restore" }).click();
+  // Restoring reloads the page; wait for that reload so the next navigation doesn't race it.
+  await Promise.all([page.waitForEvent("load"), page.getByRole("button", { name: "Restore" }).click()]);
   await expect(page.getByText("This plan is archived.")).toHaveCount(0);
 
   await page.goto("/");

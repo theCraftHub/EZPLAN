@@ -1,6 +1,6 @@
 /** The plan page header: title row, view picker, the top actions and "More". */
 import * as Menu from "@radix-ui/react-dropdown-menu";
-import { useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useId, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { ArrowLeft, CalendarPlus, Check, ChevronDown, Download, FileText, History as HistoryIcon, MonitorPlay, MoreHorizontal, Printer, Sparkles, Users, Wifi, WifiOff, type LucideIcon } from "lucide-react";
 import type { PlanDetail, UpdateState } from "../../lib/api";
 import { Link, useRouter } from "../../lib/router";
@@ -10,6 +10,8 @@ import { PLAN_VIEWS, viewName } from "./planNav";
 
 const OTHER_ICONS: Record<string, LucideIcon> = { update: Sparkles, report: FileText, history: HistoryIcon, share: Users, print: Printer };
 const viewIcon = (view: string): LucideIcon => PLAN_VIEWS.find((v) => v.view === view)?.Icon ?? OTHER_ICONS[view] ?? PLAN_VIEWS[0]!.Icon;
+/** Shorter visible names for the picker on narrow phones (the accessible name keeps the full one). */
+const NARROW_NAMES: Record<string, string> = { history: "History", update: "Update" };
 const planPath = (id: string, view: string) => `/p/${id}${view ? `/${view}` : ""}`;
 
 const base = "inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-surface text-sm font-semibold text-ink hover:bg-surface-2";
@@ -41,6 +43,8 @@ function MenuLink({ to, close, children, ...rest }: { to: string; close: () => v
 /** Button showing the current view; opens the list of the plan's 8 views. */
 export function ViewPicker({ id, view, compact = false }: { id: string; view: string; compact?: boolean }) {
   const name = viewName(view);
+  const narrow = NARROW_NAMES[view];
+  const uid = useId();
   const Icon = viewIcon(view);
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
@@ -48,14 +52,16 @@ export function ViewPicker({ id, view, compact = false }: { id: string; view: st
     <Menu.Root modal={false} open={open} onOpenChange={setOpen}>
       <Menu.Trigger aria-label={`Plan view: ${name}`} title={`Plan view: ${name}`} className={`${base} min-w-0 px-3 text-[15px] data-[state=open]:bg-surface-2`}>
         <Icon aria-hidden size={16} className="shrink-0 text-primary-ink" />
-        <span className="min-w-0 truncate">{name}</span>
+        <span data-picker-label className="min-w-0 truncate">
+          {narrow ? <><span className="max-[420px]:hidden">{name}</span><span className="min-[421px]:hidden">{narrow}</span></> : name}
+        </span>
         <ChevronDown aria-hidden size={16} className="shrink-0 text-muted" />
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Content aria-label="Plan views" align="start" sideOffset={6} collisionPadding={16} className={menuBox}>
           {PLAN_VIEWS.map((v) => {
             const on = v.view === view;
-            const hint = `view-hint-${v.view || "overview"}`;
+            const hint = `${uid}-hint-${v.view || "overview"}`;
             return (
               <MenuLink key={v.label} to={planPath(id, v.view)} close={close} aria-label={v.label} aria-describedby={hint} aria-current={on ? "page" : undefined} textValue={v.label}>
                 <v.Icon aria-hidden size={18} className="shrink-0 text-primary-ink" />
@@ -81,13 +87,14 @@ export function ActionsRow({ id, canEdit, compact, onPresent, presentDisabled }:
   const presented = useRef(false);
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
-  const pad = compact ? "justify-center w-11 px-0" : "px-2.5 lg:px-3";
-  const label = (short: string, full = short) => (compact ? null : <><span className="lg:hidden">{short}</span><span className="hidden lg:inline">{full}</span></>);
-  const tip = (name: string) => (compact ? name : undefined);
+  const uid = useId();
+  // Up to 500px Update and Share are icon-only so the view picker keeps room for its full label.
+  const pad = compact ? "justify-center w-11 px-0" : "px-2.5 lg:px-3 max-[500px]:w-11 max-[500px]:justify-center max-[500px]:px-0";
+  const label = (short: string, full = short) => (compact ? null : <><span className="max-[500px]:hidden lg:hidden">{short}</span><span className="hidden lg:inline">{full}</span></>);
   return (
     <div role="group" aria-label="Plan actions" className="ml-auto flex shrink-0 items-center gap-1.5 lg:gap-2">
-      {canEdit && <Link to={`/p/${id}/update`} aria-label="Update with my AI" title={tip("Update with my AI")} className={`${btn} ${pad} border-primary/40 text-primary-ink`}><Sparkles aria-hidden size={16} />{label("Update", "Update with my AI")}</Link>}
-      <Link to={`/p/${id}/share`} aria-label="Share" title={tip("Share")} className={`${btn} ${pad}`}><Users aria-hidden size={16} />{label("Share")}</Link>
+      {canEdit && <Link to={`/p/${id}/update`} aria-label="Update with my AI" title="Update with my AI" className={`${btn} ${pad} border-primary/40 text-primary-ink`}><Sparkles aria-hidden size={16} />{label("Update", "Update with my AI")}</Link>}
+      <Link to={`/p/${id}/share`} aria-label="Share" title="Share" className={`${btn} ${pad}`}><Users aria-hidden size={16} />{label("Share")}</Link>
       {!compact && <Link to={`/p/${id}/report`} aria-label="Status report" className={`${btn} ${pad} max-lg:hidden`}><FileText aria-hidden size={16} />Report</Link>}
       <Menu.Root modal={false} open={open} onOpenChange={setOpen}>
         <Menu.Trigger aria-label="More plan actions" title="More plan actions" className={`${btn} w-11 justify-center px-0 data-[state=open]:bg-surface-2`}>
@@ -96,15 +103,15 @@ export function ActionsRow({ id, canEdit, compact, onPresent, presentDisabled }:
         <Menu.Portal>
           <Menu.Content align="end" sideOffset={6} collisionPadding={16} className={menuBox}
             onCloseAutoFocus={(e) => { if (presented.current) { presented.current = false; e.preventDefault(); } }}>
-            <Menu.Group>
-              <Menu.Label className={groupLabel}>Share and report</Menu.Label>
+            <Menu.Group aria-labelledby={`${uid}-share`}>
+              <Menu.Label id={`${uid}-share`} className={groupLabel}>Share and report</Menu.Label>
               <MenuLink to={`/p/${id}/report`} close={close} className={`${item} ${compact ? "" : "lg:hidden"}`}><FileText aria-hidden size={18} className="shrink-0" />Status report</MenuLink>
               <Menu.Item className={item} disabled={presentDisabled} onSelect={() => { presented.current = true; onPresent(); }}><MonitorPlay aria-hidden size={18} className="shrink-0" />Present</Menu.Item>
               <MenuLink to={`/p/${id}/print`} close={close}><Printer aria-hidden size={18} className="shrink-0" />Print summary</MenuLink>
             </Menu.Group>
             <Menu.Separator className="my-1 h-px bg-line" />
-            <Menu.Group>
-              <Menu.Label className={groupLabel}>File</Menu.Label>
+            <Menu.Group aria-labelledby={`${uid}-file`}>
+              <Menu.Label id={`${uid}-file`} className={groupLabel}>File</Menu.Label>
               <Menu.Item asChild className={item}><a href={`/api/plans/${id}/export`} download><Download aria-hidden size={18} className="shrink-0" />Download plan file</a></Menu.Item>
               <Menu.Item asChild className={item}><a href={`/api/plans/${id}/calendar.ics`} download><CalendarPlus aria-hidden size={18} className="shrink-0" />Add to calendar</a></Menu.Item>
             </Menu.Group>
